@@ -317,259 +317,242 @@ source ~/.bashrc
 
 ## Mysql
 
-环境配置
+### 1 **开发环境配置：**
 
-激活pycharm
+- 下载并且激活pycharm(百度网盘里面有)
 
-![image-20230827151002359](assets/image-20230827151002359.png)
+- 先创建一个python的项目
 
-先创建一个python的项目
 
 ![](assets/image-20230827151207681.png)
 
-找到 Database 工具栏
+- 找到 Database 工具栏
+
 
 ![image-20230827151102624](assets/image-20230827151102624.png)
 
-配置mysql 链接, 这里使用centos上的Mysql (连之前centos一定要打开)
-
-- ip 192.168.88.161
-- 用户名 root
-- 密码 123456
-
-mac 同学在mac本地安装一下  ip  127.0.0.1
-
-https://zhuanlan.zhihu.com/p/599351042
+- 配置mysql 链接, 这里使用ubantu虚拟机上安装的MySQL (连之前ubantu一定要打开)
+  - ip  192.168.58.128
+  - 用户名 root
+  - 密码 12345678
 
 ![image-20230827151250721](assets/image-20230827151250721.png)
 
 ![image-20230827151423370](assets/image-20230827151423370.png)
 
-配置好Mysql连接之后, 打开默认控制台, 可以在里面写SQL
+- 配置好Mysql连接之后, 打开默认控制台, 可以在里面写SQL
+
 
 ![image-20230827151737385](assets/image-20230827151737385.png)
 
-### 1 数据库简介
+### 2 数据库简介
 
-数据库就是存储数据的仓库，用户可以对数据库中的数据进行增加，修改，删除及查询操作。
+数据库就是存储数据的仓库，用户可以对数据库中的数据进行增加，修改，删除及查询操作。数据库分为**关系型数据库**和**非关系型数据库**。
 
-数据库分为关系型数据库和非关系型数据库。
 
-常用的关系型数据库有：MySQL，Oracle，DB2，SQLserver，sqlite
 
-常用的非关系型数据库有：Redis，Hbase，MongoDB
+#### （1）**关系型数据库（RDBMS）**
 
-### 2 Mysql 简介
+**核心特点**
+
+1. **结构化数据存储**
+   - 数据以表格（二维结构）形式存储，预定义严格的模式（Schema）。
+   - 支持主键、外键约束，保证数据完整性。
+2. **SQL 支持**
+   - 通过 SQL 实现复杂查询（如 JOIN、子查询、聚合函数）。
+   - 适合需要多表关联和事务管理的场景（如金融系统）。
+3. **ACID 事务**
+   - 保证事务的原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）。
+4. **垂直扩展为主**
+   - 通过增加 CPU、内存等硬件提升性能，但成本较高。
+
+**适用场景**
+
+- 银行系统（需强一致性）
+
+- ERP、CRM（复杂业务逻辑）
+
+- 需要频繁 JOIN 操作的场景
+
+  
+
+#### （2）**非关系型数据库（NoSQL）**
+
+**核心特点**
+
+1. **灵活的数据模型**
+   - **文档型**（如 MongoDB）：JSON/BSON 格式存储。
+   - **键值型**（如 Redis）：简单键值对，适合缓存。
+   - **列存储**（如 Cassandra）：按列族组织数据，适合分析。
+   - **图数据库**（如 Neo4j）：存储节点和关系，适合社交网络。
+2. **高扩展性**
+   - 天然支持分布式架构，通过添加节点实现水平扩展。
+   - 适合处理海量数据（如日志、物联网设备数据）。
+3. **最终一致性（BASE）**
+   - 遵循 BASE（Basically Available, Soft-state, Eventually Consistent）原则，牺牲强一致性以提升可用性。
+4. **高性能**
+   - 针对特定场景优化（如 Redis 的毫秒级响应）。
+
+**适用场景**
+
+- 实时大数据处理（如用户行为日志）
+- 高并发读写（如电商秒杀）
+- 动态数据结构（如内容管理系统）
+
+
+
+#### **（3）核心差异**
+
+| **特性**     | **关系型数据库**                      | **非关系型数据库**                                    |
+| :----------- | :------------------------------------ | ----------------------------------------------------- |
+| **数据模型** | 基于表格（行和列）的严格结构          | 灵活的数据模型（文档、键值、图等）                    |
+| **查询语言** | 使用标准化的 SQL（结构化查询语言）    | 无统一语言，API或特定查询语法                         |
+| **扩展性**   | 垂直扩展（升级硬件）                  | 水平扩展（分布式集群）                                |
+| **事务支持** | 强 ACID（原子性、一致性等）           | 通常 BASE（最终一致性）                               |
+| **适用场景** | 结构化数据、复杂查询、高一致性        | 半/非结构化数据、高并发、灵活性                       |
+| **典型产品** | MySQL、Oracle、DB2、SQLserver、sqlite | MongoDB（文档型）、Redis（键值）、Cassandra（列存储） |
+
+
+
+### 3 Mysql 简介
 
 MySQL的特点：免费，支持大型数据库，标准的SQL语言形式，跨平台。
 
-课程使用的版本 centos上装的是5.6.51  不支持窗口函数 window function
-
-后面使用MySQL8.0版本。2018
-
 MySQL登录的两种方式：
 
-方法一：mysql -uroot -p123456
+```shell
+mysql -u root -p 12345678  # 本地登录
+mysql --host=192.168.88.161 --user=root --password=12345678  # 远程登陆
+```
 
-方法二：mysql --host=192.168.88.161 --user=root --password=123456
 
-### 3 SQL 语言介绍
 
-- 结构化查询语言(Structured Query Language)简称SQL，是关系型数据库管理系统都需要遵循的规范，是数据库认识的语句。不同的数据库生产厂商都支持SQL语句，但都有自己特有内容。
+### 4 SQL 语言介绍
+
+- 结构化查询语言(`Structured Query Language`)简称SQL，是关系型数据库管理系统都需要遵循的规范，是数据库认识的语句。不同的数据库生产厂商都支持SQL语句，但都有自己特有内容。
+
+  
 
 - 标准SQL 
 
   - Mysql 支持的SQL 可以看做是标准SQL的方言 (大多数都一样, 少部分区别)
+
   - Oracle 支持的SQL 可以看做是标准SQL的方言
+
+    
 
 - SQL 的分类
 
-  操作数据库数据表  DDL
+  - 操作数据库数据表  DDL
 
-  对数据进行增加删除修改 DML
 
-  对数据库进行**查询 DQL**
+  - 对数据进行增加删除修改 DML
 
-  DCL  权限控制, 用户创建管理   不涉及(DBA 管理)
+
+  - 对数据库进行**查询 DQL**
+
+
+  - DCL  权限控制, 用户创建管理 ，不涉及(DBA 管理)
+
+    
 
 - SQL 注释
 
+```mysql
+/*多行注释，在注释区域内可以随意换行*/
+-- # ：单行注释，写在语句开头，换行后注释截止。单行注释快捷键：ctrl+/
 ```
-/**/：多行注释，在注释区域内可以随意换行
--- # ：单行注释，写在语句开头，换行后注释截止。
-单行注释快捷键：ctrl+/
-```
+
+
 
 - 常用的数据类型：
   - 字符：char，varchar
   - 整数：int
-  - 浮点型：float, double,decimal
+  - 浮点型：float，double，decimal
   - 日期型：date，datetime
 
 
 
-### 4 SQL语言的DDL
+### 5 SQL语言的DDL
 
-**DDL 建库建表** →DML 向表中写入数据(修改, 删除) → DQL(数据查询)
+**操作数据流程**：DDL 建库建表 →DML 向表中写入数据(增、删、改) → DQL(数据查询)
 
-数据库操作
 
-- 创建数据库：CREATE DATABASE 数据库名；
-- 查看数据库：SHOW DATABASES;
-- 删除数据库：DROP DATABASE 数据库名；
-- 使用数据库：USE 数据库名
+
+#### （1）**数据库操作**
 
 ```sql
--- DDL 创建数据库
-create database if not exists ai_db charset =utf8;
--- create database if not exists 数据库名 charset=字符集
-show databases;
+-- DDL语句 
 
--- 删除数据库
-DROP DATABASE ai_db;
+create database if not exists ai_db charset =utf8;  # 创建数据库，create database 数据库名;
 
--- 选中一个数据库, 后续操作, 都在这个数据库中进行
-use ai_db;
+show databases;  # 查看数据库，show databases;
+
+drop database ai_db;  # 删除数据库，drop database 数据库名;
+
+use ai_db;  # 使用数据库，use 数据库名;（选中一个数据库, 后续操作, 都在这个数据库中进行）
 ```
 
-数据表操作
 
-创建表：CREATE TABLE 表名(字段名 类型 约束…)
 
-查询表：SHOW TABLES;     DESC 表名；
-
-删除表：drop table 表名;
-
-修改表：
-
-- alter  table  表名  add  列名  类型(长度)  [约束];   增加一列
-- alter table 表名 change 旧列名 新列名 类型(长度) 约束;  修改一列名字
-- alter table 表名 drop 列名;	删除一列
-- rename table 表名 to 新表名;  修改表名
+#### （2）**数据表操作**
 
 ```sql
 -- 选中一个数据库, 后续操作, 都在这个数据库中进行
 use ai_db;
 
 -- DDL 对数据表的操作
--- 创建数据表
-create table category(cid varchar(20) primary key not null ,cname varchar(100));
 
--- 查看当前数据库有哪些数据表
-show tables;
--- 查看表结构
-desc category;
+create table category(cid varchar(20) primary key not null ,cname varchar(100));  # 创建数据表，create table 表名(字段名 类型 约束…)
 
-use mysql;
-show tables;
-desc plugin;
+show tables;  # 查看当前数据库有哪些数据表，show tables;
 
--- 添加字段, 需要注意这里添加的字段 字段的名字和sql的关键字冲突了,
--- 如果非要使用SQL的关键字作为字段名 需要添加 ``
--- alter table 表名 add `字段名字 字段类型;
+desc category;  # 查看表结构，desc 表名;
+
+drop table category;  # 删除表，drop table 表名;
+
+-- 添加字段, 需要注意这里添加的字段的名字和sql的关键字冲突了,如果非要使用SQL的关键字作为字段名 需要添加 ``
+-- alter table 表名 add 列名 类型(长度) [约束]; 增加一列
 alter table category add `desc` varchar(20);
-desc category;
 
 alter table category add num varchar(20);
 
--- 修改字段名字  alter table 表名 change 老字段名 新字段名字 类型;
+-- 修改字段名字  alter table 表名 change 老字段名 新字段名字 类型 [约束]; 修改一列名字
 alter table category change `desc` description varchar(20);
 
--- 删除字段 alter table 表名 drop 字段名;
+-- 删除字段 alter table 表名 drop 字段名; 删除一列
 alter table category drop description;
 
--- rename table 表名 to 新表名;
+-- rename table 表名 to 新表名; 修改表名
 rename table category to category2;
-show tables;
 
-
-use ai_db;
-drop table ai_db.category;
 ```
 
-### 5 SQL语言的DML
 
-插入记录：格式：insert into 表 (字段1,字段2,字段3...) values(值1,值2,值3...),(值1,值2,值3...)…;
 
-更新记录：格式：update 表名 set 字段名=值,字段名=值,...;
-
-删除记录：delete from 表名 [where 条件];truncate category;
+### 6 SQL语言的DML
 
 ```sql
 -- DML
--- 插入数据 insert into
+-- 插入数据 insert into：
+-- insert into 表 (字段1,字段2,字段3...) values(值1,值2,值3...),(值1,值2,值3...)…;
 insert into category values ('c001','电器');
-insert into category values ('c002','衣服');
+
 insert into category2 values ('c002','衣服',3);
 insert into category2(cid,cname) values ('c001','电器');
-# insert into category2(cname,num) values ('衣服',3);
 insert into category2 (cid, cname) values('03','化妆品'),('04','书籍'),('05',null);
-insert into category2 values('06','玩具',4),('07','蔬菜',5);
 
--- 修改数据
+
+-- 修改数据 update
 -- 格式：update 表名 set 字段名=值,字段名=值,... where 条件
 update category2 set cname = '家电';
-# where;
+
 update category2 set cname='水果' where cid='c001';
 
-
+-- 删除记录 delete from 或 truncate category;
 delete from category2 where cid='c002';
 delete from category;
 truncate category2;
 ```
 
->update category2 set cname = '家电';
->
->delete from category;
->
->update 不带where条件会一次性修改 要修改字段的所有的记录
->
->delete from  不带where条件, 会删除所有记录
->
->除了数字，都需要双引号
-
-
-
-## 小结
-
-`Linux`使用技巧
-
-网络下载软件, 解压缩, 修改配置文件, 配置环境变量, 启动服务
-
-- 有可能会出现端口冲突
-- 查询端口占用情况  netstat -anp | grep 端口号   → 获取到占用端口的 pid
-- 通过端口占用的对应的程序pid 查询进程的详细信息决定 换端口还是kill占用的程序
-  - ps -ef|grep pid编号
-  - kill -9 进程编号
-
-Mysql
-
-- 关系型数据库/非关系型数据库
-
-  - 写在表格中的数据, 有固定的表结构, 每个字段都有固定的数据类型这种数据就是关系型数据, Mysql这类关系型数据库处理的就是这种数据
-
-  - 非关系型数据 没有固定的表结构, 每个字段存储数据大小不固定
-    - 视频
-    - 图片
-    - 长文本
-
-- SQL 
-
-  - ISO SQL 标准SQL
-  - Mysql  Oracle SqlSever DM2
-  - DDL DML DQL DCL
-
-- 今天作业
-
-  - `Linux` 思维导图 补充完整
-  - SQL 
-
-编码
-
-iso8859-1 没有中文
-
-gbk
-
-utf-8
-
-username char(3)
+>在SQL使用到的数据，除了数字，都需要双引号。
