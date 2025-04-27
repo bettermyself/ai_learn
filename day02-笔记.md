@@ -525,6 +525,8 @@ truncate category2;
 >update 不带where条件会一次性修改 要修改字段的所有的记录
 >
 >delete from  不带where条件, 会删除所有记录
+>
+>除了数字，都需要双引号
 
 
 
