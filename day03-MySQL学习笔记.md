@@ -305,19 +305,21 @@ select * from product limit 5,10;
 
   
 
-外键约束
-
-- 在创建表的时候, 如果两张表之间有一对多的关系, 可以指定外键约束
-  - 从表中引用了主表中的数据，主表中数据不可被删除。
-  - 主表中没有数据，从表外键也无法被插入
+**外键约束：**在创建表的时候, 如果两张表之间有一对多的关系, 可以指定外键约束。1、从表中引用了主表中的数据，主表中数据不可被删除。2、主表中没有数据，从表外键也无法被插入
 
 
 
 ```sql
-create table category (cid varchar(32) primary key ,cname varchar(100));
-create table  products (pid varchar(32) primary key, pname varchar(40), price DOUBLE,
-category_id varchar(32),
-CONSTRAINT FOREIGN KEY (category_id) REFERENCES category(cid));
+create table category (
+    cid varchar(32) primary key,
+    cname varchar(100));
+
+create table products (
+    pid varchar(32) primary key,
+    pname varchar(40),
+    price DOUBLE,
+	category_id varchar(32),
+	FOREIGN KEY (category_id) REFERENCES category(cid));
 ```
 
 >CONSTRAINT FOREIGN KEY (category_id) REFERENCES category(cid)
