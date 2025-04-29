@@ -322,11 +322,9 @@ create table products (
 	FOREIGN KEY (category_id) REFERENCES category(cid));
 ```
 
->CONSTRAINT FOREIGN KEY (category_id) REFERENCES category(cid)
->
->给category_id字段添加了外键约束 指向 category这个表的cid字段
->
->![image-20230829105606070](assets/image-20230829105606070.png)
+`FOREIGN KEY (category_id) REFERENCES category(cid)`给category_id字段添加了外键约束，指向 category这个表的`cid`字段
+
+![image-20230829105606070](assets/image-20230829105606070.png)
 
 ```sql
 #1 向分类表中添加数据
@@ -341,6 +339,8 @@ INSERT INTO products (pid ,pname ,category_id) VALUES('p003','商品名称2','c9
 DELETE FROM category WHERE cid = 'c001';
 ```
 
+
+
 #### 3.2 多表查询, 不同的连接方式
 
 ![image-20230829111330625](assets/image-20230829111330625.png)
@@ -350,17 +350,14 @@ DELETE FROM category WHERE cid = 'c001';
 -- 内连接, 左连接, 右连接
 
 -- 数据准备
-CREATE TABLE hero
-(
-hid   INT PRIMARY KEY,
-hname VARCHAR(255),
-kongfu_id INT
-);
-CREATE TABLE kongfu
-(
-kid     INT PRIMARY KEY,
-kname   VARCHAR(255)
-);
+CREATE TABLE hero(
+	hid INT PRIMARY KEY,
+	hname VARCHAR(255),
+	kongfu_id INT);
+	
+CREATE TABLE kongfu(
+	kid INT PRIMARY KEY,
+	kname VARCHAR(255));
 
 # 插入hero数据
 INSERT INTO hero VALUES(1, '鸠摩智', 9),(3, '乔峰', 1),(4, '虚竹', 4),(5, '段誉', 12);
@@ -368,22 +365,31 @@ INSERT INTO hero VALUES(1, '鸠摩智', 9),(3, '乔峰', 1),(4, '虚竹', 4),(5,
 # 插入kongfu数据
 INSERT INTO kongfu VALUES(1, '降龙十八掌'),(2, '乾坤大挪移'),(3, '猴子偷桃'),(4, '天山折梅手');
 
+-- 内连接 inner join
 SELECT hname,kname FROM hero INNER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
 -- 如果直接写join 没有其它修饰词 就是内连接
 SELECT hname,kname FROM hero JOIN kongfu ON hero.kongfu_id=kongfu.kid;
+
 -- 左外连接 也叫左连接
 SELECT hname,kname FROM hero LEFT OUTER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
 SELECT hname,kname FROM hero LEFT JOIN kongfu ON hero.kongfu_id=kongfu.kid;
+
 -- 右外连接  也叫右连接  OUTER 写不写都可以
 SELECT hname,kname FROM hero RIGHT OUTER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
 SELECT hname,kname FROM hero RIGHT JOIN kongfu ON hero.kongfu_id=kongfu.kid;
 ```
 
->join  内连接  保留的是交集
+>join  内连接  保留的是交集，left join  左连接  左表的信息会完整的保留，right join  右连接  右表的信息会完整的保留
 >
->left join  左连接  左表的信息会完整的保留
->
->right join  右连接  右表的信息会完整的保留
+
+
+
+**内连接/左连接/右连接如何选择：**
+
+- 内连接  两个表关联的字段 公共的部分会保留在结果中
+- 左连接  在查询结果中, 想把哪张表的结果完整保留下来, 这个表就是左表
+
+
 
 交叉连接, 两表相乘
 
@@ -398,12 +404,11 @@ select * from hero,kongfu;
 #### 3.3 多表查询 练习
 
 ```sql
-drop  table products;
-drop table category;
 CREATE TABLE category (
   cid VARCHAR(32) PRIMARY KEY ,
   cname VARCHAR(50)
 );
+
 CREATE TABLE products(
   pid VARCHAR(32) PRIMARY KEY ,
   pname VARCHAR(50),
@@ -446,7 +451,9 @@ select cname , category_id from category c left join products p on c.cid = p.cat
 >
 >当前的案例, 要查询的是类别信息的情况, 所以以category 作为左表 做left join
 
-子查询
+
+
+**子查询：**
 
 - 一个select语句的结果可以作为 另外一个查询的条件
 
@@ -463,12 +470,14 @@ select cname , category_id from category c left join products p on c.cid = p.cat
   
   ```
 
-自连接
+
+
+**自连接：**
 
 - 两张表进行join 这两张表实际上来自同一张表 就是自连接
 
 ```sql
-CREATE TABLE tb_areas (id    VARCHAR(30) NOT NULL PRIMARY KEY, title VARCHAR(30),pid   VARCHAR(30));
+CREATE TABLE tb_areas (id VARCHAR(30) NOT NULL PRIMARY KEY, title VARCHAR(30),pid VARCHAR(30));
 INSERT INTO tb_areas (id, title, pid) VALUES ('1', '广东省', 'null');
 INSERT INTO tb_areas (id, title, pid) VALUES ('2', '河南省', 'null');
 INSERT INTO tb_areas (id, title, pid) VALUES ('3', '深圳市', '1');
@@ -481,7 +490,7 @@ INSERT INTO tb_areas (id, title, pid) VALUES ('8', '天河区', '4');
 
 ![image-20230829145953734](assets/image-20230829145953734.png)
 
-把省市区放到一张表中展示
+把省市区放到一张表中展示：
 
 ```sql
 select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p on c.pid=p.id where p.title = '广东省';
@@ -502,39 +511,38 @@ select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p
 
 >子查询作为一张表来使用的时候, 需要起别名
 
-### 4 SQL 报表
+
+
+### 4、 SQL 报表
 
 数据导入
 
 ![image-20230829115049856](assets/image-20230829115049856.png)
 
-弹出对话框中选择对应的.sql文件
+弹出对话框中选择对应的`.sql`文件
 
 ![image-20230829115134383](assets/image-20230829115134383.png)
 
-表和表之间关联
-
-内连接/左连接/右连接如何选择
-
-- 内连接  两个表关联的字段 公共的部分会保留在结果中
-- 左连接  在查询结果中, 想把哪张表的结果完整保留下来, 这个表就是左表
 
 
 
-SQL 分组聚合
 
-- 当需求中出现, 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组
+**SQL 分组聚合：**
+
+- 当需求中出现， 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组
 
 - 日期时间类型  如果数据中有日期时间类型, 可以做日期大小判断
 
-count(*)  和 count(字段) 区别
 
-- 如果所有字段都没有null  count(*) count(字段) 取值都一样, 在这个条件下, 分组之后, count任何一个字段取值都相同
+
+**count(*)  和 count(字段) 区别：**
+
+- 如果所有字段都没有null  count(*) count(字段) 取值都一样, 在这个条件下, 分组之后, count任何一个字段取值都相同。
 - 如果 某个字段中包含了null   count(字段) 不统计null值的 , count(*)  会统计null
 
 
 
-CASE WHEN 小结
+**CASE WHEN：** 
 
 可以把连续的取值的一列, 变成类别型
 
@@ -548,14 +556,14 @@ CASE WHEN 字段  条件 THEN 取值 WHEN 字段 条件 THEN 取值 ELSE 取值 
 ```sql
 select customer_id,company_name, country,
 CASE WHEN country IN ('Germany','Switzerland','Austria') THEN 'German'
-    WHEN country IN('UK', 'Canada', 'USA', 'Ireland') THEN 'English'
-    ELSE 'Other' END language
+     WHEN country IN ('UK', 'Canada', 'USA', 'Ireland') THEN 'English'
+     ELSE 'Other' END language
 from customers;
 ```
 
 
 
-### 5 今日重点
+### 5 、今日重点
 
 多表查询、连接（内连接, 外连接, 交叉连接-了解）
 
