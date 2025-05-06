@@ -1,4 +1,4 @@
-## `Linux`使用技巧
+## Linux 使用技巧
 
 ### 1 常用快捷键
 
@@ -15,9 +15,9 @@
 
 ### 2 软件安装
 
-- apt：是 Debian 和基于 Debian 的 Linux 发行版（如 Ubuntu）中使用的软件包管理工具，用于自动化安装配置`Linux`软件，并可以自动解决依赖问题。
+- **apt**：是 Debian 和基于 Debian 的 Linux 发行版（如 Ubuntu）中使用的软件包管理工具，用于自动化安装配置`Linux`软件，并可以自动解决依赖问题。
 
-- 使用 `apt` 进行软件包管理：
+- 使用 **`apt`** 进行软件包管理：
 
   - **更新软件源**：在安装或升级任何软件包之前，首先需要更新本地的软件源列表。通过更新软件源，系统可以获取到最新的软件包信息和版本。使用以下命令来更新软件源：
 
@@ -29,7 +29,7 @@
 
     ```shell
     sudo apt install package_name # 安装一个软件包
-    sudo apt install package1 package2 # 可要安装多个包，以空格分隔
+    sudo apt install package1 package2 # 可以安装多个包，以空格分隔
     sudo apt install /full/path/file.deb # 要安装本地 deb 文件，需提供文件的完整路径，否则该命令将尝试从 APT 存储库检索并安装该程序包。
     sudo apt remove package_name # 删除已安装的软件包
     sudo apt remove package1 package2 # 删除指定多个包，以空格分隔
@@ -78,7 +78,7 @@ systemctl start|stop|status|enable|disable 软件名
 
 ### 4 软连接
 
-在系统中创建软链接，可以将文件、文件夹链接到其它位置。类似Windows系统中的《快捷方式》
+在系统中创建软链接，可以将文件、文件夹链接到其它位置。类似Windows系统中的-->快捷方式
 
 语法：`ln -s 参数1 参数2`
 
@@ -106,7 +106,7 @@ systemctl start|stop|status|enable|disable 软件名
 
 主机名, 每一台机器都有名字
 
-- hostname查看主机名
+- hostname 查看主机名
 
 - `hostnamectl set-hostname 主机名`，修改主机名（需root）
 
@@ -181,7 +181,7 @@ systemctl start|stop|status|enable|disable 软件名
 
   - 选项：-f，以完全格式化的形式展示信息（展示全部信息）
 
-    ![image-20250425130250957](C:\Users\Administrator\Desktop\笔记\assets\image-20250425130250957.png)
+    ![image-20250425130250957](assets\image-20250425130250957.png)
 
   - 从左到右分别是：
 
@@ -211,6 +211,16 @@ systemctl start|stop|status|enable|disable 软件名
 - kill -9 1447
 
 
+
+**端口冲突**
+
+- 获取占用端口的进程编号： `netstat -anp | grep 端口号`
+
+- 查询进程相关的详细信息：  `ps -ef | grep 进程编号`
+
+- `kill -9 进程编号`
+
+  
 
 ### 9 环境变量
 
@@ -260,7 +270,7 @@ source ~/.bashrc
 
 ### 11 压缩解压缩
 
-以下为Linux系统常用的压缩格式：tar、gzip、zip
+以下为`Linux`系统常用的压缩格式：tar、gzip、zip
 
 
 
@@ -269,12 +279,22 @@ source ~/.bashrc
 - 压缩文件后缀名：.tar及.gz
   - .tar，称之为tarball，归档文件，即简单的将文件组装到一个.tar的文件内，并没有太多文件体积的减少，仅仅是简单的封装
   - .gz，也常见为.tar.gz，gzip格式压缩文件，即使用gzip压缩算法将文件压缩到一个文件内，可以极大的减少压缩后的体积
+  
 - 语法：`tar [-c -v -x -f -z -C] 参数1 参数2 ... 参数N`
   - -c，创建压缩文件，用于压缩模式
-  - -v，显示压缩、解压过程，用于查看进度
+  
   - -x，解压模式
+  
+    
+  
+  - -v，显示压缩、解压过程，用于查看进度
+  
   - -f，要创建的文件，或要解压的文件，-f选项必须在所有选项中位置处于最后一个
+  
   - -z，gzip模式，不使用-z就是普通的tarball格式
+  
+    
+  
   - -C，选择解压的目的地，用于解压模式
 
 示例：tar/tar.gz
@@ -326,7 +346,7 @@ source ~/.bashrc
 
 ![](assets/image-20230827151207681.png)
 
-- 找到 Database 工具栏
+- 找到 Database 工具栏(界面右边栏也能找到)
 
 
 ![image-20230827151102624](assets/image-20230827151102624.png)
@@ -444,17 +464,12 @@ mysql --host=192.168.88.161 --user=root --password=12345678  # 远程登陆
 - SQL 的分类
 
   - 操作数据库数据表  DDL
-
-
   - 对数据进行增加删除修改 DML
-
-
   - 对数据库进行**查询 DQL**
-
-
   - DCL  权限控制, 用户创建管理 ，不涉及(DBA 管理)
 
-    
+
+
 
 - SQL 注释
 
@@ -512,7 +527,7 @@ desc category;  # 查看表结构，desc 表名;
 drop table category;  # 删除表，drop table 表名;
 
 -- 添加字段, 需要注意这里添加的字段的名字和sql的关键字冲突了,如果非要使用SQL的关键字作为字段名 需要添加 ``
--- alter table 表名 add 列名 类型(长度) [约束]; 增加一列
+-- alter table 表名 add 列名 类型 [约束]; 增加一列
 alter table category add `desc` varchar(20);
 
 alter table category add num varchar(20);
@@ -552,6 +567,8 @@ update category2 set cname='水果' where cid='c001';
 -- 删除记录 delete from 或 truncate category;
 delete from category2 where cid='c002';
 delete from category;
+
+-- truncate只能清除全表数据
 truncate category2;
 ```
 
