@@ -256,7 +256,7 @@ select * from product limit 5,10;
 
 
 
-- 一对一关系（One-to-One）：
+- 一对一关系（**One-to-One**）：
 
   - **定义**：一个表中的一条记录对应另一个表中的唯一一条记录。
   - **场景**：适用于将大表拆分为多个小表以提高效率（如用户基本信息和用户隐私信息）。
@@ -282,7 +282,7 @@ select * from product limit 5,10;
 
   
 
-- 一对多
+- 一对多**（One-to-Many）**
   - **定义**：一个表中的一条记录对应另一个表中的多条记录。
   - **场景**：最常见的关系（如部门和员工、用户和订单）。
   - **实现方式**：
@@ -304,7 +304,42 @@ select * from product limit 5,10;
   );
   ```
 
-  
+
+
+
+- 多对多关系**（Many-to-Many）**
+  - **定义**：一个表中的多条记录可以关联另一个表中的多条记录。
+  - **场景**：学生和课程、用户和角色、订单和商品。
+  - **实现方式**：
+    - 通过**中间表（关联表）**实现，中间表包含两个外键，分别指向两个主表的主键。
+    - 中间表的主键可以是复合主键（两个外键的组合）。
+
+```sql
+-- 学生表
+CREATE TABLE student (
+    student_id INT PRIMARY KEY AUTO_INCREMENT,
+    student_name VARCHAR(50) NOT NULL
+);
+
+-- 课程表
+CREATE TABLE course (
+    course_id INT PRIMARY KEY AUTO_INCREMENT,
+    course_name VARCHAR(50) NOT NULL
+);
+
+-- 中间表（学生选课记录）
+CREATE TABLE student_course (
+    student_id INT,
+    course_id INT,
+    PRIMARY KEY (student_id, course_id),  -- 复合主键
+    FOREIGN KEY (student_id) REFERENCES student(student_id),
+    FOREIGN KEY (course_id) REFERENCES course(course_id)
+);
+```
+
+
+
+
 
 **外键约束：**在创建表的时候, 如果两张表之间有一对多的关系, 可以指定外键约束。1、从表中引用了主表中的数据，主表中数据不可被删除。2、主表中没有数据，从表外键也无法被插入
 
@@ -528,7 +563,7 @@ select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p
 
 
 
-**SQL 分组聚合：**
+**`SQL` 分组聚合：**
 
 - 当需求中出现， 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组
 
