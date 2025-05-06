@@ -35,12 +35,13 @@ CREATE TABLE person(
     city VARCHAR(100)
 );
 
+-- 主键约束：复合主键
 CREATE TABLE Persons (
     ID int NOT NULL,
     LastName varchar(255) NOT NULL,
     FirstName varchar(255),
     Age int,
-    PRIMARY KEY (ID)
+    PRIMARY KEY (ID, LastName)
 );
     
 
