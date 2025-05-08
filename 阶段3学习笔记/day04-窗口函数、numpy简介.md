@@ -577,33 +577,128 @@ http://192.168.88.161:8888/
 
 ### 5.2 numpy的属性
 
-```python
-a.shape # 形状（3，5）
-a.dtype # 每一个元素的数据类型
 
-a.ndim  # 维度
-a.itemsize # 每一个元素占用字节数
-a.size # 元素个数
+
+#### **a、形状与维度**
+
+- **`shape`**
+
+数组的维度结构（元组形式），例如 `(行数, 列数)`。
+
+```python
+arr = np.array([[1, 2], [3, 4]])
+print(arr.shape)  # 输出 (2, 2)
+```
+
+- **`ndim`**
+
+数组的维度数（轴的个数）。
+
+```python
+print(arr.ndim)  # 输出 2（二维数组）
+```
+
+- **`size`**
+
+数组总元素个数。
+
+```python
+print(arr.size)  # 输出 4（2×2）
+```
+
+
+
+#### **b、数据类型**
+
+- **`dtype`**
+
+数组元素的数据类型（如 `int32`, `float64`）。
+
+```python
+arr = np.array([1, 2], dtype=np.float32)
+print(arr.dtype)  # 输出 float32
+```
+
+
+
+#### **c、内存信息**
+
+- **`itemsize`**
+
+单个元素占用的字节数（由 `dtype` 决定）。
+
+```python
+print(arr.itemsize)  # 输出 4（float32 占4字节）
+```
+
+
+
+- **`nbytes`**
+
+数组总内存占用（字节数）: `size * itemsize`。
+
+```python
+print(arr.nbytes)  # 输出 8（2元素×4字节）
+```
+
+
+
+####  **d、其他实用属性**
+
+- **`T`**
+
+返回数组的转置（交换行列）。
+
+```python
+print(arr.T)  # 转置（若 arr 是二维数组）
+```
+
+
+
+#### **e、 关键操作与注意事项**
+
+- **修改形状**
+
+直接修改 `shape` 属性（需总元素数一致）：
+
+```python
+arr.shape = (4, 1)  # 原地修改
+```
+
+使用 `reshape()` 方法（返回新数组，原数组不变）：
+
+```python
+new_arr = arr.reshape(4, 1)
 ```
 
 
 
 ### 5.3 创建ndarray
 
-- ndarray 每一个元素的数据类型必须一致
+
+
+#### **a、直接输入创建**
+
+ndarray 每一个元素的数据类型必须一致
 
 ```python
 a = np.array([2,3,4])
+a = np.array([1,2,'haha']) # 如果这样创建的话，会将1，2转换为字符串格式，array(['1', '2', 'haha'], dtype='<U21') 
 ```
 
-zeros() /ones()/empty()
 
-函数zeros创建一个全是0的数组，函数ones创建一个全1的数组，函数empty创建一个内容随机并且依赖于内存状态的数组。默认创建的数组类型(dtype)都是float64
 
-- 传入的是 shape形状
-- np.ones((2,3,4))
+#### b、批量生成创建
 
-```
+- **`zeros()` 、`ones()`、`empty()`**
+  - 函数**`zeros()`**创建一个全是0的数组
+  - 函数**`ones()`**创建一个全1的数组
+  - 函数**`empty()`**创建一个内容随机并且依赖于内存状态的数组。
+    - 以上三个方法默认创建的数组类型(`dtype`)都是`float64`
+    - 传入的是 shape形状，以元组的形式
+    - 实例：`np.ones((2,3,4))`
+
+```python
 array([[[1., 1., 1., 1.],
         [1., 1., 1., 1.],
         [1., 1., 1., 1.]],
@@ -615,17 +710,33 @@ array([[[1., 1., 1., 1.],
 
 
 
-arange () 
+- **`arange ()`** 
 
-arange() 类似 python 的 range() ，创建一个一维 ndarray 数组。
+`arange()` 类似 `python` 的 `range()` ，创建一个一维 ndarray 数组。
 
-![image-20250508103730121](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508103730121.png)
+```python
+np_arange = np.arange(10,20,5,dtype=int)
+print('arange创建np_arange:',np_arange)  # arange创建np_arange: [10 15]
+print('arange创建np_arange的元素类型:',np_arange.dtype)  # arange创建np_arange的元素类型: int32
+print('arange创建np_arange的类型:',type(np_arange))  # arange创建np_arange的类型: <class 'numpy.ndarray'>
+```
 
 
 
-- 创建矩阵
+#### c、随机生成创建
 
-  matrix 是 ndarray 的子类，只能生成 2 维的矩阵
+```python
+np.random.rand(3,4) # 0,1 之间，浮点数
+np.random.randint(-5,5,size=(3,4)) # 随机的整数 给定起始结束区间, size 生成随机数的形状
+np.random.uniform(-1,5,size=(3,4)) # 生成均匀分布浮点数的随机数  定起始结束区间, size 生成随机数的形状
+np.random.randn(2, 3)   # 生成服从标准正态分布（均值为 0，标准差为 1）的随机数数组
+```
+
+
+
+#### d、生成矩阵
+
+matrix 是 ndarray 的子类，只能生成 2 维的矩阵
 
 ```python
 x1 = np.mat("1 2;3 4")
@@ -634,46 +745,22 @@ x2 = np.matrix("1 2;3 4")
 x3 = np.matrix([[1,2,3],[4,5,6]])
 ```
 
-- 生成随机的ndarray
+
+
+#### e、生成等比/等差数列
+
+- `logspace()` 等比数列：`np.logspace()`是用于创建一个等比数列构成的一维数组，它最常用的有三个参数，第一个参数表示起始点，第二个参数表示终止点，第三个参数表示数列的个数。
 
 ```python
-np.random.rand(3,4) # 0,1 之间，浮点数
-np.random.randint(-5,5,size=(3,4)) # 随机的整数 给定起始结束区间, size 生成随机数的形状
-np.random.uniform(-1,5,size=(3,4)) # 生成均匀分布浮点数的随机数  定起始结束区间, size 生成随机数的形状
-# randn
-```
-
-ndarray的数据类型
-
-1. dtype参数，指定数组的数据类型，类型名+位数，如float64, int32
-
-2. astype方法，转换数组的数据类型
-
-   ![image-20250508105241332](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508105241332.png)
-
-
-
-
-
-- logspace /linspace 生成等比/等差数列
-
-- np.linspace等差数列
-
-   linspace创建的数组元素是浮点型。
-
-- 
-
-  - logspace中，开始点和结束点是默认是10的幂
-
-```python
+# logspace中，开始点和结束点是默认是10的幂
 np.logspace(0,0,10)
 np.logspace(0,9,10)
 np.logspace(0,9,10,base=2) # base 可以换底数  这里就是2^0 ~2^9 生成10个数的等比数列
 ```
 
-- linspace
-  - np.linspace是用于创建一个一维数组，并且是等差数列构成的一维数组，它最常用的有三个参数。
-  - 第一个参数表示起始点，第二个参数表示终止点，第三个参数表示数列的个数。	
+
+
+- `linspace()`等差数列：`np.linspace()`是用于创建一个等差数列构成的一维数组，它最常用的有三个参数，第一个参数表示起始点，第二个参数表示终止点，第三个参数表示数列的个数。
 
 ```python
 np.linspace(1,10,10)
@@ -682,101 +769,186 @@ np.linspace(1,10,10,endpoint=False) #endpoint 是否包含结束点, 默认是Tr
 
 
 
+- `logspace()`、`linspace()`创建的数组元素是浮点型。
+
+
+
+#### f、ndarray的数据类型
+
+- dtype参数，指定数组的数据类型，类型名+位数，如float64, int32
+- astype方法，转换数组的数据类型
+
+![image-20250508105241332](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508105241332.png)
+
+
+
 ### 5.4 Numpy的内置函数
 
-**基本函数**
-
-np.ceil(): 向上最接近的整数，参数是 number 或 array
-
-np.floor(): 向下最接近的整数，参数是 number 或 array
-
-np.rint(): 四舍五入，参数是 number 或 array
-
-np.isnan(): 判断元素是否为 NaN(Not a Number)，参数是 number 或 array
-
-np.multiply(): 元素相乘，参数是 number 或 array
-
-np.divide(): 元素相除，参数是 number 或 array
-
-np.abs()：元素的绝对值，参数是 number 或 array
-
-np.where(condition, x, y): 三元运算符，x if condition else y
+#### **a、基本函数**
 
 ```python
-np.where(arr>0,1,-1)
+import numpy as np
+arr = np.random.uniform(-1,5,size=(3,4)) 
+
+np.ceil(arr)   # 向上最接近的整数，参数是 number 或 array
+np.floor(arr)  # 向下最接近的整数，参数是 number 或 array
+np.rint(arr)   # 四舍五入，参数是 number 或 array
+np.isnan(arr)  # 判断元素是否为 NaN(Not a Number)，参数是 number 或 array
+
+# 需要注意multiply/divide 如果是两个ndarray进行运算 shape必须一致
+np.multiply(arr,arr)  # 元素相乘，参数是 number 或 array
+np.divide(arr,arr)    # 元素相除，参数是 number 或 array
+
+np.abs()       # 元素的绝对值，参数是 number 或 array
+np.where(arr>0,1,-1)  # np.where(condition, x, y): 三元运算符，x if condition else y
 ```
 
-- 需要注意multiply/divide 如果是两个ndarray进行运算 shape必须一致
 
-**统计函数** 
 
-np.mean(), np.sum()：所有元素的平均值，所有元素的和，参数是 number 或 array
+#### **b、统计函数** 
 
-np.max(), np.min()：所有元素的最大值，所有元素的最小值，参数是 number 或 array
+```python
+import numpy as np
+arr = np.random.uniform(-1,5,size=(3,4)) 
 
-np.std(), np.var()：所有元素的标准差，所有元素的方差，参数是 number 或 array
+np.mean(arr)  # 所有元素的平均值,参数是 number 或 array
+np.sum(arr)   # 所有元素的和，参数是 number 或 array
+np.max(arr)   # 所有元素的最大值，参数是 number 或 array
+np.min(arr)   # 所有元素的最小值，参数是 number 或 array
+np.argmax(arr)   # 最大值的下标索引值，参数是 number 或 array
+np.argmin(arr)   # 最小值的下标索引值，参数是 number 或 array
+np.cumsum()   # 返回一个一维数组，每个元素都是之前所有元素的累加和，参数是 number 或 array  
+np.cumprod()  # 返回一个一维数组，每个元素都是之前所有元素的累乘积，参数是 number 或 array  
 
-**标准差和方差的意义及区别**
 
-np.argmax(), np.argmin()：最大值的下标索引值，最小值的下标索引值，参数是 number 或 array
-
-**先行后列来算**
-
-np.cumsum(), np.cumprod()：返回一个一维数组，每个元素都是之前所有元素的 累加和 和 累乘积，参数是 number 或 array  
+np.std(arr)   # 所有元素的标准差，参数是 number 或 array
+np.var(arr)   # 所有元素的方差，参数是 number 或 array
+```
 
 多维数组默认统计全部维度，**axis参数**可以按指定轴心统计，值为0则按列统计，值为1则按行统计。
 
+```python
+np.sum(arr,axis=0)  # 数组的按列统计和
+np.sum(arr,axis=1)  # 数组的按行统计和
+```
+
+![image-20250508161433963](assets\image-20250508161433963-1746692078868-1-1746692083886-3.png)
 
 
-![image-20250508110940427](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508110940427.png)
 
-![image-20250508111122740](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508111122740.png)
+**标准差与方差的含义及区别**
+
+标准差和方差是统计学中衡量数据 **离散程度（波动性）** 的核心指标，两者密切相关但用途不同。以下是它们的定义、区别及实际意义：
+
+- **方差（Variance）**
+  - **定义**：数据点与均值的 **平方差的平均值**。
+  - **公式**：
+
+$$
+σ^2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2
+$$
+
+- **标准差（Standard Deviation）**
+  - **定义**：方差的 **平方根**，将离散程度还原到原始数据单位。
+  - **公式**：
+
+$$
+s = \sqrt{σ^2}
+$$
+
+**核心区别**
+
+| **特征**     | **方差（Variance）**             | **标准差（Standard Deviation）**     |
+| :----------- | :------------------------------- | :----------------------------------- |
+| **单位**     | 原始数据单位的平方（如：米²）    | 与原始数据单位一致（如：米）         |
+| **数学性质** | 放大离群值的影响（平方操作）     | 缓解离群值影响（平方根操作）         |
+| **应用场景** | 理论分析（如概率模型、优化算法） | 实际解释（如数据波动描述、风险评估） |
+| **直观性**   | 较难直接理解（单位不直观）       | 更易解释（单位与数据一致）           |
 
 
 
-**比较函数**
+**实际意义**
 
-- np.any(): 至少有一个元素满足指定条件，返回True
+- **方差的意义**
+  - **反映数据整体波动强度**：方差越大，数据点越分散。
+  - **用于数学推导**：在统计学公式（如协方差、回归分析）中，方差更易于代数运算。
 
-- np.all(): 所有的元素满足指定条件，返回True
+- **标准差的意义**
+  - **直观衡量波动性**：例如，股票收益率的标准差代表风险。
+  - **判断数据分布**：在正态分布中，约 68% 的数据落在均值 ±1 标准差内，95% 在 ±2 标准差内。
 
-  ![image-20250508111415332](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508111415332.png)
 
-**去重**
 
-np.unique():找到唯一值并返回排序结果，类似于Python的set集合
+**示例**
 
-![image-20250508112100913](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508112100913.png)
+假设某班级数学成绩为：`[70, 80, 85, 90, 95]`，均值为 `84`。
 
-**排序**
+- **计算方差**：
 
-np.sort(arr)
+$$
+σ^2 = \frac{(70-84)^2+(80-84)^2+(85-84)^2+(90-84)^2+(95-84)^2}{5} =92
+$$
 
-- 会在一个副本上排序, 不会影响原始的数据，每行单独排序
+- **计算标准差**：
 
-arr.sort()
+$$
+s = \sqrt{92}≈9.59
+$$
 
-- 直接修改原始数据
+- **解读**：学生成绩平均波动约 ±9.59 分。
 
-### 4.4 Numpy ndarray之间的运算
 
-数组的算数运算是按照元素的。新的数组被创建并且被结果填充。
 
-两个ndarray, 一个是arr_a  另一个是arr_b
 
-- 它们俩之间进行  arr_a  + arr_b  或 arr_a  - arr_b  或 arr_a  * arr_b 这样计算的前提是 shape相同
-  
-  ```
-  np.multiply(a,b)
-  ```
-  
-  
-  
-  - 计算的时候, 位置对应的元素 进行 加减乘除的计算, 计算之后得到的结果的shape 跟arr_a  /arr_b 一样
 
-ndarray的矩阵运算
+**总结**
 
-- arr_a  .dot(arr_b) 前提   arr_a 行数 = arr_b列数
+- **方差**是理论计算的基础，**标准差**是实际解释的工具。
+
+- 选择使用场景：
+
+  - 若需要数学运算（如回归分析），优先用方差。
+
+  - 若需直观理解数据波动，用标准差。
+
+    
+
+#### **c、比较函数**
+
+- `np.any()`: 至少有一个元素满足指定条件，返回True
+
+- `np.all()`: 所有的元素满足指定条件，返回True
+
+  ![image-20250508111415332](assets\image-20250508111415332.png)
+
+#### **d、去重**
+
+`np.unique()`:找到唯一值并返回排序结果，类似于Python的set集合
+
+![image-20250508112100913](assets\image-20250508112100913.png)
+
+#### **e、排序**
+
+- `np.sort(arr)`：会在一个副本上排序, 不会影响原始的数据，每行单独排序
+
+- `arr.sort()`：直接修改原始数据，每行单独排序
+
+
+
+### 5.5 Numpy ndarray之间的运算
+
+- ndarray的算术运算
+
+ndarray的算术运算（加、减、乘、除）是按照元素位置计算的。新的数组被创建并且被结果填充。计算的时候, 位置对应的元素 进行 加减乘除的计算, 计算之后得到的结果的shape 跟arr_a  /arr_b 一样
+
+两个ndarray, 一个是`arr_a`  另一个是`arr_b`，它们俩之间进行  `arr_a  + arr_b`  或 `arr_a  - arr_b`  或 `arr_a  * arr_b` 或`arr_a / arr_b`这样计算的前提是 shape相同
+
+
+
+- ndarray的矩阵运算
+
+
+`arr_a  .dot(arr_b)` 前提： arr_a 行数 = arr_b列数
 
 ![image-20230830170240967](assets/image-20230830170240967.png)
 
@@ -791,21 +963,17 @@ np.dot(x,y)
 
 
 
-## 5 pandas数据结构
+## 6 pandas数据结构
 
-1.DataFrame和Series是Pandas最基本的两种数据结构
+### 6.1 创建Series 和 DataFrame
 
-2.在Pandas中，Series是一维容器，Series表示DataFrame的每一列
+DataFrame和Series是Pandas最基本的两种数据结构
 
-​    可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series
+其中Series是一维容器，Series表示DataFrame的每一列。可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series。Series和Python中的列表非常相似，但是它的每个元素的数据类型必须相同。
 
-​    Series和Python中的列表非常相似，但是它的每个元素的数据类型必须相同
 
-### 5.1 创建Series 和 DataFrame
 
-创建 Series 的最简单方法是传入一个Python列表
-
-pd.Series(列表)
+**pd.Series(列表)**：创建 Series 的最简单方法是传入一个Python列表
 
 - 如果不特殊指定, 会自动添加行索引 Index, 从0开始计数
 - 如果想自己设置行索引, 创建Series时可以通过index这个参数来设置行索引
@@ -817,46 +985,42 @@ s = pd.Series(['Tome','Male'],index=['Name','Gender'])
 
 
 
-pd.DataFrame(字典)
+**pd.DataFrame(字典)**
 
 - 有行索引index, 也有列名 columns
 
 ```python
+# 创建DataFrame的时指定列的顺序和行索引
 name_list = pd.DataFrame({'姓名':['Tome','Bob'],'职业':['算法工程师','AI工程师'],'年龄':[28,36]})
 name_list = pd.DataFrame(data = {'职业':['算法工程师','AI工程师'],'年龄':[28,36]},columns=['年龄','职业'],index=['Tome','Bob'])
 ```
 
-2.创建DataFrame的时指定列的顺序和行索引
-
-![image-20250508115109531](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508115109531.png)
 
 
+### 6.2 Series 常用方法和属性
+
+- **Series常用属性**
+
+  - 加载加载CSV文件【**如果使用虚拟机，需要虚拟机上面的路径地址，文件同步**】 
+
+  ```python
+  import pandas as pd
+  data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  # 这里我们使用的是相对路径, 相对的是.ipynb文件
+  data.head()
+  
+  # 使用 DataFrame的loc属性获取数据集里的一行，就会得到一个Series对象,从DataFrame中获取一行/一列数据 都会返回Series。
+  first_row = data.loc[941]
+  ```
+
+![image-20250508171224686](assets\image-20250508171224686-1746695547431-5.png)
 
 
-
-需要注意
-
-- Pandas 只有列/二维表  没有行的数据结构
-
-
-
-### 5.2 Series 常用方法和属性
-
-从csv文件中加载数据  pd.read_csv('路径')【如果使用虚拟机，需要虚拟机上面的路径地址，文件同步】 
-
-- 这里我们使用的是相对路径, 相对的是.ipynb文件
-
-  ![image-20250508115259621](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508115259621.png)
-
-从DataFrame中获取一行/一列数据 都会返回Series
-
-Series 常用属性
 
 2.可以通过 index 和 values属性获取行索引和值
 
 ![image-20250508140023099](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140023099.png)
 
-- 
+
 
 - 3.Series的keys方法，作用个index属性一样
 
@@ -866,11 +1030,11 @@ Series 常用属性
 
 - values 值 → ndarray
 
-- 
-
-- loc 取一行 / iloc
+  
 
   ![image-20250508135954108](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508135954108.png)
+
+
 
 常用方法
 
