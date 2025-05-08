@@ -803,6 +803,8 @@ np.dot(x,y)
 
 ### 5.1 创建Series 和 DataFrame
 
+创建 Series 的最简单方法是传入一个Python列表
+
 pd.Series(列表)
 
 - 如果不特殊指定, 会自动添加行索引 Index, 从0开始计数
@@ -840,7 +842,7 @@ name_list = pd.DataFrame(data = {'职业':['算法工程师','AI工程师'],'年
 
 ### 5.2 Series 常用方法和属性
 
-从csv文件中加载数据  pd.read_csv('路径') 
+从csv文件中加载数据  pd.read_csv('路径')【如果使用虚拟机，需要虚拟机上面的路径地址，文件同步】 
 
 - 这里我们使用的是相对路径, 相对的是.ipynb文件
 
@@ -850,17 +852,43 @@ name_list = pd.DataFrame(data = {'职业':['算法工程师','AI工程师'],'年
 
 Series 常用属性
 
+2.可以通过 index 和 values属性获取行索引和值
+
+![image-20250508140023099](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140023099.png)
+
+- 
+
+- 3.Series的keys方法，作用个index属性一样
+
+- ![image-20250508140040545](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140040545.png)
+
 - shape  形状 
+
 - values 值 → ndarray
-- loc / iloc
+
+- 
+
+- loc 取一行 / iloc
+
+  ![image-20250508135954108](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508135954108.png)
 
 常用方法
 
+data.（列名sharp）
+
+![image-20250508140548475](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140548475.png)
+
 - value_counts()
 
-- count()/min()/max()/sum()/mean() 平均 /std() 标准差  这些方法都调用的是numpy的方法
+  ![image-20250508140744458](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140744458.png)
 
-- describe()
+- count()3.通过count()方法可以返回有多少非空值
+
+- 对比全部数量shape属性
+
+- /min()/max()/sum()/mean() 平均 /std() 标准差  这些方法都调用的是numpy的方法
+
+- describe()打印描述信息
 
   - ```
     一次性返回 计数/均值/标准差/最小值/ 25%分位数 中位数 75%分位数 最大值 这些常用的统计量
@@ -870,7 +898,9 @@ Series 常用属性
     字符串型describe 获取的是 计数/唯一值数量/ 出现次数最多的取值, 及其出现的次数
     ```
 
+![image-20250508141003784](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508141003784.png)
 
+![image-20250508141014063](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508141014063.png)
 
 ## 6 今日小结
 
