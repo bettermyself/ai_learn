@@ -952,7 +952,7 @@ ndarray的算术运算（加、减、乘、除）是按照元素位置计算的�
 
 ![image-20230830170240967](assets/image-20230830170240967.png)
 
-![image-20250508114245493](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508114245493.png)
+![image-20250508114245493](assets\image-20250508114245493.png)
 
 ```python
 x = np.array([[1,2,3],[4,5,6]])
@@ -967,118 +967,169 @@ np.dot(x,y)
 
 ### 6.1 创建Series 和 DataFrame
 
-DataFrame和Series是Pandas最基本的两种数据结构
+Pandas 是 Python 中最常用的数据分析库，其核心数据结构主要有两种：**Series** 和 **DataFrame**。
 
 其中Series是一维容器，Series表示DataFrame的每一列。可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series。Series和Python中的列表非常相似，但是它的每个元素的数据类型必须相同。
 
 
 
-**pd.Series(列表)**：创建 Series 的最简单方法是传入一个Python列表
+**Series（一维数据结构）**
 
 - 如果不特殊指定, 会自动添加行索引 Index, 从0开始计数
 - 如果想自己设置行索引, 创建Series时可以通过index这个参数来设置行索引
 
 ```python
+# 创建 Series 的最简单方法是传入一个Python列表
 s = pd.Series(['banana',42])
 s = pd.Series(['Tome','Male'],index=['Name','Gender'])
+
+# 从字典创建（键作为索引）
+s2 = pd.Series({'a': 100, 'b': 200, 'c': 300})
 ```
 
 
 
-**pd.DataFrame(字典)**
+**DataFrame（二维数据结构）**
 
 - 有行索引index, 也有列名 columns
+- 是多个 Series 的集合（每列是一个 Series）
 
 ```python
 # 创建DataFrame的时指定列的顺序和行索引
 name_list = pd.DataFrame({'姓名':['Tome','Bob'],'职业':['算法工程师','AI工程师'],'年龄':[28,36]})
 name_list = pd.DataFrame(data = {'职业':['算法工程师','AI工程师'],'年龄':[28,36]},columns=['年龄','职业'],index=['Tome','Bob'])
+
+# 从列表创建（需指定列名）
+df2 = pd.DataFrame([[1, 'A'], [2, 'B']], columns=['ID', 'Label'])
 ```
 
+|      | ID   | Label |
+| :--- | :--- | :---- |
+| 0    | 1    | A     |
+| 1    | 2    | B     |
 
 
-### 6.2 Series 常用方法和属性
 
-- **Series常用属性**
+读取文件（如 CSV）创建**DataFrame**：【如果使用虚拟机，需要虚拟机上面的路径地址，文件同步】
 
-  - 加载加载CSV文件【**如果使用虚拟机，需要虚拟机上面的路径地址，文件同步**】 
-
-  ```python
-  import pandas as pd
-  data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  # 这里我们使用的是相对路径, 相对的是.ipynb文件
-  data.head()
-  
-  # 使用 DataFrame的loc属性获取数据集里的一行，就会得到一个Series对象,从DataFrame中获取一行/一列数据 都会返回Series。
-  first_row = data.loc[941]
-  ```
+```python
+import pandas as pd
+data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  # 这里我们使用的是相对路径, 相对的是.ipynb文件
+data.head()
+```
 
 ![image-20250508171224686](assets\image-20250508171224686-1746695547431-5.png)
 
 
 
-2.可以通过 index 和 values属性获取行索引和值
+**Series vs DataFrame**
 
-![image-20250508140023099](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140023099.png)
+| 特性         | Series       | DataFrame                     |
+| :----------- | :----------- | :---------------------------- |
+| **维度**     | 一维         | 二维                          |
+| **数据形式** | 单列数据     | 多列数据（每列是一个 Series） |
+| **索引**     | 单层索引     | 行索引 + 列索引               |
+| **创建方式** | 列表、字典   | 字典、列表、文件（如 CSV）    |
+| **应用场景** | 单一数据序列 | 多维度结构化数据              |
 
 
 
-- 3.Series的keys方法，作用个index属性一样
+**相互转换**
 
-- ![image-20250508140040545](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140040545.png)
+- **Series → DataFrame**：
 
-- shape  形状 
+  ```python
+  s = pd.Series([1, 2, 3], name='Values')
+  df = s.to_frame()  # 转换为单列 DataFrame
+  ```
 
-- values 值 → ndarray
+- **DataFrame → Series**：
+
+  ```python
+  s = df['Column_Name']  # 提取单列
+  ```
 
   
 
-  ![image-20250508135954108](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508135954108.png)
+### 6.2 Series 常用方法和属性
 
 
 
-常用方法
+```python
+# 使用 DataFrame的loc属性获取数据集里的一行，就会得到一个Series对象,从DataFrame中获取一行/一列数据 都会返回Series。
+first_row = data.loc[941]
 
-data.（列名sharp）
+# 获取取出这一行的索引 列名
+first_row.index 
+data.key()
+```
 
-![image-20250508140548475](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140548475.png)
+**常用属性**
 
-- value_counts()
+| 属性       | 说明                         | 示例                            |
+| :--------- | :--------------------------- | :------------------------------ |
+| `s.index`  | 获取 Series 的索引（可修改） | `s.index = ['a', 'b', 'c']`     |
+| `s.values` | 获取值的 NumPy 数组          | `s.values` → `array([1, 2, 3])` |
+| `s.dtype`  | 获取数据类型                 | `s.dtype` → `int64`             |
+| `s.name`   | 获取或设置 Series 的名称     | `s.name = "Price"`              |
+| `s.size`   | 获取元素数量                 | `s.size` → `3`                  |
+| `s.shape`  | 获取形状（一维元组）         | `s.shape` → `(3,)`              |
+| `s.t`      | Series的转置矩阵             | -                               |
 
-  ![image-20250508140744458](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508140744458.png)
 
-- count()3.通过count()方法可以返回有多少非空值
 
-- 对比全部数量shape属性
+**常用方法**
 
-- /min()/max()/sum()/mean() 平均 /std() 标准差  这些方法都调用的是numpy的方法
+**1. 数据查看与统计**
 
-- describe()打印描述信息
+| 方法                   | 说明                                   | 示例                       |
+| :--------------------- | :------------------------------------- | :------------------------- |
+| `s.head(n)`            | 查看前 `n` 行（默认 5）                | `s.head(3)`                |
+| `s.tail(n)`            | 查看后 `n` 行（默认 5）                | `s.tail(2)`                |
+| `s.describe()`         | 生成统计摘要（均值、标准差、分位数等） | `s.describe()`             |
+| `s.mean()` / `s.sum()` | 计算均值 / 求和                        | `s.mean()` → `25.5`        |
+| `s.min()` / `s.max()`  | 找最小值 / 最大值                      | `s.max()` → `100`          |
+| `s.unique()`           | 返回唯一值数组                         | `s.unique()` → `[1, 2, 3]` |
+| `s.value_counts()`     | 统计各值出现的频次                     | `s.value_counts()`         |
 
-  - ```
-    一次性返回 计数/均值/标准差/最小值/ 25%分位数 中位数 75%分位数 最大值 这些常用的统计量
-    ```
+**2. 数据操作**
 
-  - ```
-    字符串型describe 获取的是 计数/唯一值数量/ 出现次数最多的取值, 及其出现的次数
-    ```
+| 方法                  | 说明                                | 示例                             |
+| :-------------------- | :---------------------------------- | :------------------------------- |
+| `s.isna()`            | 判断是否为缺失值（返回布尔 Series） | `s.isna()`                       |
+| `s.fillna(value)`     | 填充缺失值                          | `s.fillna(0)`                    |
+| `s.dropna()`          | 删除缺失值                          | `s.dropna()`                     |
+| `s.astype(dtype)`     | 转换数据类型                        | `s.astype('float')`              |
+| `s.apply(func)`       | 对每个元素应用函数                  | `s.apply(lambda x: x*2)`         |
+| `s.map(dict)`         | 通过字典映射替换值                  | `s.map({1: 'A', 2: 'B'})`        |
+| `s.replace(old, new)` | 替换特定值                          | `s.replace(10, 100)`             |
+| `s.sort_values()`     | 按值排序                            | `s.sort_values(ascending=False)` |
+| `s.sort_index()`      | 按索引排序                          | `s.sort_index()`                 |
 
-![image-20250508141003784](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508141003784.png)
+**3. 索引操作**
 
-![image-20250508141014063](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508141014063.png)
+| 方法                | 说明                                 | 示例                    |
+| :------------------ | :----------------------------------- | :---------------------- |
+| `s.reset_index()`   | 重置索引（原索引变为列）             | `s.reset_index()`       |
+| `s.set_index(keys)` | 将某列设为新索引（需结合 DataFrame） | 通常在 DataFrame 中使用 |
+| `s.rename(index)`   | 重命名索引                           | `s.rename({'a': 'X'})`  |
 
-## 6 今日小结
+**4. 布尔索引**
 
-- 窗口函数
+| 方法                    | 说明                 | 示例                |
+| :---------------------- | :------------------- | :------------------ |
+| `s[s > 10]`             | 筛选值大于 10 的元素 | `s[s > 10]`         |
+| `s.between(start, end)` | 筛选值在区间内的元素 | `s.between(20, 50)` |
 
-  SELECT SUM() OVER(PARTITION BY ___ ORDER BY___) FROM Table
 
-  分组聚合之后使用窗口函数, 可以把聚合值和原始数据放在一起
 
-  组内排序,  rank/dense_rank/row_number
+**`describe()`**：打印描述信息
 
-- numpy  
-  - 今天的API 过一遍
-  - 重点掌握ndarray相关属性
-- Pandas 数据结构
-  - Series 一列数据
-  - Dataframe 二维数据
+- ```
+  一次性返回 计数/均值/标准差/最小值/ 25%分位数 中位数 75%分位数 最大值 这些常用的统计量
+  ```
+
+- ```
+  字符串型获取的是 计数/唯一值数量/ 出现次数最多的取值, 及其出现的次数
+  ```
+
