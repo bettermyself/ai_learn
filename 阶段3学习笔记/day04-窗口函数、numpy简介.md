@@ -1081,4 +1081,4 @@ data.（列名sharp）
   - 重点掌握ndarray相关属性
 - Pandas 数据结构
   - Series 一列数据
-  - Dataframe 二维数据
+  - Dataframe
