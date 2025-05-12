@@ -341,7 +341,7 @@ movie2.reset_index()
   movie3.rename(index=idx_rename,columns=col_rename,inplace=True)
   ```
 
-  >需要注意 传入的字典, 老的列名/行索引不存在, 不会报错, 只不过运行之后没有效果
+  >需要注意传入的字典, 老的列名/行索引不存在, 不会报错, 只不过运行之后没有效果
   >
   >比较适合使用的场景, 行/列比较多的时候
 
@@ -360,11 +360,13 @@ movie2.reset_index()
   movie3.columns = col_list
   ```
 
-  >movie3.columns.to_list
+
+
 
 #### 5.3     DataFrame 插入/删除/追加一列数据      
 
-追加一列数据
+- 追加一列数据
+
 
 ```python
 movie['是否看过'] = 0
@@ -372,19 +374,26 @@ movie['脸书点赞总数'] = movie['actor_1_facebook_likes']+movie['actor_2_fac
                      +movie['actor_3_facebook_likes']+movie['director_facebook_likes']
 ```
 
-删除一列数据
+- 删除一列、一行数据
+
 
 ```python
+# 删除一列数据
 movie.drop('脸书点赞总数',axis=1,inplace=True)
+
+# 删除一行数据
+movie.drop('Avatar', axis=0, inplace=True)
 ```
 
->要删除的列名
+>要删除的列名or行名
 >
 >axis = 'columns'|'index' (默认)   1|0(默认)  按列|行 删除
 >
 >inplace = 默认False 是否修改原始数据
 
-insert 在指定位置插入一列数据
+
+
+- insert 在指定位置插入一列数据
 
 ```python
 movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
@@ -396,13 +405,15 @@ movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
 >
 >value = 要插入列的值
 >
->需要注意的是这个方法没有inplace 参数, 直接在原始数据上修改
+>**需要注意的是这个方法没有inplace 参数, 直接在原始数据上修改**
+
+
 
 从DataFrame中, 取出一列数据两种写法
 
-- df['列名']  一定成功
+- `df['列名']`  一定成功
 
-- df.列名 :  有些情况下这种写法会有问题  
+- `df.列名` :  有些情况下这种写法会有问题  
 
   - 列名和python的关键字/方法名冲突
   - 列名中有空格
@@ -411,9 +422,9 @@ movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
 
 #### 5.4 DataFrame数据的保存跟加载
 
-保存数据 df.to_数据格式(路径)
+保存数据 `df.to_数据格式(路径)`
 
-- pickle python特有的数据格式 如果数据处理之后, 后续还是要在Python中使用, 推荐保存成pickle文件
+- **pickle** python特有的数据格式 如果数据处理之后, 后续还是要在Python中使用, 推荐保存成pickle文件
 - tsv  用制表符作为分隔符
 
 ```python
@@ -434,25 +445,26 @@ pd.read_csv('data/movie5.csv')
 pd.read_csv('data/movie5_noindex.csv')
 ```
 
+
+
 ### 6 DataFrame数据分析入门
 
 #### 6.1 DataFrame获取部分数据
 
-获取一列/多列数据
+- 获取一列/多列数据
+  - `df['列名']` → series
+  - `df[['列名']]` → **DataFrame**
 
-df['列名'] → series
+- 获取多列数据
+  - `df[列表]` /`df[['列名1','列名2']]`
 
-df[['列名']] → DataFrame
 
-获取多列数据
-
-df[列表] / df[['列名1','列名2']]
 
 #### 6.2 loc 和 iloc
 
-df.loc[[行名字],[列名字]] / df.iloc [[行序号],[列序号]]
+`df.loc[[行名字],[列名字]]` / `df.iloc [[行序号],[列序号]]`
 
-- loc/iloc 不是方法是属性
+- `loc`/`iloc` 不是方法是**属性**
 - 可以使用切片语法, 可以传入一个值, 也可以传入列表
 
 ```python
@@ -464,6 +476,8 @@ df.loc[:,'country':'year'] # 切片 'country':'year' 没有开闭区间的概念
 ```
 
 在使用的时候, 推荐使用loc 使用行/列的名字来取值, 代码可读性比较好
+
+
 
 #### 6.3 分组聚合
 
@@ -487,10 +501,10 @@ df.groupby(['分组字段','分组字段2'])[['要聚合的字段','要聚合的
 >基本代码调用的过程
 >
 >- 通过df.groupby('year')先创一个分组对象
->
 >- 从分组之后的数据DataFrameGroupBy中，传入列名进行进一步计算返回结果为一个 SeriesGroupBy ，其内容是分组后的数据
->
 >- 对分组后的数据计算平均值
+
+
 
 #### 6.4 pandas 简单绘图
 
@@ -506,17 +520,21 @@ df.groupby('year')['lifeExp'].mean().plot()
 
 ![image-20230831165455488](assets/image-20230831165455488.png)
 
+
+
 ### 7 pandas数据分析/处理练习
 
 加载数据之后, 要先查看数据的基本情况
 
-- df.info()
+- `df.info()`
   - 数据有哪些列, 有多少条数据, 每列数据的数据类型, 每一列数据是否有空值
-- df.describe()
-  - 数值 计数, 极值,分位数, 均值, 标准差
-  - 类别型 df.describe(include =object)  不同取值的数量, 出现次数最多的取值, 出现次数最多取值出现的次数
+- `df.describe()`
+  - 数值：计数，极值，分位数，均值，标准差
+  - 类别型：`df.describe(include =object)`  不同取值的数量, 出现次数最多的取值, 出现次数最多取值出现的次数
 
-排序相关的API
+
+
+**排序相关的API**
 
 - nlargest/nsmallest
   - nlargest 获取某个字段取值最大的前n条数据
@@ -549,6 +567,8 @@ movie2.nlargest(100,'imdb_score').nsmallest(5,'budget')
   >
   >- subset  通过这个参数, 可以指定, 哪些字段重复, 认为是重复值, 可以被删除
   >- keep first/last   去重的时候, 保留第一条/保留最后一条
+
+
 
 ### 8 内容回顾
 
