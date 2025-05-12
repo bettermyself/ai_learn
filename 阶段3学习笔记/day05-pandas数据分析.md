@@ -191,10 +191,6 @@ age+pd.Series([1,2],index = [1,2])
 
 ### 4 DataFrame的常用操作
 
-#### 4.1 DataFrame的常用属性和方法
-
-
-
 **一、核心属性**
 
 | 属性       | 描述                       | 示例                           |
@@ -307,15 +303,30 @@ age+pd.Series([1,2],index = [1,2])
 
 #### 5.1 行索引(index)的调整
 
-- set_index() 把某一列设置为索引
+- `set_index(列名)` 把某一列设置为索引
+
+```python
+movie2.set_index('movie_title')
+```
+
 - reset_index() 重置索引, 回到从0开始计数的数值索引的状态
-- 在加载数据的时候, 可以通过pd.read_csv('路径', index_col='列名') 直接指定某一列作为索引
 
-需要注意的问题
+```python
+movie2.reset_index()
+```
 
-- 99%关于DataFrame/Series调整的API , 都会默认在副本上进行修改, 调用修改的方法后, 会把这个副本返回
-  - 这类API都有一个共同的参数 inplace 默认值都是False
-  - 如果把inplace 改成True会直接修改原来的数据, 此时这个方法就么有返回值了
+- 在加载数据的时候, 可以通过**`pd.read_csv('路径', index_col='列名')`** 直接指定某一列作为索引
+
+  
+
+**需要注意的问题**
+
+99%关于DataFrame/Series调整的API , 都会默认在副本上进行修改, 调用修改的方法后, 会把这个副本返回
+
+- 这类API都有一个共同的参数 inplace 默认值都是False
+- 如果把inplace 改成True会直接修改原来的数据, 此时这个方法就没有返回值了
+
+
 
 #### 5.2 行列索引值的修改
 
