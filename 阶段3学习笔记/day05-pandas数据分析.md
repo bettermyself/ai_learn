@@ -582,7 +582,7 @@ df.info()
 
 df.describe()
 
-df.shape/values/dtype
+df.shape/values/dtypes
 
 加载部分数据
 
