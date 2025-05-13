@@ -1,10 +1,12 @@
-前言
-主要记录ubuntu系统的中安装conda、jupyter lab以及基本使用过程。使用的ubuntu是20.04.
+### 前言
 
-一、Conda安装
-1.下载
-Conda 网站
-考虑下载速度，采用国内清华镜像 https://mirrors.tuna.tsinghua.edu.cn/
+主要记录ubuntu系统的中安装conda、jupyter lab以及基本使用过程。
+
+### 一、Conda安装
+
+#### 1.下载
+
+**Conda 网站：**考虑下载速度，采用国内清华镜像 https://mirrors.tuna.tsinghua.edu.cn/
 在下载链接下方，获取下载链接，选择应用软件，Conda，对应的版本。
 
 
