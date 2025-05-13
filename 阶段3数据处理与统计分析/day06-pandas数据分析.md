@@ -8,26 +8,21 @@ Apply 自定义函数
 
 
 
-## 1 租房数据练习
+## 1、租房数据练习
 
-加载数据之后, 先要了解数据的基本情况
+加载数据之后, 先要了解数据的基本情况：`df.head()`、`df.info()`、`df.describe()`
 
-- df.head()
-- df.info()
-- df.describe()
+
 
 **分组聚合**
 
-```
+```python
 house_data.groupby('view_num',as_index=False)['district'].count()
 ```
 
-- as_index 默认是True , 分组字段会作为分组结果的索引, 把它改成False之后, 分组字段会作为结果中的普通列
-
-- as_index=False  效果相当于groupby('view_num')   再 reset_index
+- `as_index` 默认是True , 分组字段会作为分组结果的索引, 把它改成False之后, 分组字段会作为结果中的普通列。`as_index=False` 效果相当于`groupby('view_num')`   再 `reset_index()`
 
 - 分组之后 count
-
   - 如果数据没有缺失(null) 分组之后对任何一个字段count结果都相同
   - 如果有些字段有缺失, count的时候, 需要注意要统计哪一列的数据
 
@@ -38,11 +33,11 @@ house_data.groupby('view_num',as_index=False)['district'].count()
   house_data.groupby('house_type').agg({'view_num':'sum','price':'mean'})
   ```
 
+
+
 **绘图**
 
-pandas的Plot() 实际上调用的是matplotlib
-
-matplotlib 中文显示问题
+pandas的`Plot()` 实际上调用的是**matplotlib**，matplotlib 中文显示问题：
 
 ```python
 import matplotlib.pyplot as plt
@@ -50,34 +45,41 @@ plt.rcParams['font.sans-serif'] = ['SimHei'] # 正常显示汉字
 plt.rcParams['axes.unicode_minus'] = False # 正常显示负号
 ```
 
-plot 几个参数
+plot 几个参数：
 
 ```python
 house_data.groupby('house_type')['district'].count().sort_values(ascending=False).plot(kind = 'bar',figsize=(16,8))
 ```
 
->kind 指定画什么图  'bar' 条形图/柱状图
->
->figsize = (16,8) 指定绘图区域的大小 16 宽度, 8 高度
+- kind 指定画什么图：bar条形图/柱状图
+- `figsize = (16,8)` ：指定绘图区域的大小 16 宽度, 8 高度
 
-## 2 DataFrame数据组合
+
+
+## 2、DataFrame数据组合
 
 ### 2.1 concat连接
 
-应用场景  两个DataFrame 有相同的结构(行名差不多, 列名差不多)
+应用场景：两个DataFrame 有**相同的结构**：行名一样or 列名一样
 
-- 典型场景,  每个df 记录了一天的数据, 记录的列名都一致, 把n天的数据放到一起分析
 
-pd.concat([df1,df2,df3], ingnore_index = , axis = )
 
-- ingnore_index  忽略索引, 默认是False 连接之后会保留原来的索引, 设置为True 会重建从0开始的索引
-- axis 上下连接(列名对齐)/左右连接(行索引对齐)
+典型场景,  每个df 记录了一天的数据, 记录的列名都一致, 把n天的数据放到一起分析
 
-上下连接, 如果列名不一致, 会多出列, 出现NaN
+```python
+pd.concat([df1,df2,df3], ingnore_index = False , axis = 0)
+```
 
-左右连接, 如果行索引不一致, 会多出行, 出现NaN
+- `ingnore_index`  忽略索引, 默认是False。连接之后会保留原来的索引，设置为True会重建从0开始的索引
+- `axis` ：对齐方式
+  - **0**：上下连接(列名对齐)
+  - **1**：左右连接(行索引对齐)
+
+> 上下连接, 如果列名不一致, 会多出列, 出现NaN；左右连接, 如果行索引不一致, 会多出行, 出现NaN
 
 **df.appen(df)** 作用跟concat类似, 已经过时了, 在新版本的pandas中这个方法已经被删除了, 使用concat可以实现完全一样的效果
+
+
 
 ### 2.2 merge连接 (相当于SQL 的join)
 
@@ -89,7 +91,6 @@ con = sqlite3.connect('data/chinook.db')
 tracks = pd.read_sql_query("select * from tracks",con)
 # 音乐/视频作品的类型  摇滚/爵士/.....歌剧/喜剧
 genres = pd.read_sql_query('select * from genres',con)
-
 ```
 
 ![image-20230902110341903](assets/image-20230902110341903.png)
@@ -103,27 +104,50 @@ tracks_subset = tracks.loc[[0,62,76,98,110,193,204,281,322,359]]
 genres.merge(tracks_subset,how='outer',on='GenreId')
 ```
 
->how 参数
->
->- how = ’left‘ 对应SQL中的 left outer 保留左侧表中的所有key
->
->- how = ’right‘ 对应SQL中的 right outer 保留右侧表中的所有key
->- how = 'outer' 对应SQL中的 full outer 保留左右两侧侧表中的所有key
->- how = 'inner' 对应SQL中的 inner 只保留左右两侧都有的key
->
->on 连接的字段, 如果左右两张表 连接的字段名字相同直接使用on
->
->- 如果名字不同, left_on right_on
->
->连接之后, 两张表中如果有相同名字的字段, 默认会加上后缀 默认值 _x, _y
->
->suffixes:("_ x", "_ y")
+**how 参数：**
+
+- `how = 'left'`   对应SQL中的 left outer 保留左侧表中的所有key
+
+- `how = 'right'` 对应SQL中的 right outer 保留右侧表中的所有key
+- `how = 'outer'` 对应SQL中的 full outer 保留左右两侧侧表中的所有key
+- `how = 'inner'` 对应SQL中的 inner 只保留左右两侧都有的key
+
+**on参数：**
+
+-  连接的字段, 如果左右两张表 连接的字段名字相同直接使用on
+
+- 如果名字不同，left_on、right_on
+
+```python
+left = pd.DataFrame({
+    'key_left': ['A', 'B', 'C'],
+    'value_left': [1, 2, 3]
+})
+
+right = pd.DataFrame({
+    'key_right': ['A', 'B', 'D'],
+    'value_right': [4, 5, 6]
+})
+
+# 合并两个 DataFrame，按左侧的 key_left 和右侧的 key_right 匹配
+result = pd.merge(
+    left, 
+    right, 
+    left_on='key_left', 
+    right_on='key_right', 
+    how='inner'
+)
+```
+
+连接之后, 两张表中如果有相同名字的字段, 默认会加上后缀 默认值  _x, _y。可以通过_`suffixes=("_ x", "_ y")`参数来修改
+
+
 
 ### 2.3 join连接 (了解)
 
 两种应用场景
 
-- 第一种 类似于concat  但是只能是左右连接, 不能上下连接 使用index(行索引) 对齐
+- 第一种：类似于concat  但是只能是左右连接, 不能上下连接 使用index(行索引) 对齐
 
   ```python
   stock_2016 = pd.read_csv('data/stocks_2016.csv')
@@ -153,7 +177,29 @@ stock_2016.join(stock_2018.set_index('Symbol'),lsuffix='_2016',rsuffix='_2018',o
 
 
 
-## 3 缺失值处理
+**核心区别对比**
+
+| **特性**     | **`pd.concat()`**                      | **`pd.merge()`**                           | **`df.join()`**                 |
+| :----------- | :------------------------------------- | :----------------------------------------- | :------------------------------ |
+| **设计目标** | 沿轴（行或列）**堆叠数据**             | 基于**列值**关联（类似SQL JOIN）           | 基于**索引**关联（简化版merge） |
+| **主要轴向** | 支持`axis=0`（纵向）和`axis=1`（横向） | 仅横向合并（列扩展）                       | 仅横向合并（列扩展）            |
+| **键值匹配** | 不需要键值，直接拼接                   | 必须指定`on`（列名）或`left_on`/`right_on` | 基于索引（默认）或列名          |
+| **索引处理** | 保留原始索引或生成新索引               | 默认生成新索引                             | 默认保留左索引                  |
+| **适用场景** | 简单堆叠数据                           | 复杂键值关联                               | 索引对齐的快速合并              |
+
+**适用场景总结**
+
+| **场景**                           | **推荐方法**     | **原因**                         |
+| :--------------------------------- | :--------------- | :------------------------------- |
+| 合并多个同结构的表格（行或列堆叠） | `concat`         | 直接拼接，无需键值匹配           |
+| 基于列值的复杂关联（如SQL JOIN）   | `merge`          | 灵活支持多种连接方式和多键合并   |
+| 快速基于索引合并                   | `join`           | 语法简洁，适合索引对齐的简单场景 |
+| 横向合并不同特征（相同索引）       | `concat(axis=1)` | 无需键值，直接扩展列             |
+| 处理列名不一致的合并               | `concat`         | 自动填充`NaN`，保留所有列        |
+
+
+
+## 3、缺失值处理
 
 ### 3.1 缺失值简介和如何判断缺失值
 
@@ -164,9 +210,14 @@ stock_2016.join(stock_2018.set_index('Symbol'),lsuffix='_2016',rsuffix='_2018',o
 
 数据处理和模型训练的时候, 有很多场景要求必须先把缺失值处理掉, 想处理缺失值先要在数据中找到缺失值
 
-pd.isnull() pd.isna() /pd.notnull() pd.notna()
+```python
+pd.isnull() 
+pd.isna() 
+pd.notnull() 
+pd.notna()
+```
 
-- np.nan np.NAN np.NaN 都是缺失值, 这个类型比较特殊, 不同通过 == 方式判断, 只能通过API
+- `np.nan`、`np.NAN`、`np.NaN` 都是缺失值, 这个类型比较特殊, 不能通过 == 方式判断, 只能通过API
 
 ```python
 import numpy as np
@@ -210,9 +261,11 @@ print(pd.notnull(''))
 
 >False
 >
->True
+>False
 >
 >True
+
+
 
 ### 3.2 读取包含缺失值的数据
 
