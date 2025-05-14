@@ -127,6 +127,8 @@ tips_10.groupby('sex')['tip'].transform(fillna_mean)
 
 #### 2.3 分组转换练习
 
+quary与布尔索引的对比
+
 - 加载减重数据 数据中包含了Bob和Amy 从1月到4月 每周的体重数据(每个月4周, 一共32条数据)
 
 ```python
