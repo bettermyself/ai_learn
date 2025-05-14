@@ -217,7 +217,7 @@ pd.notnull()
 pd.notna()
 ```
 
-- `np.nan`、`np.NAN`、`np.NaN` 都是缺失值, 这个类型比较特殊, 不能通过 == 方式判断, 只能通过API
+- `np.nan`、`np.NAN`、`np.NaN` 都是缺失值, 这个类型比较特殊, **不能通过 == 方式判断**, 只能通过API来判断
 
 ```python
 import numpy as np
@@ -233,6 +233,7 @@ print(np.NAN==0)
 >False
 
 ```python
+# 两两之间互不相等
 print(np.NAN==np.NaN)
 print(np.NAN==np.nan)
 print(np.NaN==np.nan)
@@ -275,7 +276,9 @@ pd.read_csv('data/survey_visited1.csv',na_values=['?'],keep_default_na=False)
 
 >na_values = 除了空白值之外, 还有哪些值在加载数据的过程中被按照缺失值对待, 上面传入了?  说明数据中的?加载之后会用 NaN 来表示
 >
->keep_default_na = 是否把 空白的内容作为缺失值来加载
+>keep_default_na = 是否把空白的内容作为缺失值来加载（是否加载成NaN）
+
+
 
 ### 3.3 缺失值处理
 
@@ -287,7 +290,7 @@ titanic.isnull().sum() # 快速计算是否包含缺失值
 
 可以通过可视化的方式来展示数据缺失的情况
 
-- pip install missingno
+- `pip install missingno`
 
 ```python
 import missingno as msno
@@ -303,7 +306,7 @@ msno.heatmap(titanic)
 
 ![image-20230902151658320](assets/image-20230902151658320.png)
 
-删除缺失值
+**删除缺失值**
 
 ```python
 titanic.dropna(subset=None,how='any',inplace=False,axis=0)
@@ -321,18 +324,19 @@ titanic.dropna(subset=None,how='any',inplace=False,axis=0)
 
 
 
-缺失值填充, 非时序数据
+**缺失值填充**：
 
-- 非时序数据的缺失值填充, 直接使用fillna(值, inplace)
+- 非时序数据
+  - 非时序数据的缺失值填充, 直接使用`fillna(值, inplace)`
+    - 可以使用统计量  众数 , 平均值, 中位数 ...
+    - 也可以使用默认值来填充  
 
-  - 可以使用统计量  众数 , 平均值, 中位数 ...
-  - 也可以使用默认值来填充  
+```python
+titanic1['Age'].fillna(titanic1['Age'].mean(),inplace=True)
+```
 
-  
-
-缺失值填充, 时序数据
-
-- 数值的变化, 跟时间相关 气温/天气情况/用电量 ....
+- 时序数据
+  - 数值的变化, 跟时间相关 气温/天气情况/用电量 ....
 
 ```python
 city_day = pd.read_csv('data/city_day.csv',parse_dates=['Date'],index_col='Date')
@@ -355,9 +359,11 @@ city_day['Xylene'][50:64].interpolate(limit_direction='both')
 
 >利用缺失值前面和后面两个有效值连线, 填充的缺失值从线上找
 
+
+
 ### 3.4 小结
 
-缺失值处理的套路
+缺失值处理的套路：
 
 - 能不删就不删 , 如果某列数据, 有大量的缺失值(50% 以上是缺失值, 具体情况具体分析)
 - 如果是类别型的, 可以考虑使用 '缺失' 来进行填充
@@ -367,14 +373,13 @@ city_day['Xylene'][50:64].interpolate(limit_direction='both')
 
 ## 4 Apply 自定义函数
 
-应用场景, 当Pandas自带的APi 不能满足需求, 我们需要遍历的对Series中的每一条数据/DataFrame中的一列或一行数据做相同的自定义处理, 就可以使用Apply自定义函数
+应用场景：当Pandas自带的API不能满足需求, 我们需要遍历的对Series中的每一条数据/DataFrame中的一列或一行数据做相同的自定义处理, 就可以使用Apply自定义函数
 
 ### 4.1 Series的apply方法
 
 ```python
 import pandas as pd
 df = pd.DataFrame({'a':[10,20,30],'b':[20,30,40]})
-df 
 ```
 
 - 创建一个方法, 接收一个参数(一个值), 也可以接收多个参数(使用的时候, 第一个参数来自Series 后面的参数可以自己传递)
@@ -398,14 +403,18 @@ df['a'].apply(my_sq,e=3)
 >
 >apply 相当于遍历了Series中的每一个取值, 一个一个传给自定函数, 把返回值整理成series
 
+
+
 ### 4.2 DataFrame的apply方法
 
-df.apply(func, axis = )
+`df.apply(func, axis = )`
 
 - axis = 0 按列传递数据 传入一列数据(Series)
 - axis = 1 按行传递数据 传入一列数据(Series)
 
-练习: 把titanic 的数据中, 年龄替换成年龄段
+
+
+练习： 把titanic 的数据中, 年龄替换成年龄段
 
 ```python
 def cut_age(age):
@@ -454,9 +463,9 @@ titanic['vip'].value_counts()
 
 ## 5 内容回顾
 
-**数据组合,** 就是把多张有关联的表连接到一起, 有两种连接方式
+**数据组合**：就是把多张有关联的表连接到一起, 有两种连接方式
 
-- 上下连 场景, 多天的数据合并到一起(每一天有一张表, 每张表统计的都是相同的信息就是列名一样)
+- 上下连接：场景, 多天的数据合并到一起(每一天有一张表, 每张表统计的都是相同的信息就是列名一样)
   - pd.concat()
 - 左右连
   - pd.concat
