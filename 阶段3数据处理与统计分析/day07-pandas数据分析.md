@@ -1,113 +1,156 @@
-## 今日重点
-
-1 数据分组  groupby
-
-- 分组聚合
-- 分组转换
-- 分组过滤
-- 分组接自定义处理
-
-2 数据透视表
-
-- 透视表API的使用
-- 结合零售的鞋的业务综合运营包括透视表相关的API
+1. ## 今日重点
 
 
-
-### 1 向量化函数/lambda表达式
+### 1、向量化函数/lambda表达式
 
 ```python
-def avg_test2(x,y):
+def avg_test(x,y):
     if x==20:
         return np.NaN
     else:
         return (x+y)/2
-avg_test2(df['a'],df['b'])
+avg_test(df['a'],df['b'])
 ```
 
 ![image-20230903093048874](assets/image-20230903093048874.png)
 
->上面的方法调用之所以报错, 就是因为if 需要传入的是 一个True/False , 但是我们传入的是一个 True/False 组成的Series  此时if 不能做出判断, 抛出了错误
+> 上面的方法调用之所以报错，就是因为 if 需要传入的是一个True/False , 但是我们传入的是一个True/False 组成的Series。此时if不能做出判断, 抛出了错误。想让上面的代码正常的执行, 我们需要把 Series里的每一个值遍历的传递给if做多次判断, 此时必须要自己写for循环, 可以通过 `np.vectorize(avg_test2)` 这种方式, 把这个方法变成一个向量化的方法(会遍历每一个值(分量)，多次调用这个方法)。
 >
->想让上面的代码正常的执行, 我们需要把 Series里的每一个值遍历的传递给if 做多次判断, 此时必须要自己写for循环, 可以通过 np.vectorize(avg_test2) 这种方式, 把这个方法变成一个向量化的方法(会遍历每一个值(分量)多次调用这个方法)
 
-np.vectorize 两种用法
+**`np.vectorize` 两种用法**
+
+- **方法1：**
 
 ```python
 import numpy as np
-def avg_test2(x,y):
+def avg_test(x,y):
     if x==20:
         return np.NaN
     else:
         return (x+y)/2
-avg_vec = np.vectorize(avg_test2)
+avg_vec = np.vectorize(avg_test)
 ```
 
-还有一种通过装饰器来调用的方式
+- **方法2：**通过装饰器来调用的方式
 
 ```python
 @np.vectorize
-def avg_test3(x,y):
+def avg_test(x,y):
     if x==20:
         return np.NaN
     else:
         return (x+y)/2
-avg_test3(df['a'],df['b'])
+avg_test(df['a'],df['b'])
 ```
+
+
+
+#### 拓展：**装饰器**
+
+1.**什么是装饰器？**
+
+装饰器是一种**高阶函数**，它接受一个函数作为参数，并返回一个新的函数。通过装饰器，我们可以在不修改原函数代码的前提下，动态地为其添加额外的功能。
+简单来说，装饰器就是**函数的包装器**，它可以在函数执行前后添加一些操作。
+
+2.装饰器的基本语法
+
+在Python中，装饰器通常使用 `@` 符号来应用于函数或类。下面是一个简单的装饰器示例：
+
+```python
+def my_decorator(func):
+    def wrapper():
+        print("函数执行前的操作")
+        func()
+        print("函数执行后的操作")
+    return wrapper
+
+@my_decorator
+def say_hello():
+    print("Hello!")
+
+say_hello()
+```
+
+**输出：**
+
+```she
+函数执行前的操作
+Hello!
+函数执行后的操作
+```
+
+在这个例子中：
+
+- `my_decorator` 是一个装饰器，它接受一个函数 `func` 作为参数。
+- `wrapper` 是一个内部函数，它在调用 `func` 前后添加了额外的打印操作。
+- `@my_decorator` 将 `say_hello` 函数传递给装饰器，并将返回的 `wrapper` 函数重新赋值给 `say_hello`。
+- 因此，当我们调用 `say_hello()` 时，实际执行的是 `wrapper()` 函数。
+
+
 
 **lambda表达式**
 
-使用apply的时候, 如果自定义处理逻辑比较简单, 一行代码就可以搞定, 可以使用lambda, 不用再def 一个起名字的函数, 使用lambda 创建一个匿名函数就可以了
+使用`apply`的时候, 如果自定义处理逻辑比较简单, 一行代码就可以搞定, 可以使用`lambda`, 不用再`def` 一个起名字的函数, 使用`lambda` 创建一个匿名函数就可以了
 
 ```python
 df.apply(lambda x:x.isnull().sum())
 ```
 
-### 2 数据分组
+
+
+### 2、数据分组
 
 #### 2.1 分组聚合
 
-df.groupby('分组字段')['聚合字段'].describe()
-
-分组之后想调用非Pandas的聚合函数, 需要使用agg/aggregate 方法, 聚合函数可以自定义
+分组聚合函数语法：
 
 ```python
-import numpy as np
-df.groupby('continent')['lifeExp'].aggregate(np.mean)
-```
+# 分组之后，对一个字段进行聚合
+df.groupby('分组字段')['聚合字段'].count()
 
-自定义聚合函数
+# 分组之后，对多个字段进行聚合
+df.groupby('分组字段')[['聚合字段1','聚合字段2']].count()
 
-```python
-def my_mean_diff(s,global_mean):
-    return s.mean() - global_mean
-```
-
-```python
-global_mean = df['lifeExp'].mean()
-df.groupby('continent')['lifeExp'].agg(my_mean_diff,global_mean = global_mean)
-```
-
-```python
 # 不同字段按照不同方式进行聚合
 df.groupby('year').agg({'lifeExp':'mean','pop':'median','gdpPercap':'max'})
 ```
 
+
+
+分组之后想调用非**Pandas**的聚合函数, 需要使用**agg**|**aggregate** 方法, 聚合函数可以自定义：
+
+```python
+import numpy as np
+df.groupby('continent')['lifeExp'].aggregate(np.mean)
+
+# 自定义聚合函数
+def my_mean_diff(s,global_mean):
+    return s.mean() - global_mean
+
+global_mean = df['lifeExp'].mean()
+df.groupby('continent')['lifeExp'].agg(my_mean_diff,global_mean = global_mean)
+```
+
+
+
 #### 2.2 分组转换
 
-分组计算均值来填充缺失值-----和窗口函数很像
+- 数据准备工作
 
 ```python
 # 加载小费数据集
 tips = pd.read_csv('data/tips.csv')
+
 #random_state 具体的取值没有啥意义, 但是把这个值固定下来, 多次运行采样的代码, 采样出来的数据是一样的
 tips_10 = tips.sample(10,random_state=42) # sample采样 
+
 import numpy as np
-tips_10.loc[np.random.permutation(tips_10.index)[:4],'tip'] = np.NAN 
+
 #np.random.permutation(tips_10.index) 将index随机打乱 随机找了4条数据 给tip复制为nan
+tips_10.loc[np.random.permutation(tips_10.index)[:4],'tip'] = np.NAN 
 ```
 
-- 创建自定义函数, 用来填充缺失值
+- 编写自定义函数，用来填充缺失值
 
 ```python
 def fillna_mean(x):
@@ -115,34 +158,81 @@ def fillna_mean(x):
     return x.fillna(x.mean())
 ```
 
+- 分组转换，调用编写的自定义函数
+
 ```python
 tips_10.groupby('sex')['tip'].transform(fillna_mean)
 ```
 
->不同性别填充的缺失值, 是各自性别的小费平均值
+>不同性别填充的缺失值, 是各自性别的小费平均值。
 
-分组转换跟SQL中的窗口函数中的聚合函数作用一样
 
-- 可以把每一条数据和这个数据所属的组的一个聚合值在放在一起, 可以根据需求进行相应计算
+
+在 pandas 中，**分组转换（ Group By  + Transform）** 是一种常用的操作，用于对分组后的数据应用函数，并返回与原数据相同形状的结果。（类似与`SQL`中的**窗口函数**）
+
+- **基本用法**
+
+`transform()` 方法会对每个分组应用一个函数，并将结果广播到原数据的每一行，保持形状一致。
+
+```python
+import pandas as pd
+
+df = pd.DataFrame({
+    'Group': ['A', 'A', 'B', 'B', 'B'],
+    'Value': [10, 20, 30, 40, 50]
+})
+
+# 计算每组的均值，并返回与原数据相同长度的结果
+df['GroupMean'] = df.groupby('Group')['Value'].transform('mean')
+```
+
+- **常见场景**
+
+```python
+# 场景 1：标准化（Z-Score）
+
+# 按组标准化： (x - 组均值) / 组标准差
+df['Z-Score'] = df.groupby('Group')['Value'].transform(
+    lambda x: (x - x.mean()) / x.std()
+)
+
+# 场景 2：填充缺失值
+
+# 用组中位数填充缺失值
+df['Filled'] = df.groupby('Group')['Value'].transform(
+    lambda x: x.fillna(x.median())
+)
+
+# 场景 3：排名
+
+# 计算每组内的排名
+df['Rank'] = df.groupby('Group')['Value'].transform('rank', ascending=False)
+```
+
+- 与 `apply` 的区别
+  - `transform` 要求输出与输入**形状相同**，适合逐元素操作。
+  - `apply` 更灵活，可以返回任意形状的结果（但需手动对齐）。
+
+通过 `groupby.transform`，你可以高效实现按组计算并保持数据对齐的需求。
+
+
 
 #### 2.3 分组转换练习
 
-quary与布尔索引的对比
+**任务：比较Bob 和 Amy 1-4月每月减重效果**
 
-- 加载减重数据 数据中包含了Bob和Amy 从1月到4月 每周的体重数据(每个月4周, 一共32条数据)
+
+
+- **第一步：**加载减重数据
+
+数据中包含了Bob和Amy 从1月到4月每周的体重数据(每个月4周, 一共32条数据)
 
 ```python
+# 数据中包含了Bob和Amy 从1月到4月每周的体重数据(每个月4周, 一共32条数据)
 weight_loss = pd.read_csv('data/weight_loss.csv')
-weight_loss
 ```
 
-- query 类似于SQL 的where 条件  query 需要传入的是条件对应的字符串, 如果条件中还有字符串, 需要用不同类型的引号进行区分
-
-```python
-weight_loss.query("Month=='Jan'")
-```
-
->从数据中查询出月份是 'Jan' 一月份的数据
+- **第二步：**编写减重函数
 
 我们要使用分组转换来计算Bob和Amy每个月的减重效果 (每个月每周的体重减去当月第一周的体重), 定义一个自定义函数
 
@@ -151,6 +241,54 @@ weight_loss.query("Month=='Jan'")
 def find_perc_loss(s):
     # s.iloc[0] 每个月的第一周, 体重
     return (s.iloc[0]-s)/s.iloc[0]
+```
+
+- **第三步：**分组转换，调用编写的减重函数
+
+按姓名和月份分组转换，计算Bob和Amy每个月中每周的减重效果
+
+```python
+weight_loss['减重比例'] = weight_loss.groupby(['Name','Month'])['Weight'].transform(find_perc_loss)
+```
+
+- **第四步：**比较减重效果
+
+```python
+# 提取第4周的数据用于比较， 看谁的减重效果更明显
+week4_result = weight_loss.query('Week=="Week 4"')[['Name','Month','减重比例']]
+week4_amy = week4_result[week4_result['Name']=='Amy']
+week4_bob = week4_result.query("Name=='Bob'")
+
+# 将月份设置为行索引, 方便两份数据进行计算
+week4_bob[['Month','减重比例']].set_index('Month') - week4_amy[['Month','减重比例']].set_index('Month')
+```
+
+![image-20230903112123650](assets/image-20230903112123650.png)
+
+从数据中, 看出bob-amy 三个月的数据是负值, 说明amy的减重比例高于bob, amy减重效果更好。
+
+
+
+
+
+
+
+
+
+
+
+query 类似于SQL 的where 条件  query 需要传入的是条件对应的字符串, 如果条件中还有字符串, 需要用不同类型的引号进行区分
+
+```python
+weight_loss.query("Month=='Jan'")
+```
+
+>从数据中查询出月份是 'Jan' 一月份的数据
+
+
+
+```python
+
 
 # 使用Query 查询出一月份 bob的数据, 测试一下自定义函数
 bob_jan = weight_loss.query("Name=='Bob' and Month=='Jan'")
@@ -159,32 +297,21 @@ find_perc_loss(bob_jan['Weight'])
 
 ![image-20230903111822014](assets/image-20230903111822014.png)
 
-按姓名和月份分组转换，计算Bob和Amy每个月中每周的减重效果
 
-```python
-weight_loss['减重比例'] = weight_loss.groupby(['Name','Month'])['Weight'].transform(find_perc_loss)
 
-```
 
-提取第4周的数据用于比较， 看谁的减重效果更明显
 
-```python
-week4_result = weight_loss.query('Week=="Week 4"')[['Name','Month','减重比例']]
-week4_amy = week4_result[week4_result['Name']=='Amy']
-week4_bob = week4_result.query("Name=='Bob'")
-```
 
-比较第四周的减重数据
 
-- 将月份设置为行索引, 方便两份数据进行计算
 
-```python
-week4_bob[['Month','减重比例']].set_index('Month') - week4_amy[['Month','减重比例']].set_index('Month')
-```
 
-![image-20230903112123650](assets/image-20230903112123650.png)
 
-从数据中, 看出bob-amy 三个月的数据是负值, 说明amy的减重比例高于bob, amy减重效果更好
+
+
+
+quary与布尔索引的对比	
+
+
 
 #### 2.4 分组过滤
 
