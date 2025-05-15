@@ -248,6 +248,7 @@ def find_perc_loss(s):
 按姓名和月份分组转换，计算Bob和Amy每个月中每周的减重效果
 
 ```python
+# 想清楚需要用什么数据代入减重函数，就能准确写好用什么字段groupby
 weight_loss['减重比例'] = weight_loss.groupby(['Name','Month'])['Weight'].transform(find_perc_loss)
 ```
 
@@ -265,142 +266,217 @@ week4_bob[['Month','减重比例']].set_index('Month') - week4_amy[['Month','减
 
 ![image-20230903112123650](assets/image-20230903112123650.png)
 
-从数据中, 看出bob-amy 三个月的数据是负值, 说明amy的减重比例高于bob, amy减重效果更好。
+从数据中, 看出bob- Amy  三个月的数据是负值, 说明 amy 的减重比例高于bob,  amy 减重效果更好。
 
 
 
+**query方法**
+
+`query()`是**pandas**中一个非常实用的 **`DataFrame`** 方法，它允许你使用字符串表达式来筛选数据（如果条件中还有字符串, 需要用不同类型的引号进行区分），类似于SQL中的WHERE子句。
+
+ ```python
+ import pandas as pd
+ 
+ df = pd.DataFrame({
+     'A': range(1, 6),
+     'B': range(10, 60, 10),
+     'C': list('abcde')
+ })
+ 
+ # 使用query筛选
+ result = df.query('A > 2')
+ ```
 
 
 
+**pandas中query方法与布尔索引的对比**
 
+`query()`方法和布尔索引是**pandas**中两种常用的数据筛选方式，它们各有优缺点。下面从多个维度进行对比分析：
 
-
-
-
-query 类似于SQL 的where 条件  query 需要传入的是条件对应的字符串, 如果条件中还有字符串, 需要用不同类型的引号进行区分
+**1. 语法对比**
 
 ```python
-weight_loss.query("Month=='Jan'")
+# 布尔索引  需要全部用小括号包起来
+df[(df['A'] > 2) & (df['B'] < 50) | (df['C'] == 'a')]
+
+# query方法
+df.query('A > 2 and B < 50 or C == "a"')
 ```
 
->从数据中查询出月份是 'Jan' 一月份的数据
+**对比**：
+
+- query语法更简洁，更接近自然语言
+- 布尔索引需要使用`&`、`|`等运算符，而query可以使用`and`、`or`
+- 布尔索引需要重复写**`DataFrame`**名称，**`query`**不需要
 
 
+
+**2.可读性对比**
+
+简单条件：两者可读性相当
 
 ```python
+# 布尔索引
+df[df['A'] > 2]
 
-
-# 使用Query 查询出一月份 bob的数据, 测试一下自定义函数
-bob_jan = weight_loss.query("Name=='Bob' and Month=='Jan'")
-find_perc_loss(bob_jan['Weight'])
+# query
+df.query('A > 2')
 ```
 
-![image-20230903111822014](assets/image-20230903111822014.png)
+复杂条件：query明显更易读
 
+```python
+# 布尔索引
+df[(df['A'] > 2) & (df['B'].isin([10, 30])) | (df['C'].str.startswith('a'))]
 
+# query
+df.query('A > 2 and B in [10, 30] or C.str.startswith("a")')
+```
 
+**3.列名处理**
 
+```python
+# 布尔索引 - 列名中有空格也能正常工作
+df[df['column with space'] > 10]
 
+# query - 需要反引号
+df.query('`column with space` > 10')
+```
 
+布尔索引处理特殊列名更方便
 
+```python
+col = 'A'
+# 布尔索引
+df[df[col] > 2]
 
+# query - 需要使用@语法
+df.query(f'{col} > 2')  # 或者 df.query('@col > 2')
+```
 
-
-
-
-
-quary与布尔索引的对比	
+布尔索引处理动态列名更直接
 
 
 
 #### 2.4 分组过滤
 
-- groupby()分组之后, 接filter方法, 传入一个返回True/False 的方法, 当数据传入这个方法中,返回True的会被留下, 返回False的会被过滤掉
+**groupby** 分组之后, 接 **filter** 方法, 传入一个返回 **True** / **False** 的方法, 当数据传入这个方法中,返回True的会被留下, 返回False的会被过滤掉。
 
 ```python
+# 使用就餐人数进行分组, 过滤掉条目数少于5条的组
 tips.groupby('size').filter(lambda x:x['size'].count()>5)
 ```
 
->使用就餐人数进行分组, 过滤掉条目数少于5条的组
+
 
 #### 2.5 DataFrameGroupby对象
 
-调用了groupby方法之后, 就会返回一个DataFrameGroupby对象
+DataFrameGroupBy对象是pandas中分组操作的核心，它由`groupby()`方法创建，提供了强大的数据分组和聚合功能。
 
 ```python
 grouped = tips_10.groupby('sex')
-grouped.groups
-```
 
->{'Female': [198, 124, 101], 'Male': [24, 6, 153, 211, 176, 192, 9]}
->
->返回了分组的情况 {'组中的取值':[取值对应的条目索引列表]}
+# 返回了分组的情况 {'组中的取值':[取值对应的条目索引列表]}
+grouped.groups  # {'Female': [198, 124, 101], 'Male': [24, 6, 153, 211, 176, 192, 9]}
 
-```python
+# 可以获取每组中的数据 (DataFrame)
 grouped.get_group('Female')
 ```
 
-可以获取每组中的数据 (DataFrame)
-
 ![image-20230903121614962](assets/image-20230903121614962.png)
 
-可以遍历这个DataFrameGroupby对象
-
 ```python
+# 可以遍历这个DataFrameGroupby对象，每个group 都是一个元组 (分组的值, 这一组对应数据的DataFrame)
 for group in grouped:
     # print(group)
     print(type(group[1]))
 ```
 
->每个group 都是一个元组 (分组的值, 这一组对应数据的DataFrame)
 
-多字段分组的时候, 返回的是复合索引(MultiIndex)
+
+**复合索引(MultiIndex)**
 
 ```python
-result = tips_10.groupby(['sex','time']).mean()
+# 多字段分组的时候, 返回的是复合索引
+result = tips_10.groupby(['sex','time'])['size'].mean()
 result.loc[('Female', 'Dinner')] # 获取复合索引后, 需要使用索引对应的元组才能获取到对应行的数据
+
+# 将复合索引变成普通的索引
+result.reset_index()
+tips_10.groupby(['sex','time'],as_index = False)
 ```
 
-可以把复合索引变成普通的索引
+
+
+### 3、会员分析和数据透视表
+
+**任务：分析会员运营的基本情况**
+
+- 从量的角度分析会员运营情况：
+  - 整体会员运营情况（存量，增量）
+  - 不同渠道（线上，线下）的会员运营情况
+  - 线下业务，拆解到不同的地区、门店会员运营情况
+
+- 从质的角度分析会员运营情况：
+  - 会销比 会员消费占整体消费的占比
+  - 连带率 是不是每次购买商品的时候, 都购买一件以上
+  - 复购率 是不是买了之后, 又来买
+
+
+
+**透视表：**
 
 ```python
-result.reset_index()
-tips_10.groupby(['sex','time'],as_index = False).mean()
+df.pivot_table(index= , columns = , values= , aggfunc= )
 ```
 
-### 3 会员分析和数据透视表
+- **index**：行索引，传入原始数据的列名， 这一列中每一个取值会作为透视表结果的一个行索引；
 
-分析会员运营的基本情况从量的角度分析会员运营情况：
+- **columns**：列索引，传入原始数据的列名,  这一列中每一个取值会作为透视表结果的一列；
 
-① 整体会员运营情况（存量，增量）
+- **values**: 要做聚合操作的列名；
 
-② 不同渠道（线上，线下）的会员运营情况
+- **aggfunc**：聚合函数；
 
-③ 线下业务，拆解到不同的地区、门店会员运营情况
 
-从质的角度分析会员运营情况：
 
-① 会销比 会员消费占整体消费的占比
+**累计求和：**
 
-② 连带率 是不是每次购买商品的时候, 都购买一件以上
+```py
+df['列名'].cumsum()
+```
 
-③ 复购率 是不是买了之后, 又来买
+
+
+**strftime 时间类型格式化：**将注册年月转换成年月的形式展示
+
+参数：
+
+**年份表示：**
+
+| 代码 | 说明     | 示例 |
+| :--- | :------- | :--- |
+| `%Y` | 四位年份 | 2023 |
+| `%y` | 两位年份 | 23   |
+
+**月份表示：**
+
+| 代码 | 说明             | 示例     |
+| :--- | :--------------- | :------- |
+| `%m` | 数字月份（补零） | 01-12    |
+| `%b` | 缩写的月份名称   | Jan, Feb |
+| `%B` | 完整的月份名称   | January  |
+
+**日期表示：**
+
+| 代码 | 说明                 | 示例    |
+| :--- | :------------------- | :------ |
+| `%d` | 月份中的天数（补零） | 01-31   |
+| `%j` | 年中的第几天（补零） | 001-366 |
+
+
 
 #### 3.1 会员增量和存量分析
-
-df.pivot_table(index= , columns = , values=, aggfunc=)
-
-- index：行索引，传入原始数据的列名, 这一列中每一个取值会作为透视表结果的一个行索引
-
-- columns：列索引，传入原始数据的列名,  这一列中每一个取值会作为透视表结果的一列
-
-- values: 要做聚合操作的列名
-
-- aggfunc：聚合函数
-
-累计求和
-
-df[列名].cumsum()
 
 ```python
 import pandas as pd
@@ -409,68 +485,50 @@ customer_info.head()
 customer_info.info()
 ```
 
-><class 'pandas.core.frame.DataFrame'>
->RangeIndex: 952714 entries, 0 to 952713
->Data columns (total 12 columns):
->
->Column  Non-Null Count   Dtype         
->
->---  ------  --------------   -----
-> 0   会员卡号    952714 non-null  object        
-> 1   会员等级    952714 non-null  object        
-> 2   会员来源    952714 non-null  object        
-> 3   注册时间    952714 non-null  datetime64[ns]
-> 4   所属店铺编码  952714 non-null  object        
-> 5   门店店员编码  253828 non-null  object        
-> 6   省份      264801 non-null  object        
-> 7   城市      264758 non-null  object        
-> 8   性别      952714 non-null  object        
-> 9   生日      785590 non-null  object        
-> 10  年齡      952705 non-null  float64       
-> 11  生命级别    952714 non-null  object        
->dtypes: datetime64[ns](1), float64(1), object(10)
->memory usage: 87.2+ MB
 
-- 将注册年月转换成 年月的形式展示
-  - strftime 时间类型格式化
+
+-  **会员增量分析：**注册年月分组, 对会员卡号计数
 
 ```python
 customer_info.loc[:,'注册年月'] = customer_info['注册时间'].apply(lambda x:x.strftime('%Y-%m'))
-```
 
-##### 统计每个月份新增会员数量
-
-(注册年月分组, 对会员卡号计数)
-
-```python
 month_count = customer_info.groupby('注册年月')[['会员卡号']].count()
-# 修改列名
+# DataFrame修改列名
 month_count.columns = ['月增量']
+
+# Series修改列名
+mouth_count.name = '月增量'
 ```
 
 绘制会员增量曲线
 
 ```python
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['SimHei'] # 正常显示汉字
+plt.rcParams['font.sans-serif'] = ['Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei'] # 正常显示汉字
 plt.rcParams['axes.unicode_minus'] = False # 正常显示负号
 customer_info.groupby('注册年月')['会员卡号'].count()[1:].plot(figsize=(16,8))
 ```
 
 ![image-20230903154126523](assets/image-20230903154126523.png)
 
-通过透视表计算月增量
+
+
+**通过透视表计算月增量**
 
 ```python
 # index 在透视表结果中, 哪一列数据作为行索引  columns 在透视表结果中, 哪一列数据作为列名 values 对哪一个字段进行统计 aggfunc 聚合方式
 customer_info.pivot_table(index='注册年月',values='会员卡号',aggfunc='count')
 ```
 
-对月增量字段累计求和计算月存量
+
+
+- **会员存量分析：**对月增量字段累计求和计算月存量
 
 ```python
 month_count.loc[:,'会员存量']=month_count['月增量'].cumsum()
 ```
+
+
 
 将月增量和月存量进行可视化
 
@@ -481,25 +539,37 @@ month_count['会员存量'].plot(kind = 'bar',figsize=(16,8))
 
 ![image-20230903154402405](assets/image-20230903154402405.png)
 
-##### **统计月增量会员中的会员等级分布**
+
+
+#### **3.2 统计月增量会员中的会员等级分布**
 
 ```python
+# unstack()是pandas中一个用于重塑数据的重要方法，它可以将多级索引的行转换为列，实现数据的"旋转"或"透视"。
 customer_info.groupby(['注册年月','会员等级'])['会员卡号'].count().unstack()
 member_level = customer_info.pivot_table(index='注册年月',columns='会员等级',values='会员卡号',aggfunc='count')
 member_level = member_level[1:]
 ```
 
-可视化
+![image-20250515211356492](assets\image-20250515211356492.png)
+
+可视化：
 
 ```python
 import matplotlib.pyplot as plt
+
+# plt.subplots 创建了一个绘图区域 fig 和坐标系 ax1
 fig,ax1 = plt.subplots(figsize=(20,8))
-ax2 = ax1.twinx() # 通过ax1 创建了一个共享x轴的坐标系 ax2
-# plt.subplots 创建了一个绘图区域 fig 和坐标系 ax1   grid=True 添加网格线  xlabel/ylabel x轴y轴 起名  legend 图例
+
+# 通过ax1 创建了一个共享x轴的坐标系 ax2
+ax2 = ax1.twinx() 
+
+# grid=True 添加网格线  xlabel/ylabel x轴y轴 起名  legend 图例
 member_level[['白银会员','黄金会员']].plot.bar(ax=ax1,grid=True,xlabel='年月',ylabel='白银黄金',legend= True)
 member_level[['铂金会员','钻石会员']].plot(ax=ax2,color=['red','gray'],ylabel='铂金钻石',legend= True)
+
 # 把ax2 坐标系 图例显示的地方调整到左上角
 ax2.legend(loc='upper left')
+
 plt.title('会员增量等级分布')
 plt.show()
 ```
@@ -514,6 +584,8 @@ member_level.loc[:,'白银会员占比'] = member_level['白银会员']/member_l
 member_level.loc[:,'黄金会员占比'] = member_level['黄金会员']/member_level['总计']
 ```
 
+
+
 黄金白银会员占比可视化
 
 ```python
@@ -522,7 +594,7 @@ member_level[['白银会员占比','黄金会员占比']].plot(color=['r','g'],y
 
 ![image-20230903161033577](assets/image-20230903161033577.png)
 
-#####  整体等级分布      
+####  3.3 整体等级分布      
 
 ```python
 ratio = customer_info.groupby('会员等级')[['会员卡号']].count()
