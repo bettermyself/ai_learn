@@ -599,30 +599,33 @@ member_level[['白银会员占比','黄金会员占比']].plot(color=['r','g'],y
 ```python
 ratio = customer_info.groupby('会员等级')[['会员卡号']].count()
 customer_info.pivot_table(index='会员等级',values='会员卡号',aggfunc='count')
+
 ratio.columns=['会员数']
 ratio['占比'] = ratio['会员数']/ratio['会员数'].sum()
-ratio
 ```
 
 ![image-20230903161136371](assets/image-20230903161136371.png)
 
-绘制饼图
+**绘制饼图**
 
 ```python
+# 由于铂金会员/钻石会员占比较低, 绘图之前先调整在数据中的顺序, 让铂金会员和钻石会员在数据中不要挨着
 ratio.loc[['白银会员','铂金会员','黄金会员','钻石会员'],'占比'].plot.pie(figsize=(16,8),autopct='%.2f%%',fontsize=16)
 ```
 
->由于铂金会员/钻石会员占比较低, 绘图之前先调整在数据中的顺序, 让铂金会员和钻石会员在数据中不要挨着
->
->pie 绘制饼图
->
->autopct 控制显示饼图的占比数据图例   .2f% 表示保留两位有效数字
->
->fontsize = 16 控制字体大小
+- pie 绘制饼图
+
+
+- autopct 控制显示饼图的占比数据图例   .2f 表示保留两位有效数字
+
+
+- fontsize = 16 控制字体大小
 
 ![image-20230903161157708](assets/image-20230903161157708.png)
 
-##### 线上线下会员增量分析      
+#### 3.4 线上线下会员增量分析 
+
+- **统计数据**     
 
 ```python
 customer_info['会员来源'].value_counts()
@@ -630,16 +633,16 @@ customer_info['会员来源'].value_counts()
 
 ![image-20230903161416302](assets/image-20230903161416302.png)
 
-从数据中看出, 主要来线下扫码
 
-- 计算每个月 线上线下的会员增量
+
+计算每个月线上线下的会员增量
 
 ```python
 customer_info.groupby(['注册年月','会员来源'])['会员卡号'].count().unstack()
 online_offline = customer_info.pivot_table(index='注册年月',columns='会员来源',values='会员卡号',aggfunc='count')
 ```
 
-数据可视化
+- **数据可视化**
 
 ```python
 online_offline[1:].plot(figsize=(16,8),grid=True)
@@ -649,16 +652,14 @@ plt.show()
 
 ![image-20230903161503502](assets/image-20230903161503502.png)
 
-##### 按地区统计会员数量
+#### 3.5 按地区统计会员数量
 
-```python
-store_info = pd.read_excel('data/门店信息表.xlsx')
-store_info.head()
-```
+
 
 将门店信息跟会员数据连接到一起
 
 ```python
+store_info = pd.read_excel('data/门店信息表.xlsx')
 customer_info1 = customer_info.merge(store_info[['店铺代码','地区编码']],left_on='所属店铺编码',right_on='店铺代码',how='left')
 ```
 
@@ -673,12 +674,15 @@ customer_info1 = customer_info.merge(store_info[['店铺代码','地区编码']]
 ```python
 # 统计每个地区会员数量 去掉线上数据  GBL6D01线上电商数据
 customer_info2 = customer_info1[customer_info1['地区编码']!='GBL6D01']
+
 # 统计每个地区会员数量
 district_count = customer_info2.groupby('地区编码')[['会员卡号']].count()
 district_count.columns =['会员数量']
+
 # 统计每个地区店铺数量
 district_shop_count = customer_info2[['地区编码','所属店铺编码']].drop_duplicates().groupby('地区编码')['所属店铺编码'].count()
 district_shop_count.name = '店铺数量'
+
 # 将会员数量跟店铺数量数据连接起来
 district = pd.concat([district_count,district_shop_count],axis=1)
 ```
@@ -706,7 +710,7 @@ plt.show()
 
 ![image-20230903182711641](assets/image-20230903182711641.png)
 
-##### 各地区会销比
+#### 3.6 各地区会销比
 
 - 加载数据
 
@@ -732,11 +736,12 @@ custom_consume['年月'] = custom_consume['订单日期'].apply(lambda x: x.strf
 ```python
 #将销售数据跟地区信息关联起来
 member_orders = custom_consume.merge(store_info[['店铺代码','地区编码']],on='店铺代码',how='left')
+
 # 去掉电商数据
 member_orders =member_orders[member_orders['地区编码']!='GBL6D01']
+
 # 创建数据透视表 计算每个月每个地区会员的订单数
 area_sales= member_orders.pivot_table(index='地区编码',columns='年月',values='消费数量',aggfunc=sum,margins=True,margins_name='汇总')
-area_sales
 ```
 
 - 计算各地区每个月的总销量
