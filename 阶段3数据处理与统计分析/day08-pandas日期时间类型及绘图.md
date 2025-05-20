@@ -116,75 +116,214 @@ result.iloc[:,1]/result.iloc[:,0]
 
 
 
-## 2 日期时间类型数据
+## 2、日期时间类型数据
 
 ### 2.1 日期时间类型简介
+
+**pandas**的日期时间类型默认是 **datetime64[ns]**。在加载了下面的数据之后, 发现日期数据列是**Object**类型。
 
 ```python
 import pandas as pd
 ebola = pd.read_csv('data/country_timeseries.csv')
 ```
 
-pandas的日期时间类型默认是 datetime64[ns]
+|      | Date       | Day  | Deaths\_Guinea | Deaths\_Liberia | Deaths\_SierraLeone |
+| :--- | :--------- | :--- | :------------- | :-------------- | :------------------ |
+| 0    | 1/5/2015   | 289  | 1786.0         | NaN             | 2977.0              |
+| 1    | 1/4/2015   | 288  | 1781.0         | NaN             | 2943.0              |
+| 2    | 1/3/2015   | 287  | 1767.0         | 3496.0          | 2915.0              |
+| 3    | 1/2/2015   | 286  | NaN            | 3496.0          | NaN                 |
+| 4    | 12/31/2014 | 284  | 1739.0         | 3471.0          | 2827.0              |
 
-在加载了上面的数据之后, 发现日期数据列是Object类型, 可以通过
 
-pd.to_datetime()转换成日期时间类型
+
+**转换为日期时间类型：**
+
+- 使用 `pd.to_datetime()` 转换为 Pandas 的日期时间格式：
 
 ```python
 ebola['date_dt'] = pd.to_datetime(ebola['Date'])
 ```
 
-也可以在读取数据的时候, 直接指定, 某一列解析成日期时间的格式
+- 也可以在读取数据的时候, 直接指定, 某一列解析成日期时间的格式：
 
 ```python
-ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=[0])
+ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=[0])  # 指定第一列为日期时间格式
+ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=['Date'])  # 按列名指定为日期时间格式
 ```
 
-关于日期时间相关的还有TimeStamp 时间戳 这种类型
+|      | Date       | Day  | Deaths\_Guinea | Deaths\_Liberia | Deaths\_SierraLeone |
+| :--- | :--------- | :--- | :------------- | :-------------- | :------------------ |
+| 0    | 2015-01-05 | 289  | 1786.0         | NaN             | 2977.0              |
+| 1    | 2015-01-04 | 288  | 1781.0         | NaN             | 2943.0              |
+| 2    | 2015-01-03 | 287  | 1767.0         | 3496.0          | 2915.0              |
+| 3    | 2015-01-02 | 286  | NaN            | 3496.0          | NaN                 |
+| 4    | 2014-12-31 | 284  | 1739.0         | 3471.0          | 2827.0              |
+
+
+
+其他时间类型：**TimeStamp 时间戳**
+
+**`Timestamp`**：表示单个时间点（类似 Python 的 `datetime.datetime`），精度可到纳秒。
 
 ```python
+import pandas as pd
+
 pd.Timestamp(2023,9,1)
+pd.Timestamp("2023-10-01 12:30:45")
 ```
 
->Timestamp('2023-09-01 00:00:00')
 
 
-
-提取不同维度的日期信息
+**提取不同维度的日期信息：**
 
 ```python
+# 单个时间点的提取
 time_stamp = pd.to_datetime('2023-09-01')
 time_stamp.year
 time_stamp.month
 time_stamp.day
-```
 
-如果是一列日期时间的数据ebola['Date'].dt.XXX
-
-```python
+# 如果是一列日期时间的数据ebola['Date'].dt.XXX
 ebola['year']=ebola['Date'].dt.year
 ebola['month'] = ebola['Date'].dt.month
 ebola['day'] = ebola['Date'].dt.day
 ```
 
+
+
 ### 2.2 日期时间索引
 
-把日期时间类型的数据设置为索引, 优势就是方便进行时间范围的选择, 进行时间维度的切片操作会变得十分简单
+**datetimeIndex**：把日期时间类型的数据（ **datetime64[ns]**）设置为索引, 优势就是方便进行时间范围的选择, 进行时间维度的切片操作会变得十分简单。
 
-datetimeIndex
 
-- 把datetime64这个类型的数据设置为索引, 就是日期时间索引datetimeIndex
+
+**案例：**筛选2015年8月的tesla股票数据
+
+##### 方法一：布尔索引/query
 
 ```python
+# 之前的筛选方法：
 tesla_stock = pd.read_csv('data/TSLA.csv',parse_dates=[0])
-# 要筛选出2015年8月的股票信息, 如果Date是一列, 需要使用下面的布尔索引的写法(query写条件)
-tesla_stock[(tesla_stock['Date'].dt.year==2015)&(tesla_stock['Date'].dt.month==8)]
+
+# 要筛选出2015年8月的股票信息, 如果Date是一列, 需要使用下面的布尔索引的写法
+tesla_stock[(tesla_stock['Date'].dt.year==2015)&(tesla_stock['Date'].dt.month==8)]  # 布尔索引写法
+tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")  # query写法。query() 内部会自动解析 and 为逐元素操作（无需使用 &）
 ```
 
-这里千万不能使用and,and会报错
 
-- 把'Date'设置为日期时间索引, 这类操作就会变得十分简单
+
+在以上的代码中，布尔索引写法中两个条件同时满足需要使用  **&**  而不是  **and**  ，使用and会报错。原因涉及 **Python 运算符的底层机制**和 **Pandas 布尔索引的设计逻辑**。以下是详细解释：
+
+**1. `&` 和 `and` 的核心区别**
+
+- **`and`** 是 Python 的 **逻辑运算符**，用于处理标量（单个布尔值）。
+  例如：`(True) and (False)` 返回 `False`。
+- **`&`** 是 Python 的 **位运算符**，用于逐元素操作数组或布尔序列。
+  例如：`pd.Series([True, False]) & pd.Series([True, True])` 返回 `[True, False]`。
+
+
+
+**2. 为什么 `and` 会报错？**
+
+当你在 Pandas 中对 DataFrame/Series 使用 `and` 时，Python 会尝试将整个布尔序列视为一个标量值进行逻辑运算，但布尔序列的真值是未定义的（**ambiguous**）。例如：
+
+```python
+# 以下代码会报错！
+tesla_stock[(tesla_stock['Date'].dt.year==2015) and (tesla_stock['Date'].dt.month==8)]
+```
+
+**错误原因**
+
+- `(tesla_stock['Date'].dt.year==2015)` 返回一个布尔 Series（如 `[True, False, True, ...]`）。
+- Python 的 `and` 运算符要求左右两侧为标量布尔值（True/False），但布尔 Series 的真值无法直接判断（因为它包含多个值）。
+- 触发错误：`ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().`
+
+
+
+**3. 为什么 `&` 可以正常工作？**
+
+`&` 运算符被 Pandas 重载为逐元素（element-wise）的布尔运算，适合处理布尔序列：
+
+```python
+# 正确写法
+tesla_stock[(tesla_stock['Date'].dt.year==2015) & (tesla_stock['Date'].dt.month==8)]
+```
+
+**关键机制**
+
+1. `(tesla_stock['Date'].dt.year==2015)` 生成一个布尔 Series，例如：
+
+   ```python
+   [True, False, True, ...]
+   ```
+
+2. `(tesla_stock['Date'].dt.month==8)` 生成另一个布尔 Series：
+
+   ```python
+   [False, True, True, ...]
+   ```
+
+3. `&` 运算符对这两个 Series **逐元素执行逻辑与操作**，生成最终的布尔掩码：
+
+   ```python
+   [True & False, False & True, True & True, ...] → [False, False, True, ...]
+   ```
+
+4. DataFrame 根据掩码筛选符合条件的行。
+
+
+
+**4. 注意事项**
+
+- **括号不可省略**：由于运算符优先级问题，必须用括号包裹每个条件：
+
+```python
+# 错误写法（缺少括号）
+tesla_stock[tesla_stock['Date'].dt.year==2015 & tesla_stock['Date'].dt.month==8]
+
+# 正确写法
+tesla_stock[(tesla_stock['Date'].dt.year==2015) & (tesla_stock['Date'].dt.month==8)]
+```
+
+- **多个条件组合**：多个条件需要用 `&`（与）、`|`（或）、`~`（非）组合：
+
+```python
+# 筛选 2015 年 8 月 或 2020 年 12 月
+mask = (
+    (tesla_stock['Date'].dt.year==2015) & 
+    (tesla_stock['Date'].dt.month==8) |
+    (tesla_stock['Date'].dt.year==2020) & 
+    (tesla_stock['Date'].dt.month==12)
+)
+```
+
+
+
+**5. 替代方案：`query()` 方法**
+
+如果觉得 `&` 的写法繁琐，可以用 `query()` 简化语法：
+
+```python
+tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")
+```
+
+- `query()` 内部会自动解析 `and` 为逐元素操作（无需使用 `&`）。
+
+
+
+**总结**
+
+| 场景                | 正确操作                | 错误操作    |
+| :------------------ | :---------------------- | :---------- |
+| 标量布尔运算        | `and`、`or`             | `&`、`|`    |
+| Pandas 布尔序列运算 | `&`、`|`、`~`（带括号） | `and`、`or` |
+
+
+
+##### 方法二：日期时间索引
+
+- 把**Date**设置为日期时间索引, 这类操作就会变得十分简单
 
 ```python
 tesla_stock.set_index('Date',inplace=True)
@@ -193,44 +332,54 @@ tesla_stock.loc['2015-08']
 
 >tesla_stock['2015-08']  这种写法在2.0的版本已经被删除了
 
-timedeltaIndex
 
-- 把timedelta64这个类型的数据设置为索引, 就是时间差值索引timedeltaIndex
+
+
+
+在 Pandas 中，`timedelta64` 类型用于表示时间差（时间间隔），例如计算两个时间点之间的差异，或对时间序列进行偏移操作。把timedelta64这个类型的数据设置为索引, 就是时间差值索引timedeltaIndex：
 
 ```python
 tesla_stock.reset_index(inplace=True)
+
 tesla_stock['ref_date'] = tesla_stock['Date']-tesla_stock['Date'].min()
 tesla_stock.set_index('ref_date',inplace=True)
+
 tesla_stock.loc['0 days':'4 days']
 ```
 
 >上面的切片操作, 4 days在数据中不存在, 依然能正确返回结果, 就是TimeDeltaIndex 优势
 
+
+
 ### 2.3 生成日期时间序列
 
+```python
 pd.date_range('起始时间','结束时间', freq= 生成时间序列的方式)
+```
 
-freq可能取值
+freq可能取值：
 
 ![image-20230905112147497](assets/image-20230905112147497.png)
 
 ![image-20230905112156977](assets/image-20230905112156977.png)
 
 ```python
-pd.date_range('2023-08-01','2023-10-30',freq='B')
-pd.date_range('2023-08-01','2023-10-30',freq='2B')# 隔一个工作日获取一个工作日
-pd.date_range('2023-08-01','2023-10-30',freq='WOM-1THU') # 每个月的第一个星期4
-# WOM week of month  THU Thursday
+pd.date_range('2023-08-01','2023-10-30',freq='B')  # 工作日
+pd.date_range('2023-08-01','2023-10-30',freq='2B')  # 隔一个工作日获取一个工作日
+
+pd.date_range('2023-08-01','2023-10-30',freq='WOM-1THU') # 每个月的第一个星期4 WOM： week of month  THU Thursday	
 pd.date_range('2023-08-01','2023-10-30',freq='WOM-3FRI')  # Friday 星期五
 ```
 
+
+
 ### 2.4 日期时间数据的小结
 
-- Pandas关于日期时间的数据 有如下几种数据类型
+Pandas日期时间数据类型：
 
-  - TimeStamp 时间戳 就是一个时间点
-  - Datetime64 一列时间数据  →DatetimeIndex
-  - TimeDelta64 两列时间的差值  → TimeDeltaIndex
+- **TimeStamp**： 时间戳就是一个时间点
+- Datetime64 一列时间数据  →DatetimeIndex
+- TimeDelta64 两列时间的差值  → TimeDeltaIndex
 
 - 如果数据中包含了日期时间的数据, 并且后续计算/数据的处理需要用到日期时间类型数据的特性需要把他转换成日期时间类型
 
@@ -246,6 +395,8 @@ pd.date_range('2023-08-01','2023-10-30',freq='WOM-3FRI')  # Friday 星期五
   - df['Date'].dt.year /df['Date'].dt.month /df['Date'].dt.quarter 季度 df['Date'].dt.dayofweek 星期几
 
   - 如果想快速的对日期进行切片/范围选取的操作, 可以把它转换成日期时间索引
+
+
 
 ### 2.5 日期时间数据类型的练习
 
