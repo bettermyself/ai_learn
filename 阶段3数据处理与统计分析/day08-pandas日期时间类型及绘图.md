@@ -444,20 +444,20 @@ Pandas日期时间数据类型：
 
 把日期时间设置为Index 行索引之后, 可以使用
 
+```python
+crime.between_time('2:00','5:00',include_start=False)  # between_time 在两个时刻的范围内
+crime.at_time('5:43')  # at_time 在某个具体的时刻
 ```
-crime.between_time('2:00','5:00',include_start=False)
-crime.at_time('5:43')
-```
 
->between_time 在两个时刻的范围内
->
->at_time 在某个具体的时刻
 
-crime.resample('W') 将数据按周进行分组 , 分组之后可以接聚合函数, 类似于groupby之后的聚合
 
-crime.resample('M') 将数据按月份进行分组,分组之后可以接聚合函数, 类似于groupby之后的聚合,
+**日期时间索引的重采样**：
 
-crime.resample('Q') 将数据按季度进行分组, 分组之后可以接聚合函数, 类似于groupby之后的聚合
+- `crime.resample('W')` 将数据按周进行分组 , 分组之后可以接聚合函数, 类似于groupby之后的聚合；
+
+- `crime.resample('M')` 将数据按月份进行分组,分组之后可以接聚合函数, 类似于groupby之后的聚合；
+
+- `crime.resample('Q')` 将数据按季度进行分组, 分组之后可以接聚合函数, 类似于groupby之后的聚合；
 
 
 
@@ -469,15 +469,9 @@ crime.resample('Q') 将数据按季度进行分组, 分组之后可以接聚合�
 
 ### 3.1 可视化库的介绍
 
-基于Matplotlib 绘制静态图形
+基于Matplotlib 绘制静态图形：pandas、seaborn
 
-- pandas
-- seaborn 
-
-基于JS (javaScript)
-
-- pyecharts/echarts
-- plotly
+基于javaScript：pyecharts/echarts、plotly
 
 
 
@@ -493,7 +487,7 @@ x = [-3,5,7]  # 所有坐标点的 x坐标
 y = [10,2,5]  # 所有坐标点的 y坐标
 ```
 
-- 绘制折线图 使用plt. 这一套API
+- 绘制折线图 使用plt. 这一套API（面向过程）
 
 ```python
 # 创建绘图区域
@@ -524,6 +518,8 @@ ax.set_ylabel('y axis',size=10)
 ax.set_title('折线图')
 plt.show()
 ```
+
+
 
 #### anscombe数据集可视化
 
