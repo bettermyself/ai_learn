@@ -487,7 +487,7 @@ x = [-3,5,7]  # 所有坐标点的 x坐标
 y = [10,2,5]  # 所有坐标点的 y坐标
 ```
 
-- 绘制折线图 使用plt. 这一套API（面向过程）
+- 绘制折线图：使用plt. 这一套API（面向过程）
 
 ```python
 # 创建绘图区域
@@ -521,11 +521,13 @@ plt.show()
 
 
 
-#### anscombe数据集可视化
 
-数据集介绍通
 
-- 过Anscombe数据集说明数据可视化的重要性
+#### anscombe数据集可视化：数据可视化的重要性
+
+
+
+- 通过Anscombe数据集说明数据可视化的重要性
 - Anscombe数据集由英国统计学家Frank Anscombe创建
 - 数据集包含4组数据，每组数据包含两个连续变量。
 - 每组数据的平均值、方差、相关性基本相同，但是当它们可视化后，就会发现每组数据的模式明显不同。
@@ -536,21 +538,30 @@ anscombe = pd.read_csv('data/anscombe.csv')
 anscombe.dataset.value_counts()
 ```
 
->4组数据, 放在一个数据集中, 分别用I, II, III , IV 加以区分
->
->![image-20230905164804946](assets/image-20230905164804946.png)
+
+
+4组数据, 放在一个数据集中, 分别用I, II, III , IV 加以区分
+
+| dataset | count |
+| :------ | :---- |
+| I       | 11    |
+| II      | 11    |
+| III     | 11    |
+| IV      | 11    |
+
+
 
 ```python
 anscombe.groupby('dataset').describe().T
 ```
 
->describe()查看数据的查看数据的分布情况
->
->发现每组数据中, x, y 的分布情况基本相同, 从均值, 极值和几个4分位数上看, 这几组数据貌似分布差不多
->
->![image-20230905164943956](assets/image-20230905164943956.png)
+`describe()`查看数据的查看数据的分布情况，发现每组数据中, x, y 的分布情况基本相同, 从均值, 极值和几个4分位数上看, 这几组数据貌似分布差不多
 
-数据可视化
+![image-20230905164943956](assets/image-20230905164943956.png)
+
+
+
+数据可视化：
 
 ```python
 # 上面的数据一共可以分成4分 I II III IV  我们把这四份数据分别可视化, 画4张小图, 放到一个画布中
@@ -572,9 +583,11 @@ plt.show()
 
 ![image-20230905165109832](assets/image-20230905165109832.png)
 
+
+
 #### Matplotlib 单变量可视化
 
-直方图 直方图能反应一个变量数据的分布情况
+直方图：直方图能反应一个变量数据的分布情况
 
 ```python
 tips = pd.read_csv('data/tips.csv')
@@ -594,9 +607,13 @@ plt.ylabel('出现次数')
 >
 >![image-20230905161225242](assets/image-20230905161225242.png)
 
+
+
 #### Matplotlib双变量/多变量可视化
 
-双变量（bivariate)指两个变量
+
+
+**双变量可视化：**
 
 - 散点图用于表示一个连续变量随另一个连续变量的变化所呈现的大致趋势
 
@@ -612,7 +629,7 @@ plt.grid(True)
 
 ![image-20230905181355351](assets/image-20230905181355351.png)
 
-多变量可视化
+**多变量可视化：**
 
 - 在散点图的基础上, 可以通过颜色来区分不同的类别
 - 散点的大小也可以用来表示一个变量
@@ -631,17 +648,18 @@ tips['sex_color'] = tips['sex'].apply(recode_sex)
 
 ```python
 plt.figure(figsize=(12,8))
+# c=tips['sex_color'] 区分颜色；s = tips['size']*10 区分大小；alpha=0.5 设置点的透明度
 plt.scatter(tips['total_bill'],tips['tip'],c=tips['sex_color'],s = tips['size']*10,alpha=0.5)
 plt.xlabel('账单金额')
 plt.ylabel('小费金额')
 plt.legend(tips['sex'])
 ```
 
->c=tips['sex_color']  区分颜色
->
->s = tips['size']*10  区分大小
->
->alpha=0.5 设置点的透明度
+![image-20250520200915391](assets\image-20250520200915391.png)
+
+
+
+
 
 ## 4 Pandas绘图
 
@@ -680,6 +698,8 @@ reviews.describe(include=object)
 
 ![image-20230905173528546](assets/image-20230905173528546.png)
 
+
+
 #### 1 柱状图
 
 - 统计葡萄酒出产种类最多的10个省份
@@ -695,8 +715,10 @@ reviews['province'].value_counts().head(10).plot.bar(**kwargs)
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 fig,ax = plt.subplots(figsize=(16,8))
+
 # 设置坐标轴为百分比形式展示 decimals=1表示百分比的小数位数为1
 ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1,decimals=1))
+
 kwargs = dict(fontsize=20,color = ['b','orange','g','r','purple','brown','pink','gray','cyan','y'])
 reviews['province'].value_counts(1).head(10).plot.bar(**kwargs)
 ```
@@ -738,6 +760,8 @@ reviews['price'].quantile(0.9994)
 
 >500.0
 
+
+
 #### 4 饼图
 
 - 饼图适合统计类别数量不多, 组合起来是1的数据的可视化
@@ -750,19 +774,23 @@ reviews['province'].value_counts().head(10).plot.pie()
 
 ## 5 今日内容小结
 
-**日期时间类型数据**
 
-Pandas关于日期时间的数据 有如下几种数据类型
+
+**日期时间类型数据**：Pandas关于日期时间的数据，有如下几种数据类型
 
 - TimeStamp 时间戳 就是一个时间点
 - Datetime64 一列时间数据  →DatetimeIndex
 - TimeDelta64 两列时间的差值  → TimeDeltaIndex
+
+
 
 pd.to_datetime()
 
 df['日期列'].dt.year/df['日期列'].dt.month/df['日期列'].dt.day/df['日期列'].dt.weekday
 
 DatetimeIndex 转换成日期时间索引后方便做切片处理
+
+
 
 **数据可视化**
 
@@ -773,6 +801,8 @@ matplotlib 图片
 - 最核心的两句  
   - 创建绘图区域 plt.figure(figsize=())  / fig, ax = plt.subplots(figsize=())
   - plt.plot(x,y) /plt.scatter(x,y)/plt.hist(x)
+
+
 
 javascript 网页中展示的
 
