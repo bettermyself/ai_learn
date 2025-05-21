@@ -1260,7 +1260,7 @@ m_bins = [0,69,1199,206252]
 
 
 ```python
-# RFM分箱得分
+# RFM分箱得分,也可以使用apply方法
 rfm_gb['r_score'] = pd.cut(rfm_gb['r'], r_bins, labels=[i for i in range(len(r_bins)-1,0,-1)])  # 计算R得分
 rfm_gb['f_score'] = pd.cut(rfm_gb['f'], f_bins, labels=[i+1 for i in range(len(f_bins)-1)])  # 计算F得分
 rfm_gb['m_score'] = pd.cut(rfm_gb['m'], m_bins, labels=[i+1 for i in range(len(m_bins)-1)])  # 计算M得分
