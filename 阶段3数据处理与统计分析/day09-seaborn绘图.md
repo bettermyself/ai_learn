@@ -1,6 +1,6 @@
-### 1、Pandas双变量可视化
+## 1、Pandas双变量可视化
 
-#### 1 散点图、蜂巢图
+### 1 散点图、蜂巢图
 
 评分跟价格之间是否有关联：
 
@@ -29,7 +29,7 @@ reviews[reviews['price']<100].plot.hexbin(x='price',y='points',gridsize=15)
 
 ![image-20230906093440683](assets/image-20230906093440683.png)
 
-#### 2 堆叠图-堆叠柱状图
+### 2 堆叠图-堆叠柱状图
 
 找到最受欢迎的前五种葡萄酒种类：
 
@@ -56,7 +56,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906093943703](assets/image-20230906093943703.png)
 
-#### 3 堆叠面积图
+### 3 堆叠面积图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot.area(figsize=(16,8))
@@ -64,7 +64,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906094124691](assets/image-20230906094124691.png)
 
-#### 4 折线图
+### 4 折线图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot(figsize=(16,8),grid=True)
@@ -72,7 +72,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906094134783](assets/image-20230906094134783.png)
 
-### 2 Seaborn 绘图
+## 2 Seaborn 绘图
 
 Seaborn 是一个基于 **Matplotlib** 的 Python 数据可视化库，专注于统计图表的绘制。它通过简洁的语法和美观的默认样式，帮助用户快速生成高质量的可视化图表，特别适合数据探索和分析。
 
@@ -188,48 +188,6 @@ sns.set_theme(rc={'figure.figsize':(12, 8)})
 
 
 
-#### 1 单变量可视化：
-
-##### a、直方图、KDE图
-
-- 准备数据
-
-```python
-import pandas as pd
-import seaborn as sns
-tips = pd.read_csv('data/tips.csv')
-```
-
-
-
-绘制直方图
-
-```python
-import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif']=['SimHei']
-fig,ax = plt.subplots(figsize=(12,6))
-sns.histplot(x='total_bill',data=tips,hue='sex')
-ax.set_title('总账单直方图')
-```
-
-![image-20230906101046248](assets/image-20230906101046248.png)
-
-绘制KDE图
-
-```python
-plt.rcParams['axes.unicode_minus'] = False # 正常显示负号
-fig,ax = plt.subplots(figsize=(12,6))
-sns.kdeplot(data=tips,x='total_bill',hue='day')
-```
-
-![image-20230906101054532](assets/image-20230906101054532.png)
-
-**KDE V.S. 直方图**
-
-- 表示的意义基本一样, 都是 线/柱子越高  出现的概率/样本数量越大/越高
-- KDE 当多个类别进行对比的时候, 读图比直方图方便
-- Y轴的坐标, KDE图是概率密度  直方图是样本数量
-
 **Seaborn API 数据传入的两种方式**
 
 ```python
@@ -244,28 +202,71 @@ sns.kdeplot(tips['total_bill'])
 
 
 
-#### 计数柱状图countplot
+### 1 单变量可视化：
 
-这个api 体现了Seaborn这一套API另外的一个特点
+#### a、直方图、KDE图
 
-- 除了绘图以外还会帮助做一些统计
+- 准备数据
+
+```python
+import pandas as pd
+import seaborn as sns
+tips = pd.read_csv('data/tips.csv')
+```
+
+- 绘制直方图
+
+
+```python
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei'] # 正常显示汉字
+
+fig,ax = plt.subplots(figsize=(12,6))
+sns.histplot(x='total_bill',data=tips,hue='sex')
+ax.set_title('总账单直方图')
+```
+
+![image-20230906101046248](assets/image-20230906101046248.png)
+
+- 绘制KDE图
+
+
+```python
+plt.rcParams['axes.unicode_minus'] = False # 正常显示负号
+
+fig,ax = plt.subplots(figsize=(12,6))
+sns.kdeplot(data=tips,x='total_bill',hue='day')
+```
+
+![image-20230906101054532](assets/image-20230906101054532.png)
+
+**KDE VS 直方图**
+
+- 表示的意义基本一样, 都是线/柱子越高  出现的概率/样本数量越大/越高
+- KDE当多个类别进行对比的时候, 读图比直方图方便
+- Y轴的坐标, KDE图是概率密度  直方图是样本数量
+
+
+
+#### b、计数柱状图countplot
+
+这个api 体现了**Seaborn**这一套API另外的一个特点：除了绘图以外还会帮助做一些统计
 
 ```python
 fig,ax = plt.subplots(figsize=(12,6))
 sns.countplot(data=tips,x='day')
 ax.set_title('计数柱状图')
 plt.show()
+
+# 使用day进行分组, 然后再计数, 把计数的结果绘制成柱状图, 同下面代码效果类似
+tips['day'].value_counts().plot.bar(color=['r','g','b','orange'])
 ```
 
->使用day 进行分组, 然后再计数, 把计数的结果绘制成柱状图, 同下面代码效果类似
->
->```python
->tips['day'].value_counts().plot.bar(color=['r','g','b','orange'])
->```
->
->![image-20230906102157332](assets/image-20230906102157332.png)
 
-### 双变量可视化
+
+![image-20230906102157332](assets/image-20230906102157332.png)
+
+### 2 双变量可视化
 
 #### 1 散点图
 
@@ -292,11 +293,20 @@ plt.show()
 #### 2 蜂巢图
 
 ```python
+# kind='hex'  加上这个参数就是蜂巢图, 如果不加就是散点图
 sns.jointplot(data=tips,x='total_bill',y='tip',kind='hex')
 plt.show()
 ```
 
->kind='hex'  加上这个参数就是蜂巢图, 如果不加就是散点图
+![image-20250522153636540](assets\image-20250522153636540-1747899398696-1.png)
+
+```python
+# kind='hex'  加上这个参数就是蜂巢图, 如果不加就是散点图
+sns.jointplot(data=tips,x='total_bill',y='tip')
+plt.show()
+```
+
+![image-20250522153735113](assets\image-20250522153735113-1747899456410-3.png)
 
 #### 3 2D KDE图
 
@@ -305,13 +315,13 @@ sns.kdeplot(data=tips,x='total_bill',y='tip',fill=True,cbar=True)
 plt.show()
 ```
 
->一维KDE 只传入x, 或者 只转入Y
->
->二维KDE x,y 都传入
->
->fill=True   是否填充曲线内的颜色
->
->cbar=True  是否显示 右侧的颜色示意条
+- 一维KDE 只传入x, 或者 只转入Y
+
+- 二维KDE x,y 都传入
+
+- fill=True   是否填充曲线内的颜色
+
+- cbar=True  是否显示 右侧的颜色示意条
 
 ![image-20230906111132723](assets/image-20230906111132723.png)
 
@@ -326,17 +336,16 @@ ax.set_title('就餐时间和金额之间关系')
 plt.show()
 ```
 
->errorbar 误差条, 默认会显示, 当数据是从大量数据中抽样出来的, 此时计算的结果可能不能真正代表全部的数据, 会有一个可能的统计范围, 这个范围就通过这个errorbar来显示, 如果数据不是抽样的数据, 可以把它关了,
->
->上面的代码相当于 
->
->tips.groupby('time')['total_bill'].mean().plot.bar()
->
->![image-20230906112922023](assets/image-20230906112922023.png)
+> errorbar 误差条： 默认会显示，当数据是从大量数据中抽样出来的，此时计算的结果可能不能真正代表全部的数据, 会有一个可能的统计范围，这个范围就通过这个errorbar来显示, 如果数据不是抽样的数据, 可以把它关了。
 
 
 
+```python
+# 上面的代码相当于 
+tips.groupby('time')['total_bill'].mean().plot.bar()
+```
 
+![image-20230906112922023](assets/image-20230906112922023.png)
 
 #### 5 箱线图
 
