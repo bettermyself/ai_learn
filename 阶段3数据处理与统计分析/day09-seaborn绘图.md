@@ -1,38 +1,18 @@
-## 今日重点
+### 1、Pandas双变量可视化
 
-**数据可视化**
+#### 1 散点图、蜂巢图
 
-- pandas多变量可视化
+评分跟价格之间是否有关联：
 
-- Seaborn的API介绍
+```python
+reviews[reviews['price']<100].plot.scatter(x='price',y='points')
+```
 
-**RFM** 
+![image-20230906093536874](assets/image-20230906093536874.png)
 
+> 当数据量比较大的时候, 绘制的散点图不能反应数据的分布情况，此时有两种解决方法。
 
-
-业务指标如何转换成代码
-
-- 复购率 = 复购的人数/总消费人数
-
-要按大区和年月日来统计
-
-- **每个**大区**每个**月来消费的会员有**多少**
-  - groupby([大区id, 月份])['会员ID'].count()   会员id需要去重 我们算的是人头
-
-- **每个**大区**每个**月不止一天有消费的会员有**多少**
-  - 一天消费多次只计算一次    消费日期和会员ID 去重
-  - groupby([大区id, 月份])['会员ID'].count() 
-
-计数/去重计数/求和/最大/最小/平均
-
-- 计数/去重计数  id
-- 求和 金额/件数
-
-## 1 Pandas双变量可视化
-
-### 1 散点图蜂巢图
-
-- 评分跟价格之间是否有关联
+- **方法1：**采样
 
 ```python
 reviews[reviews['price']<100].sample(100).plot.scatter(x='price',y='points')
@@ -40,46 +20,43 @@ reviews[reviews['price']<100].sample(100).plot.scatter(x='price',y='points')
 
 ![image-20230906093431827](assets/image-20230906093431827.png)
 
-```python
-reviews[reviews['price']<100].plot.scatter(x='price',y='points')
-```
-
-当数据量比较大的时候, 散点图不能反应数据的分布情况, 此时可以考虑使用蜂巢图
-
-![image-20230906093536874](assets/image-20230906093536874.png)
+- **方法2：**蜂巢图
 
 ```python
-# hexbin gridsize 蜂巢网格的大小
+# hexbin绘制蜂巢图  gridsize蜂巢网格的大小
 reviews[reviews['price']<100].plot.hexbin(x='price',y='points',gridsize=15)
 ```
 
 ![image-20230906093440683](assets/image-20230906093440683.png)
 
-### 2 堆叠图- 堆叠柱状图
+#### 2 堆叠图-堆叠柱状图
 
-- 找到最受欢迎的前五种葡萄酒种类
+找到最受欢迎的前五种葡萄酒种类：
 
 ```python
 top_5_variety = reviews['variety'].value_counts().head().index.to_list()
+
 # isin Series中的元素, 是否在列表范围内,如果在返回True ,不在返回False
 top_5_wine = reviews[reviews['variety'].isin(top_5_variety)]
 ```
 
 
 
+**绘制堆叠柱状图：**
+
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot.bar(figsize=(20,8),stacked=True)
 ```
 
->stacked=True 默认是False False的情况下柱子不会堆叠起来
->
->![image-20230906093914494](assets/image-20230906093914494.png)
->
->设置为True之后会有堆叠的效果
->
->![image-20230906093943703](assets/image-20230906093943703.png)
+`stacked=True` 默认是**False**（ False的情况下柱子不会堆叠起来）
 
-### 3 堆叠面积图
+![image-20230906093914494](assets/image-20230906093914494.png)
+
+设置为True之后会有堆叠的效果
+
+![image-20230906093943703](assets/image-20230906093943703.png)
+
+#### 3 堆叠面积图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot.area(figsize=(16,8))
@@ -87,7 +64,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906094124691](assets/image-20230906094124691.png)
 
-### 4 折线图
+#### 4 折线图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot(figsize=(16,8),grid=True)
@@ -95,11 +72,127 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906094134783](assets/image-20230906094134783.png)
 
-## 2 Seaborn 绘图
+### 2 Seaborn 绘图
 
-### 单变量可视化
+Seaborn 是一个基于 **Matplotlib** 的 Python 数据可视化库，专注于统计图表的绘制。它通过简洁的语法和美观的默认样式，帮助用户快速生成高质量的可视化图表，特别适合数据探索和分析。
 
-#### 直方图和KDE图
+
+
+- **核心特点**
+
+  - **简化复杂图表**
+    相比 Matplotlib，Seaborn 用更少的代码实现复杂图表（如分面图、分布图、回归图等）。
+
+  - **内置统计功能**
+    支持直接绘制带统计分析的图表（如分布拟合、误差线、回归线）。
+
+  - **美观的默认主题**
+    提供多种颜色主题和样式（如 `darkgrid`, `whitegrid`），图表更专业。
+
+  - **与 Pandas 无缝集成**
+    支持直接传入 Pandas DataFrame，自动解析数据字段。
+
+
+
+- **常见图表类型**
+
+| 图表类型                 | 函数示例                           | 用途                 |
+| :----------------------- | :--------------------------------- | :------------------- |
+| 分布图（直方图、密度图） | `sns.histplot()`, `sns.kdeplot()`  | 数据分布分析         |
+| 散点图                   | `sns.scatterplot()`                | 变量间关系           |
+| 箱线图                   | `sns.boxplot()`                    | 数据分布与异常值     |
+| 热力图                   | `sns.heatmap()`                    | 矩阵数据相关性可视化 |
+| 分面图（多子图）         | `sns.FacetGrid()`, `sns.catplot()` | 多维度数据对比       |
+| 回归图                   | `sns.regplot()`                    | 线性关系与趋势       |
+
+
+
+- **seaborn** 通用的几个参数：
+
+  - data：传入一个df 对象
+
+  - x , y：DataFrame中的列名
+
+  - hue：传入一个类别型的列名, 同样的图会按照这个类别分组, 分别绘制一份，绘制到一起方便进行对比
+
+
+
+- **seaborn 调整图的大小**
+
+**1. 通用方法（适用于所有图表）**
+
+使用 Matplotlib 的 `plt.figure(figsize=(width, height))` 在绘图前设置画布大小：
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# 设置图形尺寸
+plt.figure(figsize=(10, 6))  # 宽度10英寸，高度6英寸
+
+# 绘制Seaborn图表
+sns.lineplot(x=[1, 2, 3], y=[4, 5, 1])
+plt.show()
+```
+
+**2. 子图场景**
+
+使用 `plt.subplots()` 创建子图时直接指定 `figsize`：
+
+```python
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.barplot(x=['A', 'B', 'C'], y=[3, 7, 2], ax=ax)
+```
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 创建一个 2行×2列 的子图网格，并设置整个画布大小为 12×8 英寸
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
+
+# 在第一个子图（axes[0,0]）中绘制
+sns.lineplot(x=[1,2,3], y=[4,5,1], ax=axes[0,0])
+axes[0,0].set_title("子图1")
+
+# 在第二个子图（axes[0,1]）中绘制
+sns.barplot(x=['A','B','C'], y=[3,7,2], ax=axes[0,1])
+axes[0,1].set_title("子图2")
+
+# ... 其他子图的绘制
+plt.tight_layout()  # 自动调整子图间距
+plt.show()
+```
+
+**3. 分面图（FacetGrid类图表）**
+
+对于 `sns.catplot`, `sns.lmplot`, `sns.relplot` 等分面绘图函数，需通过 `height`（单个子图高度）和 `aspect`（宽高比）调整：
+
+```python
+# 总宽度 = height * aspect * 列数
+sns.catplot(
+    data=tips, x="day", y="total_bill", 
+    kind="box", 
+    height=4,    # 每个子图高度为4英寸
+    aspect=2     # 宽高比（宽度=4*2=8英寸）
+)
+```
+
+**4. 修改默认设置**
+
+通过 Seaborn 主题配置全局图形尺寸（需在绘图前设置）：
+
+```python
+sns.set_theme(rc={'figure.figsize':(12, 8)})
+```
+
+
+
+#### 1 单变量可视化：
+
+##### a、直方图、KDE图
+
+- 准备数据
 
 ```python
 import pandas as pd
@@ -107,17 +200,7 @@ import seaborn as sns
 tips = pd.read_csv('data/tips.csv')
 ```
 
-seaborn 通用的几个参数
 
-- data 传入一个df 对象
-- x , y  df中的列名
-- hue 传入一个类别型的列名, 同样的图会按照这个类别, 分组, 分别绘制一份绘制到一起方便进行对比
-
-seaborn 调整图的大小
-
-- plt.subplots(figsize=())
-- 如果plt.subplots(figsize=()) 不行, 都会有一个height的参数, 指定图片的高度 可以通过height 调整图片大小
-- height 高度 aspect 宽高比例
 
 绘制直方图
 
