@@ -1,6 +1,6 @@
 ## 1、Pandas双变量可视化
 
-### 1 散点图、蜂巢图
+### 1.1 散点图、蜂巢图
 
 评分跟价格之间是否有关联：
 
@@ -29,7 +29,7 @@ reviews[reviews['price']<100].plot.hexbin(x='price',y='points',gridsize=15)
 
 ![image-20230906093440683](assets/image-20230906093440683.png)
 
-### 2 堆叠图-堆叠柱状图
+### 1.2 堆叠图-堆叠柱状图
 
 找到最受欢迎的前五种葡萄酒种类：
 
@@ -56,7 +56,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906093943703](assets/image-20230906093943703.png)
 
-### 3 堆叠面积图
+### 1.3 堆叠面积图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot.area(figsize=(16,8))
@@ -64,7 +64,7 @@ top_5_wine.pivot_table(index='points',columns=['variety'],values=['description']
 
 ![image-20230906094124691](assets/image-20230906094124691.png)
 
-### 4 折线图
+### 1.4 折线图
 
 ```python
 top_5_wine.pivot_table(index='points',columns=['variety'],values=['description'],aggfunc='count').plot(figsize=(16,8),grid=True)
@@ -202,9 +202,9 @@ sns.kdeplot(tips['total_bill'])
 
 
 
-### 1 单变量可视化：
+### 2.1 单变量可视化：
 
-#### a、直方图、KDE图
+#### 2.1,1、直方图、KDE图
 
 - 准备数据
 
@@ -248,7 +248,7 @@ sns.kdeplot(data=tips,x='total_bill',hue='day')
 
 
 
-#### b、计数柱状图countplot
+#### 2.1.2、计数柱状图countplot
 
 这个api 体现了**Seaborn**这一套API另外的一个特点：除了绘图以外还会帮助做一些统计
 
@@ -266,9 +266,9 @@ tips['day'].value_counts().plot.bar(color=['r','g','b','orange'])
 
 ![image-20230906102157332](assets/image-20230906102157332.png)
 
-### 2 双变量可视化
+### 2.2 双变量可视化
 
-#### 1 散点图
+#### 2.2.1 散点图
 
 ```python
 fig,ax = plt.subplots(figsize=(12,6))
@@ -290,7 +290,7 @@ plt.show()
 
 ![image-20230906113628456](assets/image-20230906113628456.png)
 
-#### 2 蜂巢图
+#### 2.2.2 蜂巢图
 
 ```python
 # kind='hex'  加上这个参数就是蜂巢图, 如果不加就是散点图
@@ -308,7 +308,7 @@ plt.show()
 
 ![image-20250522153735113](assets\image-20250522153735113-1747899456410-3.png)
 
-#### 3 2D KDE图
+#### 2.2.3 2D KDE图
 
 ```python
 sns.kdeplot(data=tips,x='total_bill',y='tip',fill=True,cbar=True)
@@ -325,7 +325,7 @@ plt.show()
 
 ![image-20230906111132723](assets/image-20230906111132723.png)
 
-#### 4 barplot
+#### 2.2.4 barplot
 
  barplot 是对 x 分组 , 对y聚合, 聚合函数 通过estimator传入, 默认是mean 平均
 
@@ -336,7 +336,7 @@ ax.set_title('就餐时间和金额之间关系')
 plt.show()
 ```
 
-> errorbar 误差条： 默认会显示，当数据是从大量数据中抽样出来的，此时计算的结果可能不能真正代表全部的数据, 会有一个可能的统计范围，这个范围就通过这个errorbar来显示, 如果数据不是抽样的数据, 可以把它关了。
+> errorbar 误差条： 默认会显示，当数据是从大量数据中抽样出来的，此时计算的结果可能不能真正代表全部的数据, 会有一个可能的统计范围，这个范围就通过这个errorbar来显示, 如果数据不是抽样的数据, 可以把它关了。\
 
 
 
@@ -347,22 +347,44 @@ tips.groupby('time')['total_bill'].mean().plot.bar()
 
 ![image-20230906112922023](assets/image-20230906112922023.png)
 
-#### 5 箱线图
+#### 2.2.5 箱线图
 
-箱线图读图
+Seaborn的箱线图（Box Plot）是一种用于展示数据分布和检测异常值的常用图表。以下是读取箱线图的关键要素及步骤：
 
-- 箱子的中间有一条线，代表了数据的中位数
+**1. 箱体部分（Box）**
 
-- 箱子的上下底，分别是数据的上四分位数（Q3）和下四分位数（Q1）
+- **中位数（Median）**：箱体中间的横线，代表数据的50%分位数，反映数据集中趋势。
+- **四分位距（IQR, Interquartile Range）**：
+  - **上四分位数（Q3）**：箱体上边缘，75%分位数。
+  - **下四分位数（Q1）**：箱体下边缘，25%分位数。
+  - **IQR = Q3 - Q1**：箱体高度，表示中间50%数据的分布范围。IQR越大，数据越分散。
 
-- 箱体包含了50%的数据。因此，箱子的高度在一定程度上反映了数据的波动程度
 
-- 上下边缘则代表了该组数据的最大值和最小值
-  - IQR = 上四分位数（Q3) - 下四分位数（Q1）
-  - 判断异常值时最大值 = 上四分位数（Q3)  + 1.5 IQR  大于这个值的就是异常值
-  - 判断异常值时最小值 = 下四分位数（Q1）- 1.5 IQR   小于这个值的就是异常值
 
-- 有时候箱子外部会有一些点，可以理解为数据中的“异常值”
+**2. 须线（Whiskers）**
+
+- **须线范围**：默认从Q1向下延伸至`Q1 - 1.5×IQR`，从Q3向上延伸至`Q3 + 1.5×IQR`（可通过`whis`参数调整）。
+- **须线末端**：须线末端通常是数据在`[Q1-1.5IQR, Q3+1.5IQR]`范围内的最小值和最大值。如果数据未超出此范围，须线末端即为实际数据点；若超出，则须线末端为计算值（非实际数据点）。
+
+> 1.5×IQR是统计学中的经验法则，平衡了 **异常值检测的灵敏度** 和 **对正常波动的容忍度**。
+
+
+
+**3. 异常值（Outliers）**
+
+- **定义**：超出须线范围的数据点，以单独的点显示。
+- **意义**：可能表示极端值或测量误差，需结合实际场景判断是否合理。
+
+
+
+**4. 对称性与偏态**
+
+- **对称分布**：中位数位于箱体中心，上下须长度相近。
+- **偏态分布**：
+  - **右偏（正偏）**：中位数靠近Q1，上须较长或异常值较多。
+  - **左偏（负偏）**：中位数靠近Q3，下须较长或异常值较多。
+
+
 
 ```python
 fig,ax = plt.subplots(figsize=(12,6))
@@ -371,11 +393,11 @@ ax.set_title('总账小费之间关系图')
 plt.show()
 ```
 
->![image-20230906113259638](assets/image-20230906113259638.png)
->
->
+![image-20230906113259638](assets/image-20230906113259638.png)
 
-#### 6 提琴图
+
+
+#### 2.2.6 提琴图
 
 相当于是箱线图的增强版
 
@@ -386,25 +408,23 @@ ax.set_title('总账午餐晚餐性别之间关系图')
 plt.show()
 ```
 
->split = True 默认是False  当使用hue的时候会生效
->
->会在一个violin中切开 一半显示一个类别
->
->![image-20230906113405510](assets/image-20230906113405510.png)
->
->
+> `split = True` 默认是False，当使用hue的时候会生效，会在一个violin中切开 一半显示一个类别
 
-#### 7 成对关系图
+![image-20250522191043713](assets\image-20250522191043713.png)
 
-pairplot
+![image-20250522191006685](assets\image-20250522191006685.png)
 
-- ```python
-  sns.pairplot(tips,hue='sex')
-  ```
 
->默认对角线是直方图, 其它都是散点图, 默认情况下, 右上和左下图标的信息是一样的
->
->![image-20230906144553264](assets/image-20230906144553264.png)
+
+#### 2.2.7 成对关系图
+
+```python
+sns.pairplot(tips,hue='sex')
+```
+
+> 默认对角线是直方图, 其它都是散点图, 默认情况下, 右上和左下图标的信息是一样的
+
+![image-20230906144553264](assets/image-20230906144553264.png)
 
 ```python
 pair_grid = sns.PairGrid(tips)
@@ -418,16 +438,15 @@ pair_grid.map_diag(sns.histplot)
 
 ![image-20230906144617562](assets/image-20230906144617562.png)
 
-### 多变量可视化和style样式
+### 2.3 多变量可视化和style样式
 
-hue 参数 可以多加一个类别的变量, 用颜色进行区分
+**hue 参数：** 可以多加一个类别的变量, 用颜色进行区分
 
 ```python
 # white, dark, whitegrid, darkgrid, ticks
 sns.set_style('ticks')
 fig,ax = plt.subplots(figsize=(12,6))
-# fit_reg 默认是True 会拟合一条直线 就是利用这一份数据跑了线性回归
-# fit_reg=False 可以关掉
+
 sns.violinplot(data=tips,x='time',y='total_bill',hue='sex',split=True)
 ax.set_title('总账小费之间关系图')
 plt.show()
@@ -435,57 +454,60 @@ plt.show()
 
 
 
-### Seaborn绘图小结
+### 2.4 Seaborn绘图小结
 
+```python
 sns.XXXplot(data = df, x = '列名', y='列名',hue='列名')
+```
 
-- 调整绘图区域的大小
-  - plt.subplots(figsize=())
-  - 如果plt.subplots(figsize=()) 不行, 都会有一个height的参数, 指定图片的高度 可以通过height 调整图片大小
-  - height 高度 aspect 宽高比例
+
 
 ## 3 RFM
 
 ### 3.1 RFM 模型业务说明
 
-R recency       最近一次购买距今的时间间隔      7天以内来过  高  |  低
+| 变量名        | 含义                       | 示例值            | 分类     |
+| :------------ | :------------------------- | :---------------- | :------- |
+| R (Recency)   | 最近一次购买距今的时间间隔 | 7天以内来过       | 高 \| 低 |
+| F (Frequency) | 最近一段时间购买的次数     | 最近半年来过25次  | 高 \| 低 |
+| M (Monetary)  | 最近一段时间购买的金额     | 最近半年消费5千元 | 高 \| 低 |
 
-F frequency    最近一段时间购买的次数         最近半年来过25次   高|低 
+| R (Recency) | F (Frequency) | M (Monetary) | 用户类别     |
+| :---------- | :------------ | :----------- | :----------- |
+| 高          | 高            | 高           | 重要价值用户 |
+| 高          | 低            | 高           | 重要发展用户 |
+| 低          | 高            | 高           | 重要保持用户 |
+| 低          | 低            | 高           | 重要挽留用户 |
+| 高          | 高            | 低           | 一般价值用户 |
+| 高          | 低            | 低           | 一般发展用户 |
+| 低          | 高            | 低           | 一般保持用户 |
+| 低          | 低            | 低           | 一般挽留用户 |
 
-M monetary   最近一段时间购买的金额         最近半年消费5千元   高|低 
 
-<img src="assets/image-20230906145827647.png" alt="image-20230906145827647" style="zoom:80%;" />
 
-RFM 计算
+**RFM 计算**：R/F/M 每个维度做二分，分成8组    或者    R/F/M 每个维度打3分  3/2/1   333   111
 
-- R/F/M 每个维度做二分 分成8组
-- R/F/M 每个维度打3分  3/2/1   333   111
+**RFM计算要使用到的数据**：有用户ID 的交易流水信息就可以了（**用户ID、消费时间、消费金额**）
 
-RFM 计算要使用到什么样的数据
 
-有用户ID 的交易流水信息就可以了
-
-- 用户ID
-- 消费时间
-- 消费金额
 
 计算方法
 
-- R  最近一次购买距今的时间间隔   用户ID分组对消费时间取最大值 和今天的日期计算差值
+- R  最近一次购买距今的时间间隔   用户ID分组对消费时间取最大值 和消费的日期计算差值
 - F   用户ID分组对消费的记录计数 count
 - M  用户ID分组对消费金额求和 sum
+
+
 
 设置打分的规则, 将R/F/M 每一个维度打分 3/2/1
 
 把三个分数拼到一起, 就是最后的标签
 
-把数据保存到Mysql中, 保存到Excel
-
-每个组的数据进行可视化
+把数据保存到Mysql中, 保存到Excel，每个组的数据进行可视化
 
 
 
-RFM 适合落地的场景
+**RFM 适合落地的场景**
 
 - 有消费M, 消费的频率还不能太低(F不能太小)
   - 电商/打车/旅游/外卖.....
@@ -884,10 +906,11 @@ for i in sheet_names:
     - 而订单金额为0.1元这类使用优惠券支付的订单，没有实际意义
     - 除此之外，所有低于1元的订单均有这个问题，因此需要在后续处理中去掉
 
+
+
 #### 3.2.2 数据处理
 
-
-- 有的表中存在缺失值记录，但数量不多，选择丢弃或填充均可
+有的表中存在缺失值记录，但数量不多，选择丢弃或填充均可
 
 
 ```python
@@ -933,13 +956,11 @@ for i in sheet_names:
 
 #### 3.2.3 汇总所有数据
 
-- 为了后续计算方便， 我们将2015~2018年的销售数据合并到同一个DataFrame中
+- 为了后续计算方便， 我们将2015~2018年的销售数据合并到同一个DataFrame中，后续的所有计算都能基于同一个dataframe进行，而不用写循环代码段对每个年份的数据单独计算
 
 
 ```python
-data_merge = sheet_datas['2015']
-for i in sheet_names[1:-1]:
-    data_merge =data_merge.append(sheet_datas[i])
+data_merge = pd.concat([sheet_datas[name] for name in sheet_name[:-1]], ignore_index=True)
 ```
 
 
@@ -1093,9 +1114,6 @@ data_merge.info()
      4   max_year_date  202827 non-null  datetime64[ns]
     dtypes: datetime64[ns](2), float64(1), int64(2)
     memory usage: 9.3 MB
-
-
-- 汇总所有数据: 由于4年的数据列名都一样，所以使用append方法将4年数据合并为一个完整的dataframe data_merge，后续的所有计算都能基于同一个dataframe进行，而不用写循环代码段对每个年份的数据单独计算
 
 #### 3.2.4 以年为周期计算RFM
 
@@ -1261,60 +1279,20 @@ rfm_gb.head()
 
 ```python
 # 查看数据分布
-desc_pd = rfm_gb.iloc[:,2:].describe().T
-desc_pd
+rfm_gb.iloc[:,2:].describe()
 ```
 
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>count</th>
-      <th>mean</th>
-      <th>std</th>
-      <th>min</th>
-      <th>25%</th>
-      <th>50%</th>
-      <th>75%</th>
-      <th>max</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>r</th>
-      <td>148591.0</td>
-      <td>165.524043</td>
-      <td>101.988472</td>
-      <td>0.0</td>
-      <td>79.0</td>
-      <td>156.0</td>
-      <td>255.0</td>
-      <td>365.0</td>
-    </tr>
-    <tr>
-      <th>f</th>
-      <td>148591.0</td>
-      <td>1.365002</td>
-      <td>2.626953</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>1.0</td>
-      <td>130.0</td>
-    </tr>
-    <tr>
-      <th>m</th>
-      <td>148591.0</td>
-      <td>1323.741329</td>
-      <td>3753.906883</td>
-      <td>1.5</td>
-      <td>69.0</td>
-      <td>189.0</td>
-      <td>1199.0</td>
-      <td>206251.8</td>
-    </tr>
-  </tbody>
-</table>
+|       | r             | f             | m             |
+| :---- | :------------ | :------------ | :------------ |
+| count | 148591.000000 | 148591.000000 | 148591.000000 |
+| mean  | 165.524043    | 1.365002      | 1323.741329   |
+| std   | 101.988472    | 2.626953      | 3753.906883   |
+| min   | 0.000000      | 1.000000      | 1.500000      |
+| 25%   | 79.000000     | 1.000000      | 69.000000     |
+| 50%   | 156.000000    | 1.000000      | 189.000000    |
+| 75%   | 255.000000    | 1.000000      | 1199.000000   |
+| max   | 365.000000    | 130.000000    | 206251.800000 |
+
 
 - 从describe结果看出
   - 汇总后的数据总共有14万条
@@ -1516,7 +1494,10 @@ rfm_gb
 rfm_gb['r_score'] = rfm_gb['r_score'].astype(str)
 rfm_gb['f_score'] = rfm_gb['f_score'].astype(str)
 rfm_gb['m_score'] = rfm_gb['m_score'].astype(str)
+
+# 使用 str.cat 方法逐列拼接字符串，适合处理缺失值（可指定分隔符和缺失值处理方式），更灵活。
 rfm_gb['rfm_group'] = rfm_gb['r_score'].str.cat(rfm_gb['f_score']).str.cat(rfm_gb['m_score'])
+# rfm_gb['rfm_score'] = rfm_gb['r_score'] + rfm_gb['f_score'] + rfm_gb['m_score'] 更简单直接
 ```
 
 - 将3列作为字符串组合为新的分组
@@ -1525,7 +1506,7 @@ rfm_gb['rfm_group'] = rfm_gb['r_score'].str.cat(rfm_gb['f_score']).str.cat(rfm_g
   - 然后使用pandas的字符串处理库str中的cat方法做字符串合并，该方法可以将右侧的数据合并到左侧
   - 再连续使用两个str.cat方法得到总的R、F、M字符串组合
 
-- Series.str.cat(others=None, sep=None, na_rep=None) 
+- `Series.str.cat(others=None, sep=None, na_rep=None)` 
   - 参数: 
   - others : 列表或复合列表,默认为None,如果为None则连接本身的元素 
   - sep : 字符串 或者None,默认为None 
@@ -1789,9 +1770,3 @@ c = (
 c.render() 
 ```
 
-## 4 内容小结
-
-Seaborn绘图
-
-- 蜂巢图/KDE图/箱线图/提琴图
-- Seaborn api   sns.XXXplot(data,x='列名',y='列名', hue=)
