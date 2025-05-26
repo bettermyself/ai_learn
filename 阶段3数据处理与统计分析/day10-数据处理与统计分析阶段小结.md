@@ -15,16 +15,8 @@
   - 属性：`dtype`, `index`, `name`, `values`
   - 方法：`value_counts()`, `describe()`, `apply()`
 - **DataFrame**
-  - 属性：`shape`, `columns`, `index`, `dtypes`
+  - 属性：`shape`, `columns`, `index`, `dtypes`, `values`
   - 方法：`info()`, `head()`, `tail()`, `describe()`
-
-
-
-
-
-
-- shape dtype index/columns  values series.name  loc/iloc
-- info() describe()  value_counts()  统计方法 sum/count/mean/min/max
 
 
 
@@ -417,74 +409,156 @@ select 窗口函数 over(partition by 分组字段 order by 排序字段)
 
 ### 2.1 基本命令
 
-cd / ls / 相对路径 绝对路径
+**1. 目录操作**
 
-目录文件的创建/删除/移动/复制/查看文件内容
+- **`cd`**：切换目录
+  - `cd /path`（绝对路径）
+  - `cd ../`（相对路径，返回上级目录）
+  - `cd ~` 进入用户主目录
+- **`ls`**：列出目录内容
+  - `ls -l` 显示详细信息
+  - `ls -a` 显示隐藏文件
 
-- touch 创建文件  mkdir
-- 查看 cat/more
-- 复制/移动  cp mv
-- 删除 rm 
 
-查找
 
-- which
+**2. 路径类型**
 
-- find
+- **绝对路径**：从根目录 `/` 开始，如 `/home/user/file.txt`
+- **相对路径**：相对于当前目录，如 `./file.txt`（当前目录） 或 `../folder`（上级目录）
 
-grep |
 
-vi/vim
 
-- 命令模式 ESC
-- 编辑模式   i a o
-- 底行模式  :
+**3. 文件/目录操作**
+
+- **创建**
+  - `touch file.txt`：创建空文件
+  - `mkdir dir`：创建目录
+    - `mkdir -p dir1/dir2`：递归创建多级目录
+- **查看内容**
+  - `cat file.txt`：显示全部内容（适合小文件）
+  - `more file.txt` 或 `less file.txt`：分页查看（支持上下翻页）
+  - `head -n 5 file.txt`：查看前5行
+  - `tail -n 5 file.txt`：查看后5行
+- **复制/移动**
+  - `cp file.txt newfile.txt`：复制文件
+    - `cp -r dir1 dir2`：递归复制目录
+  - `mv file.txt newdir/`：移动文件
+    - `mv oldname.txt newname.txt`：重命名
+- **删除**
+  - `rm file.txt`：删除文件
+    - `rm -r dir`：递归删除目录（⚠️ 谨慎使用）
+    - `rm -rf dir`：强制删除（无确认）
+
+
+
+**4. 查找命令**
+
+- **`which`**：查找命令的绝对路径
+  - `which python` → 输出 `/usr/bin/python`
+
+- **`find`**：高级文件搜索
+  - 按名称查找：`find /home -name "*.txt"`
+  - 按类型查找：`find . -type d`（查找目录）
+- **`grep`**：文本内容搜索
+  - `grep "error" log.txt`：查找包含 "error" 的行
+  - 结合管道：`cat log.txt | grep "error"`
+
+
+
+**5. vi/vim 编辑器模式**
+
+- **三种模式切换**：
+
+```sh
+命令模式（ESC） → 编辑模式（i/a/o） → 底行模式（:）
+```
+
+- **常用操作**：
+  - **命令模式**：
+    - `i`：插入模式
+    - `dd`：删除当前行
+    - `yy`：复制当前行
+    - `p`：粘贴
+  - **底行模式**：
+    - `:wq`：保存并退出
+    - `:q!`：强制退出不保存
+    - `:/keyword`：搜索关键字
 
 
 
 ### 2.2 常用操作
 
-- 常用快捷键
+**1. 常用快捷键**
 
-  - ctrl + c /ctrl+d
+| 快捷键     | 作用                                    |
+| :--------- | :-------------------------------------- |
+| `Ctrl + C` | 终止当前正在运行的命令                  |
+| `Ctrl + D` | 退出当前终端或结束输入流（如`cat`命令） |
+| `Ctrl + L` | 清屏                                    |
 
-- 当端口被占用, 如何杀掉占用的进程
 
-  - netstat -anp |grep 端口号 → 占用当前端口的进程编号
-  - ps -ef|grep 进程编号  → 进程的详细信息
-  - kill -9 进程编号
 
-- 配置环境变量
+**2. 端口占用处理**
 
-  - /etc/profile
+```sh
+# 1. 查找占用端口的进程ID（PID）
+netstat -anp | grep 端口号 
+# 2. 获取进程的详细信息
+ps -ef| grep 进程编号
+# 3. 杀死进程
+kill -9 进程编号
+```
 
-    export PATH=$PATH:/路径
 
-  - ~/.bashrc
 
-- 压缩解压缩
-  打包
+**3. 环境变量配置**
 
-  - tar  `tar -cvf xxx.tar  要打包的文件1.xxx 要打包的文件2.xxxx`
-  - tar.gz  `tar -zcvf xxx.tar.gz  要打包的文件1.xxx 要打包的文件2.xxxx`
+1. **全局配置**（所有用户生效）
+   编辑 `/etc/profile`，添加以下内容：
 
-  解包
+   ```sh
+   export PATH=$PATH:/自定义路径
+   ```
 
-  - tar  `tar -xvf xxx.tar -C 要解到的路径`
-  - tar.gz  `tar -zxvf xxx.tar.gz  -C 要解到的路径`
+   生效命令：
 
-  zip/unzip
+   ```sh
+   source /etc/profile
+   ```
 
-  `zip XXX.zip  要打包的文件1.xxx 要打包的文件2.xxxx`
+2. **用户级配置**（仅当前用户生效）
+   编辑 `~/.bashrc` 或 `~/.bash_profile`，添加相同内容，然后执行：
 
-  `zip -r XXX.zip  要打包的文件夹 要打包的文件.xxxx`
+   ```sh
+   source ~/.bashrc
+   ```
 
-  `upzip XXX.zip -d 要解压到的路径`
 
-用户和权限
 
-chmod +x XXX.sh
+**4. 压缩与解压缩**
 
-chmod 777 文件名            chmod 521 文件名   101010001  r-x-w---x
+| 格式      | 压缩命令                                     | 解压命令                                |
+| :-------- | :------------------------------------------- | :-------------------------------------- |
+| `.tar`    | `tar -cvf 压缩包名.tar 文件1 文件2 ...`      | `tar -xvf 压缩包名.tar -C 目标路径`     |
+| `.tar.gz` | `tar -zcvf 压缩包名.tar.gz 文件1 文件夹 ...` | `tar -zxvf 压缩包名.tar.gz -C 目标路径` |
+| `.zip`    | `zip -r 压缩包名.zip 文件1 文件夹 ...`       | `unzip 压缩包名.zip -d 目标路径`        |
 
-chown xxx  文件名   chown :xxx 文件名
+**关键参数说明**：
+
+- `-c`: 创建压缩包
+- `-x`: 解压
+- `-v`: 显示过程
+- `-f`: 指定文件名
+- `-z`: 处理gzip压缩
+- `-r`: 递归压缩目录（zip专用）
+
+
+
+**5. 用户和权限**
+
+| 操作                   | 命令示例             | 用途                                |
+| :--------------------- | :------------------- | :---------------------------------- |
+| 添加执行权限           | `chmod +x script.sh` | 使脚本可执行                        |
+| 设置权限为 `rwxr-x--x` | `chmod 751 file`     | 用户：全权，组：读+执行，其他：执行 |
+| 修改所有者             | `chown alice file`   | 将文件所有者改为 `alice`            |
+| 修改所属组             | `chown :dev file`    | 将文件所属组改为 `dev`              |
