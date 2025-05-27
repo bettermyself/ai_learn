@@ -36,6 +36,7 @@ CREATE TABLE person(
 );
 
 -- 主键约束：复合主键
+-- 在 MySQL 中，复合主键（Composite Primary Key） 是由多个列（字段）组合而成的主键，用于唯一标识表中的每一行数据。与单列主键不同，复合主键要求这些列的组合值必须唯一，但单个列的值可以重复。所有组成复合主键的列均不允许为 NULL。
 CREATE TABLE Persons (
     ID int NOT NULL,
     LastName varchar(255) NOT NULL,
@@ -75,6 +76,13 @@ CREATE TABLE Orders (
     OrderNumber int NOT NULL,
     PersonID int,
     FOREIGN KEY (PersonID) REFERENCES Persons(ID)
+);
+
+CREATE TABLE Orders (
+    OrderID int NOT NULL PRIMARY KEY,
+    OrderNumber int NOT NULL,
+    PersonID int,
+    CONSTRAINT fk_PersonID FOREIGN KEY (PersonID) REFERENCES Persons(ID)
 );
 
 -- CHECK 约束
@@ -138,20 +146,48 @@ ALTER City DROP DEFAULT;
 
 ### 2、`DQL` 单表查询
 
-- 基本查询语法：`select *|字段名 form 表名 where 条件；`
+#### 2.1 基本查询语法
 
+```sql
+SELECT *|字段名 FROM 表名 WHERE 条件;
+```
 
-- 排序查询：`SELECT * FROM 表名 ORDER BY 排序字段 ASC|DESC;`
+#### 2.2 排序查询
 
+```sql
+SELECT * FROM 表名 ORDER BY 排序字段 ASC|DESC;  -- ASC 升序 / DESC 降序
+```
 
-- 聚合查询函数：count()，sum()，max()，min()，avg()。
+#### 2.3 聚合函数
 
+| 函数      | 功能描述 |
+| :-------- | :------- |
+| `COUNT()` | 统计行数 |
+| `SUM()`   | 求和     |
+| `MAX()`   | 最大值   |
+| `MIN()`   | 最小值   |
+| `AVG()`   | 平均值   |
 
-- 分组查询：`SELECT 字段1,字段2… FROM 表名 GROUP BY 分组字段 HAVING 分组条件;`
+#### 2.4 分组查询
 
+```sql
+SELECT 字段1, 字段2... FROM 表名 GROUP BY 分组字段 HAVING 分组条件;  -- HAVING 用于分组后过滤
+```
 
-- 分页查询：`SELECT 字段1，字段2... FROM 表名 LIMIT M,N；`M: 整数，表示从第几条索引开始，计算方式 （当前页-1）*每页显示条数。N: 整数，表示查询多少条数据
-- 完整语法：
+**注意**：WHERE 用于分组前过滤，HAVING 用于分组后过滤。
+
+#### 2.5 分页查询
+
+```sql
+SELECT 字段1, 字段2... FROM 表名 LIMIT M, N;  -- M: 起始索引，N: 查询条数
+```
+
+**参数计算**：
+
+- `M = (当前页码 - 1) * 每页显示条数`
+- `N = 每页显示条数`
+
+#### 2.6 完整语法：
 
 ```sql
 SELECT [DISTINCT] 列名1, 列名2, ...
@@ -216,7 +252,8 @@ select * from product where  price=200 or price =800;
 
 select * from product where  not (price=200);
 
--- 模糊查询
+-- 模糊查询：在 SQL 的模糊查询中，LIKE 关键字配合通配符使用，主要涉及 % 和 _ 两个通配符（注意 * 不是模糊查询的通配符）
+-- % 作用：匹配任意长度的字符串（包括零个字符）；_ 作用：匹配单个任意字符。
 select * from product where pname like '香%';
 select * from product where pname like '_想%';
 
@@ -339,11 +376,7 @@ CREATE TABLE student_course (
 
 
 
-
-
 **外键约束：**在创建表的时候, 如果两张表之间有一对多的关系, 可以指定外键约束。1、从表中引用了主表中的数据，主表中数据不可被删除。2、主表中没有数据，从表外键也无法被插入
-
-
 
 ```sql
 create table category (
@@ -503,7 +536,6 @@ select cname , category_id from category c left join products p on c.cid = p.cat
 
   ```sql
   select * from products p, (select * from category where cname = '化妆品') c where p.category_id=c.cid;
-  
   ```
 
 
@@ -549,7 +581,7 @@ select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p
 
 
 
-### 4、 SQL 报表
+### 4、SQL 报表
 
 数据导入
 
@@ -608,18 +640,3 @@ from customers;
 | **HAVING** | 数据筛选（`GROUP BY` 后） | **过滤分组后的结果**（如筛选分组后数量 > 3 的供应商）        | ✔️ 是             |
 
 **优先级**：`ON` → `WHERE` → `GROUP BY` → `HAVING` → `ORDER BY` → `LIMIT`。
-
-
-
-### 5 、今日重点
-
-多表查询、连接（内连接, 外连接, 交叉连接-了解）
-
-多表查询和分组聚合结合
-
-CASE WHEN 使用
-
-今天作业
-
-- PPT里面的SQL
-- 报表练习前20个
