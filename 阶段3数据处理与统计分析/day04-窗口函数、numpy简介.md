@@ -5,7 +5,7 @@
 **窗口函数（Window Function）** 是 SQL 中一种高级分析工具，允许在数据集的特定“窗口”（一组相关行）上执行计算，**不合并原始数据行**，而是为每一行生成独立的结果。其核心目标是在保留明细数据的同时，支持复杂的分析和聚合操作。
 
 - MYSQL 8.0 之后，加入了窗口函数功能
-- 在没有窗口函数之前，我们需要通过定义临时变量和大量的子查询才能完成的工作，使用窗口函数实现起来更加简洁高效
+- 在没有窗口函数之前，需要通过定义临时变量和大量的子查询才能完成工作，现在使用窗口函数实现起来更加简洁高效
 
 
 
@@ -15,7 +15,7 @@
 
 ```sql
 -- 基本语法
-SELECT SUM() OVER(PARTITION BY ___ ORDER BY___) FROM Table
+SELECT 窗口函数() OVER(PARTITION BY ___ ORDER BY___) FROM Table
 
 -- 完整语法
 SELECT 
@@ -36,8 +36,12 @@ FROM 表;
   - 由 `OVER()` 子句定义，决定函数计算的范围。
   - 可以基于分区（`PARTITION BY`）、排序（`ORDER BY`）和行范围（`ROWS` 或 `RANGE`）进一步细化。
     - `PARTITION BY` 和 `GROUP BY` 的相同点：都会使用字段进行分组 , 做聚合计算的时候, 结果都是一样的
-    - `PARTITION BY` 和 `GROUP BY` 的区别：GROUP BY 分组 聚合之后, 分组字段有几个取值, 就会返回几条结果；PARTITION BY 返回的结果 跟原始数据表的条目数是一样的
-
+    - `PARTITION BY` 和 `GROUP BY` 的区别：`GROUP BY` 分组 聚合之后, 分组字段有几个取值, 就会返回几条结果；`PARTITION BY` 返回的结果跟原始数据表的条目数是一样的
+    - `ROWS/RANGE BETWEEN 起始范围 AND 结束范围`：定义窗口的起始和结束范围（**窗口帧**）。
+      1. `UNBOUNDED PRECEDING`：窗口从第一行开始。
+      2. `CURRENT ROW`：当前行。
+      3. `n PRECEDING`/`n FOLLOWING`：当前行前/后n行。
+      4. 示例：`ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`计算当前行及其前两行的聚合。
 - **与聚合函数的区别**
   - 普通聚合函数（如 `SUM`、`AVG`、`count`、`max`、`min`）合并多行为一行。
   - 窗口函数保留所有原始行，并为每行附加计算结果。
@@ -118,7 +122,7 @@ FROM 表;
 
 #### b. **聚合函数作为窗口函数**
 
-- **`SUM() OVER()`、`AVG() OVER()`**
+- **`SUM() OVER()`、`AVG() OVER()`**、 **`COUNT() OVER()`**、 **`MIN() OVER()`**、 **`MAX() OVER()`**
   计算累计值或分区内聚合。
 
   ```sql
@@ -236,35 +240,6 @@ insert into department values
 (5, 'Help Desk')
 ;
 
-create table purchase(
-    id int unsigned primary key not null,
-    department_id tinyint not null,
-    item varchar(30) not null,
-    price int not null
-);
-
-insert into purchase values
-(1, 4, 'monitor', 531),
-(2, 1, 'printer', 315),
-(3, 3, 'whiteboard', 170),
-(4, 5, 'training', 117),
-(5, 3, 'computer', 2190),
-(6, 1, 'monitor', 418),
-(7, 3, 'whiteboard', 120),
-(8, 3, 'monitor', 388),
-(9, 5, 'paper', 37),
-(10, 1, 'paper', 695),
-(11, 3, 'projector', 407),
-(12, 4, 'garden party', 986),
-(13, 5, 'projector', 481),
-(14, 2, 'chair', 180),
-(15, 2, 'desk', 854),
-(16, 2, 'post-it', 15),
-(17, 3, 'paper', 60),
-(18, 2, 'tv', 943),
-(19, 2, 'desk', 478),
-(20, 5, 'keyboard', 214)
-;
 
 SELECT
   first_name,
@@ -311,9 +286,7 @@ select ename from
 
 
 
-## 2 SQL 别名的作用域（可见范围）
-
-
+## 2、SQL 别名的作用域（可见范围）
 
 **实例：**
 
@@ -364,7 +337,7 @@ SQL 的执行顺序为：
 
 
 
-### **2.3 修正方法：通过子查询或 CTE**
+### **2.3 修正方法：通过子查询或 CTE**(给子查询单独定义表名，方便后续复用)
 
 将窗口函数和其别名定义在子查询中，然后在外部查询中引用：
 
@@ -418,7 +391,7 @@ WHERE temp.rank_ < 3;  -- 合法：rank_ 是子查询结果集的列
 
 
 
-## 3 Linux  Mysql 小结
+## 3、Linux  Mysql 小结
 
 **Linux 基本的操作—常见的命令：**
 
@@ -455,7 +428,7 @@ WHERE temp.rank_ < 3;  -- 合法：rank_ 是子查询结果集的列
 
   
 
-## 4 Python数据处理
+## 4、Python数据处理
 
 ### 4.1 python对比其他工具
 
@@ -476,17 +449,19 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 
 
 
+### 4.2 开发环境搭建和Notebook使用说明
+
 开发环境： `Jupyter Lab`/`Jupyter notebook`
+
+为什么需要使用`Jupyter`：`Jupyter`是数据科学和教育的“瑞士军刀”，尤其适合需要**交互性**和**可视化**的场景。对于复杂项目，可结合传统 IDE（如 VS Code、PyCharm）使用。其核心价值在于**“将思考过程与成果无缝结合”**，是探索性工作的理想工具
 
 - 可以在虚拟机中（安装**`anaconda`**-python的发行版）：具体操作流程在开发环境配置文件夹中。
 
-- 也可以在本地安装 anaconda
+- 也可以在本地安装 `anaconda`
 
 - 在pycharm中调用notebook
 
-  
 
-### 3.2 开发环境搭建和Notebook使用说明
 
 打开虚拟机，通过 finalshell 连接，在finalshell 的命令行 输入jupyter lab
 
@@ -497,6 +472,8 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 在浏览器中看到如下页面, 点击 notebook就可以创建一个新的notebook
 
 ![image-20230830111750862](assets/image-20230830111750862.png)
+
+
 
 在pycharm中连接远程的notebook
 
@@ -513,6 +490,8 @@ http://192.168.88.161:8888/
 
 ![image-20230830112336326](assets/image-20230830112336326.png)
 
+
+
 本地环境搭建
 
 - 可以安装anaconda 
@@ -523,28 +502,20 @@ http://192.168.88.161:8888/
 
 ### 4.3 notebook的使用
 
-**快捷键** 
+| **快捷键**      | **操作**                                                     | **模式/说明**                |
+| :-------------- | :----------------------------------------------------------- | :--------------------------- |
+| `Esc`           | 退出输入模式，进入命令模式，在命令模式下可以输入快捷键       | 从编辑模式切换到命令模式     |
+| `a`             | 在当前 Cell 上方插入新 Cell                                  | 命令模式                     |
+| `b`             | 在当前 Cell 下方插入新 Cell                                  | 命令模式                     |
+| `dd`            | 删除当前 Cell                                                | 命令模式（需连按两次`d`键）  |
+| `m`             | 将当前 Cell 切换为 Markdown 模式                             | 命令模式                     |
+| `y`             | 将当前 Cell 切换为 Code 模式                                 | 命令模式                     |
+| `Ctrl + Enter`  | 运行当前 Cell                                                | 命令模式或编辑模式下均可使用 |
+| `Shift + Enter` | 运行当前 Cell，并自动跳转到下一个 Cell（若下方无 Cell 则新建） | 命令模式或编辑模式下均可使用 |
 
-- esc 从输入模式可以退出到命令模式，在命令模式下可以输入快捷键
 
-  - a  在当前cell 上面创建一个新的cell
 
-  - b  在当前cell 下面创建一个新的cell
-
-  - dd 删除当前cell
-
-  - m 切换到markdown模式
-
-  - y 切换到code模式
-
-  - 运行cell 
-
-    - ctrl+回车
-    -  shift + 回车：运行当前cell，再创建一个新的cell
-
-    
-
-## 5 Numpy简介
+## 5、Numpy简介
 
 **NumPy**（Numerical Python）是 Python 生态中最核心的科学计算库之一，专注于高性能的多维数组（**ndarray**）操作和数学函数。它是数据科学、机器学习和数值计算的基础工具，许多其他库（如 Pandas、SciPy、TensorFlow 等）都依赖 NumPy。
 
@@ -559,13 +530,11 @@ http://192.168.88.161:8888/
 - **简洁的语法**
   - 用一行代码实现复杂的数学运算（如矩阵乘法 `A @ B`）。
 - **生态支持**
-  - 是 SciPy、Pandas、Scikit-learn 等库的基础依赖，因此理解np的数据类型对python数据分析十分重要。
+  - 是 SciPy、Pandas、Scikit-learn 等库的基础依赖，因此理解NumPy的数据类型对python数据分析十分重要。
 
 
 
 ### 5.2 numpy的属性
-
-
 
 #### **a、形状与维度**
 
@@ -633,9 +602,9 @@ print(arr.nbytes)  # 输出 8（2元素×4字节）
 
 ####  **d、其他实用属性**
 
-- **`T`**
+- **`T`**  
 
-返回数组的转置（交换行列）。
+返回数组的转置（交换行列），只对二维及以上数组体现为转置，1维数组不变。
 
 ```python
 print(arr.T)  # 转置（若 arr 是二维数组）
@@ -650,7 +619,7 @@ print(arr.T)  # 转置（若 arr 是二维数组）
 直接修改 `shape` 属性（需总元素数一致）：
 
 ```python
-arr.shape = (4, 1)  # 原地修改
+arr.shape = (4, 1)  # 在原始数据上修改
 ```
 
 使用 `reshape()` 方法（返回新数组，原数组不变）：
@@ -659,11 +628,21 @@ arr.shape = (4, 1)  # 原地修改
 new_arr = arr.reshape(4, 1)
 ```
 
+| 属性/方法   | 功能说明                       | 示例代码                                                     | 示例输出              |
+| ----------- | ------------------------------ | ------------------------------------------------------------ | --------------------- |
+| `shape`     | 数组的维度结构（如`(行, 列)`） | `arr = np.array([[1,2],[3,4]])` `print(arr.shape)`           | `(2, 2)`              |
+| `ndim`      | 数组的维度数（轴的个数）       | `print(arr.ndim)`                                            | `2`                   |
+| `size`      | 数组总元素个数                 | `print(arr.size)`                                            | `4`                   |
+| `dtype`     | 元素的数据类型                 | `arr = np.array([1,2], dtype=np.float32)` `print(arr.dtype)` | `float32`             |
+| `itemsize`  | 单元素占用字节数               | `print(arr.itemsize)`                                        | `4`                   |
+| `nbytes`    | 数组总内存占用（字节数）       | `print(arr.nbytes)`                                          | `8`                   |
+| `T`         | 数组转置                       | `print(arr.T)`                                               | `[[1 3]\n [2 4]]`     |
+| 修改`shape` | 直接修改形状，需元素数一致     | `arr.shape = (4, 1)`                                         | 修改后 shape: `(4,1)` |
+| `reshape()` | 返回新形状数组，原数组不变     | `new_arr = arr.reshape(4, 1)`                                | 新数组 shape: `(4,1)` |
+
 
 
 ### 5.3 创建ndarray
-
-
 
 #### **a、直接输入创建**
 
