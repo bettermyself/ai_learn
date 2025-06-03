@@ -695,7 +695,7 @@ print('arange创建np_arange的类型:',type(np_arange))  # arange创建np_arang
 ```python
 np.random.rand(3,4) # 0,1 之间，浮点数
 np.random.randint(-5,5,size=(3,4)) # 随机的整数 给定起始结束区间, size 生成随机数的形状
-np.random.uniform(-1,5,size=(3,4)) # 生成均匀分布浮点数的随机数  定起始结束区间, size 生成随机数的形状
+np.random.uniform(-1,5,size=(3,4)) # 生成均匀分布浮点数的随机数  给定起始结束区间, size 生成随机数的形状
 np.random.randn(2, 3)   # 生成服从标准正态分布（均值为 0，标准差为 1）的随机数数组
 ```
 
@@ -736,7 +736,7 @@ np.linspace(1,10,10,endpoint=False) #endpoint 是否包含结束点, 默认是Tr
 
 
 
-- `logspace()`、`linspace()`创建的数组元素是浮点型。
+> `logspace()`、`linspace()`创建的数组元素是浮点型。
 
 
 
@@ -745,7 +745,19 @@ np.linspace(1,10,10,endpoint=False) #endpoint 是否包含结束点, 默认是Tr
 - dtype参数，指定数组的数据类型，类型名+位数，如float64, int32
 - astype方法，转换数组的数据类型
 
-![image-20250508105241332](C:\Users\Administrator\Desktop\ai_learn\阶段3学习笔记\assets\image-20250508105241332.png)
+```python
+import numpy as np
+
+# 初始化3行4列数组，数据类型为float64
+zeros_float_arr = np.zeros((3, 4), dtype=np.float64)
+print(zeros_float_arr)
+print(zeros_float_arr.dtype)  # float64
+
+# astype转换数据类型，将已有的数组的数据类型转换为int32
+zeros_int_arr = zeros_float_arr.astype(np.int32)
+print(zeros_int_arr)
+print(zeros_int_arr.dtype)  # int32
+```
 
 
 
@@ -792,7 +804,7 @@ np.std(arr)   # 所有元素的标准差，参数是 number 或 array
 np.var(arr)   # 所有元素的方差，参数是 number 或 array
 ```
 
-多维数组默认统计全部维度，**axis参数**可以按指定轴心统计，值为0则按列统计，值为1则按行统计。
+多维数组默认统计全部维度，**axis参数**可以按指定轴心统计，~~值为0则按列统计，值为1则按行统计~~(不一定如此，只要记住默认`axis=0`，如果得出不符合预期的结果，就使用`axis=1`)。
 
 ```python
 np.sum(arr,axis=0)  # 数组的按列统计和
@@ -886,13 +898,50 @@ $$
 
 - `np.all()`: 所有的元素满足指定条件，返回True
 
-  ![image-20250508111415332](assets\image-20250508111415332.png)
+
+```python
+import numpy as np
+
+# 生成一个2行3列的随机数组，元素服从标准正态分布
+arr = np.random.randn(2, 3)
+
+# 检查数组中是否有任一元素大于0
+print(np.any(arr > 0))  # 返回True或False
+
+# 检查数组中是否所有元素都大于0
+print(np.all(arr > 0))  # 返回True或False
+```
+
+
 
 #### **d、去重**
 
 `np.unique()`:找到唯一值并返回排序结果，类似于Python的set集合
 
-![image-20250508112100913](assets\image-20250508112100913.png)
+```python
+import numpy as np
+
+# 创建一个2行3列的数组
+arr = np.array([[1, 2, 1], [2, 3, 4]])
+
+# 打印数组
+print(arr)
+"""
+输出:
+[[1 2 1]
+ [2 3 4]]
+"""
+
+# 获取数组的唯一值（去重后排序）
+unique_values = np.unique(arr)
+print(unique_values)
+"""
+输出:
+[1 2 3 4]
+"""
+```
+
+
 
 #### **e、排序**
 
@@ -906,9 +955,10 @@ $$
 
 - ndarray的算术运算
 
-ndarray的算术运算（加、减、乘、除）是按照元素位置计算的。新的数组被创建并且被结果填充。计算的时候, 位置对应的元素 进行 加减乘除的计算, 计算之后得到的结果的shape 跟arr_a  /arr_b 一样
+ndarray的算术运算（加、减、乘、除）是**按照元素位置**计算的。新的数组被创建并且被结果填充。计算的时候, 位置对应的元素 进行 加减乘除的计算, 计算之后得到的结果的shape 跟arr_a  /arr_b 一样
 
-两个ndarray, 一个是`arr_a`  另一个是`arr_b`，它们俩之间进行  `arr_a  + arr_b`  或 `arr_a  - arr_b`  或 `arr_a  * arr_b` 或`arr_a / arr_b`这样计算的前提是 shape相同
+> 两个ndarray, 一个是`arr_a`  另一个是`arr_b`，它们俩之间进行  `arr_a  + arr_b`  或 `arr_a  - arr_b`  或 `arr_a  * arr_b` 或`arr_a / arr_b`这样计算的前提是 shape相同
+>
 
 
 
@@ -936,7 +986,7 @@ np.dot(x,y)
 
 Pandas 是 Python 中最常用的数据分析库，其核心数据结构主要有两种：**Series** 和 **DataFrame**。
 
-其中Series是一维容器，Series表示DataFrame的每一列。可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series。Series和Python中的列表非常相似，但是它的每个元素的数据类型必须相同。
+其中Series是一维容器，Series表示DataFrame的每一列。可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series。Series和Python中的列表非常相似，但是它的每个元素的**数据类型必须相同**。
 
 
 
@@ -981,7 +1031,7 @@ df2 = pd.DataFrame([[1, 'A'], [2, 'B']], columns=['ID', 'Label'])
 
 ```python
 import pandas as pd
-data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  # 这里我们使用的是相对路径, 相对的是.ipynb文件
+data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  
 data.head()
 ```
 
