@@ -61,7 +61,7 @@ anaconda 是一个Python的发行版, 主要用于科学计算，继承了一个
 从**`Series`**、**`DataFrame`**中获取满足某些条件的数据，可以使用布尔索引。
 
 - 布尔索引类似于`SQL`语句中的where条件
-- 将数据中的某一列和一个值进行比较 (>, <  , = , !=) ，比较之后会返回一个True/False组成的Series, 把这个Series再传递给Series/DataFrame (**传递的时候, 需要注意要写到中括号中**)
+- 将数据中的某一列和一个值进行比较 (**>**、**<** 、**=**、**!=**) ，比较之后会返回一个True/False组成的Series, 把这个Series再传递给Series/DataFrame (**传递的时候, 需要注意要写到中括号中**)
   - True/False组成的Series, True所对应的行, 原始数据会留下
   - True/False组成的Series, False所对应的行, 原始数据会过滤掉
 
@@ -153,8 +153,10 @@ scientiests= pd.read_csv('data/scientists.csv')
 avg_age = scientiests['Age'].mean()
 # 获取了年龄的Series
 age = scientiests['Age']
+# 通过布尔索引取出符合条件的值
 scientiests['Name'][age>avg_age]
 scientiests['Name'][scientiests['Age']>avg_age]
+
 # 上面的代码相当于
 temp_list = [False,True,True,True,False,False,False,True]
 scientiests['Name'][temp_list]
@@ -164,27 +166,30 @@ scientiests['Name'][temp_list]
 
 ## 3、Series的运算
 
-Series和一个数值之间的计算：每一个元素都会和这个数值进行计算
+### 3.1 基本运算特性
 
-- 两个Series之间计算
-  - 能算出非nan的条件, 两个Series的index 相同
-  - 如果在另外一个Series中没有找到当前行的Index, 这个index在计算结果中会保留但是,  得到的值是nan
+- Series与标量运算：每个元素都会参与运算
+- 两个Series运算：
+  - 索引对齐：相同索引的值进行计算
+  - 索引不匹配：结果中保留索引，缺失值设为NaN
 
-```python
-age+age
-```
-
-![image-20230831101419159](assets/image-20230831101419159.png)
+> 能算出非nan的条件, 两个Series的index 相同
 
 ```python
-age+pd.Series([1,2],index = [1,2])
+# 相同索引运算
+age = pd.Series([25, 30, 35], index=['A','B','C'])
+age + age
+
+# 索引不匹配
+age + pd.Series([1,2], index=['B','C']) 
+# 结果：A→NaN, B→31, C→37
 ```
 
-![image-20230831101513455](assets/image-20230831101513455.png)
 
-### 4 DataFrame的常用操作
 
-**一、核心属性**
+## 4、DataFrame的常用操作
+
+### 4.1 基础属性
 
 | 属性       | 描述                       | 示例                           |
 | :--------- | :------------------------- | :----------------------------- |
@@ -198,9 +203,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**二、数据预览与信息**
-
-1. **基础方法**
+### 4.2 数据预览
 
 | 方法          | 功能                               | 示例                     |
 | :------------ | :--------------------------------- | :----------------------- |
@@ -211,9 +214,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**三、数据操作**
-
-1. **数据筛选与修改**
+### 4.3 数据操作
 
 | 方法             | 功能                     | 示例                                       |
 | :--------------- | :----------------------- | :----------------------------------------- |
@@ -225,7 +226,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**四、缺失值处理**
+### **4.4 缺失值处理**
 
 | 方法             | 功能                            | 示例                |
 | :--------------- | :------------------------------ | :------------------ |
@@ -235,7 +236,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**五、分组与聚合**
+### **4.5 分组聚合**
 
 | 方法         | 功能                     | 示例                                      |
 | :----------- | :----------------------- | :---------------------------------------- |
@@ -244,18 +245,17 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**六、数据合并与重塑**
+### **4.6 数据合并**
 
 | 方法             | 功能                              | 示例                                                         |
 | :--------------- | :-------------------------------- | :----------------------------------------------------------- |
 | `.merge()`       | 合并两个DataFrame（类似SQL JOIN） | `pd.merge(df1, df2, on='id')`                                |
 | `.concat()`      | 拼接多个DataFrame（行或列）       | `pd.concat([df1, df2], axis=0)`                              |
-| `.pivot_table()` | 创建透视表                        | `df.pivot_table(index='name', columns='year', values='sales')` |
-| `.melt()`        | 将宽表转换为长表                  | `df.melt(id_vars='name', value_vars=['age', 's`              |
+| `.pivot_table()` | 创建透视表                        | `df.pivot_table(index='name', columns='year', values='sales',aggfunc='mean')` |
 
 
 
-**七、文件读写**
+### **4.7 文件读写**
 
 | 方法          | 功能            | 示例                                 |
 | :------------ | :-------------- | :----------------------------------- |
@@ -265,7 +265,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**八、其他实用方法**
+### **4.8 其他实用方法**
 
 | 方法             | 功能               | 示例                                  |
 | :--------------- | :----------------- | :------------------------------------ |
@@ -276,7 +276,7 @@ age+pd.Series([1,2],index = [1,2])
 
 
 
-**总结表格**
+### **4.9 总结表格**
 
 | **类别**       | **常用属性/方法**                        | **核心功能**     |
 | :------------- | :--------------------------------------- | :--------------- |
@@ -288,13 +288,11 @@ age+pd.Series([1,2],index = [1,2])
 | **文件读写**   | `.to_csv()`, `.read_csv()`               | 数据持久化       |
 | **高级操作**   | `.merge()`, `.apply()`                   | 复杂数据处理     |
 
-布尔索引/两个DataFrame之间的计算, 和Series完全一样
 
 
+## 5、DataFrame索引操作
 
-### 5 DataFrame 行列索引的修改
-
-#### 5.1 行索引(index)的调整
+### 5.1 行索引调整
 
 - `set_index(列名)` 把某一列设置为索引
 
@@ -321,9 +319,9 @@ movie2.reset_index()
 
 
 
-#### 5.2 行列索引值的修改
+### 5.2 索引重命名
 
-- rename()
+- 使用rename方法
 
   ```python
   idx_rename = {'Avatar':'阿凡达'}
@@ -334,10 +332,9 @@ movie2.reset_index()
   movie3.rename(index=idx_rename,columns=col_rename,inplace=True)
   ```
 
-  >需要注意传入的字典, 老的列名/行索引不存在, 不会报错, 只不过运行之后没有效果
+  >需要注意传入的字典, 老的列名/行索引不存在, 不会报错, 只不过运行之后没有效果，比较适合使用的场景：行/列比较多的时候
   >
-  >比较适合使用的场景, 行/列比较多的时候
-
+  
 - 整体替换 index / columns
 
   - dataframe.index 获取行索引    数据类型  pandas.core.indexes.base.Index
@@ -356,7 +353,7 @@ movie2.reset_index()
 
 
 
-#### 5.3     DataFrame 插入/删除/追加一列数据      
+### 5.3 列操作      
 
 - 追加一列数据
 
@@ -413,7 +410,7 @@ movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
 
   
 
-#### 5.4 DataFrame数据的保存跟加载
+### 5.4 数据持久化
 
 保存数据 `df.to_数据格式(路径)`
 
@@ -440,11 +437,11 @@ pd.read_csv('data/movie5_noindex.csv')
 
 
 
-### 6 DataFrame数据分析入门
+## 6、DataFrame数据分析入门
 
-#### 6.1 DataFrame获取部分数据
+### 6.1 DataFrame获取部分数据
 
-- 获取一列/多列数据
+- 获取一列数据
   - `df['列名']` → series
   - `df[['列名']]` → **DataFrame**
 
@@ -453,7 +450,7 @@ pd.read_csv('data/movie5_noindex.csv')
 
 
 
-#### 6.2 loc 和 iloc
+### 6.2 loc 和 iloc
 
 `df.loc[[行名字],[列名字]]` / `df.iloc [[行序号],[列序号]]`
 
@@ -461,47 +458,74 @@ pd.read_csv('data/movie5_noindex.csv')
 - 可以使用切片语法, 可以传入一个值, 也可以传入列表
 
 ```python
-df.loc[0]  # 取出来的数据是Series 还是DataFrame??
+df.loc[0]  # 取第一行（索引为0 的行）,返回Series
 df.iloc[:,[2,4,-1]] # :, 获取所有行  [2,4,-1] 获取序号是2和4 以及最后一列
 df.loc[:,['country','year']] # :, 获取所有行  获取名字是country 和 year这两列数据
 df.iloc[:,0:6:2] # 切片 0:6 左闭右开 不包含6  2是步长
 df.loc[:,'country':'year'] # 切片 'country':'year' 没有开闭区间的概念
 ```
 
-在使用的时候, 推荐使用loc 使用行/列的名字来取值, 代码可读性比较好
+> 在使用的时候, 推荐使用loc，使用行/列的名字来取值, 代码可读性比较好
+>
 
 
 
-#### 6.3 分组聚合
+✨ 关键总结
 
-分组聚合在SQL中 
+| 操作          | 目标       | 返回类型    | 示例                   |
+| :------------ | :--------- | :---------- | :--------------------- |
+| `df.loc[0]`   | **第一行** | `Series`    | `A:1, B:4`（单行数据） |
+| `df.loc[:,0]` | 第一列     | `Series`    | 需列索引是整数 0       |
+| `df.loc[0:0]` | 第一行     | `DataFrame` | 保留二维结构           |
+
+
+
+**保持 DataFrame 结构**：
+若想取单行/单列但返回 `DataFrame`（二维），用双层括号：
+
+```python
+df.loc[[0]]     # 返回只有一行的 DataFrame（行索引为0）
+df.loc[:, ['A']] # 返回只有列'A'的 DataFrame
+```
+
+
+
+### 6.3 分组聚合
+
+**SQL实现方式**
 
 ```sql
 select 字段, 聚合函数(字段名字) from 表名 group by 分组字段名字
 ```
 
-DataFrame的api
+**DataFrame API实现方式**
 
 ```python
-df.groupby('分组字段')['要聚合的字段'].聚合函数()
-df.groupby(['分组字段','分组字段2'])[['要聚合的字段','要聚合的字段2']].聚合函数()
+# 单字段分组
+df.groupby('分组字段')['聚合字段'].聚合函数()
+
+# 多字段分组
+df.groupby(['分组字段1', '分组字段2'])[['聚合字段1', '聚合字段2']].聚合函数()
 ```
 
->分组后默认会把分组字段作为结果的行索引(index)
+**核心注意事项**
+
+> 1. **索引处理**
+>    分组后默认将分组字段设为行索引(index)
+>    多字段分组会产生`MultiIndex`复合索引，可用`reset_index()`转为普通列
+> 2. **执行流程**
 >
->如果是多字段分组, 得到的是MultiIndex(复合索引), 此时可以通过reset_index() 把复合索引变成普通的列
->
->基本代码调用的过程
->
->- 通过df.groupby('year')先创一个分组对象
->- 从分组之后的数据DataFrameGroupBy中，传入列名进行进一步计算返回结果为一个 SeriesGroupBy ，其内容是分组后的数据
->- 对分组后的数据计算平均值
+> - 创建分组对象：`grouped = df.groupby('year')`
+> - 字段选择：`series_group = grouped['目标字段']`
+> - 执行计算：`result = series_group.mean()`
 
 
 
-#### 6.4 pandas 简单绘图
+### 6.4 pandas 简单绘图
 
+```python
 series数据.plot()
+```
 
 - 默认绘制的是折线图
 - index 作为x坐标取值
@@ -515,112 +539,79 @@ df.groupby('year')['lifeExp'].mean().plot()
 
 
 
-### 7 pandas数据分析/处理练习
+## 7、pandas数据分析与处理练习
 
-加载数据之后, 要先查看数据的基本情况
+### **7.1 数据加载与初步分析**
 
-- `df.info()`
+加载数据后，首先需要了解数据集的基本情况：
+
+- `df.info()` - 数据集元数据概览
   - 数据有哪些列, 有多少条数据, 每列数据的数据类型, 每一列数据是否有空值
-- `df.describe()`
-  - 数值：计数，极值，分位数，均值，标准差
-  - 类别型：`df.describe(include =object)`  不同取值的数量, 出现次数最多的取值, 出现次数最多取值出现的次数
+- `df.describe()` - 数据统计分析
+  - **数值型数据**：显示计数、极值、分位数、均值和标准差
+  - **类别型数据**：使用 `df.describe(include='object')` 查看：
+    - 不同取值的数量
+    - 出现频率最高的取值
+    - 最高频取值出现的次数
 
 
 
-**排序相关的API**
+### 7.2 数据排序技巧
 
-- nlargest/nsmallest
-  - nlargest 获取某个字段取值最大的前n条数据
-  - nsmallest  获取某个字段取值最小的前n条数据
+**nlargest/nsmallest - 极值筛选**
+
+- nlargest 获取某个字段取值最大的前n条数据
+- nsmallest  获取某个字段取值最小的前n条数据
 
 ```python
 movie2 = movie[['movie_title','imdb_score','budget']]
+
+# 获取IMDB评分最高的100部电影，从高分电影中筛选预算最低的5部
 movie2.nlargest(100,'imdb_score').nsmallest(5,'budget')
 ```
 
-- sort_values() 对某一列/某几列的值排序
-
-  ```python
-  sorted_result = movie3.sort_values(['title_year','imdb_score'],ascending=False)
-  ```
-
-  >ascending 升序 默认是True , 改成False之后, 就是降序了
-  >
-  >ascending  传入的参数是True, False的列表, 这个列表的长度需要和要排序的字段对应
-  >
-  >- 可以分别指定 哪个字段升序, 哪个字段降序
-
-- 去重 drop_duplicates()
-
-  ```python
-  sorted_result.drop_duplicates(subset=['title_year'],keep='last')
-  ```
-
-  >drop_duplicates
-  >
-  >- subset  通过这个参数, 可以指定, 哪些字段重复, 认为是重复值, 可以被删除
-  >- keep first/last   去重的时候, 保留第一条/保留最后一条
 
 
+**sort_values() - 单列/多列排序**
 
-### 8 内容回顾
+```python
+sorted_result = movie3.sort_values(['title_year','imdb_score'],ascending=False)
 
-加载数据
+# 按年份降序、评分降序排序
+sorted_result = movie.sort_values(
+    ['title_year', 'imdb_score'],
+    ascending=[False, False]
+)
 
-df  = pd.read_XXX(路径)
+# 按年份升序、评分降序排序
+sorted_result = movie.sort_values(
+    ['title_year', 'imdb_score'],
+    ascending=[True, False]
+)
+```
 
-了解数据, 认识数据
+>**参数说明**：
+>
+>- `ascending`：控制排序方向
+>  - 默认 `True`（升序）
+>  - 设置为 `False` 改为降序
+>- 多列排序时可传递布尔值列表，分别指定每列的排序方向
 
-df.info()
 
-df.describe()
 
-df.shape/values/dtypes
+### 7.3 数据去重操作
 
-加载部分数据
+**drop_duplicates() - 删除重复项**
 
-df['列名'] / df[['列名1','列名2']]
+```python
+# 保留每年最后一部电影（按当前排序）
+sorted_result.drop_duplicates(subset=['title_year'],keep='last')
+```
 
-df.loc[['行名'],['列名']] / df.iloc[['行序号'],['列序号']]
-
-df[df['列']> 值] /df[df['列']== 值] /df[df['列']<值]  类似于SQL 的where 条件
-
-行列修改
-
-- set_index() / reset_index()
-- rename(index=idx_rename,columns=col_rename )
-- df.index =  
-- df.columns = 
-
-插入/删除/追加数据
-
-- df['新列名'] = 值
-
-- df.insert(loc,column,value=)
-- df.drop() 按行/按列
-
-分组聚合
-
-df.groupby(分组字段)[聚合字段].聚合方法()
-
-简单绘图
-
-series.plot() 画图
-
-排序
-
-nlargest/nsmallest
-
-sort_values([字段], ascending = False/True)
-
-去重
-
-df.drop_duplicates(subset)
-
-api 中两个经常遇到的参数
-
-inplace 是否在原始数据上修改
-
-- 修改数据的API 调用之后, 如果有返回说明修改的是副本, 如果没有返回说明修改的是原始的数据
-
-axis 按行操作/按列操作  columns 列/index行
+>**参数说明**：
+>
+>- `subset`：指定判断重复的列（默认所有列）
+>- `keep`：保留策略
+>  - `'first'`：保留首次出现的条目
+>  - `'last'`：保留最后出现的条目
+>  - `False`：删除所有重复项
