@@ -1,58 +1,84 @@
-## 今日重点
-
-数据组合 (类似SQL join)
-
-缺失值处理 (null 值处理)
-
-Apply 自定义函数
-
-
-
 ## 1、租房数据练习
 
-加载数据之后, 先要了解数据的基本情况：`df.head()`、`df.info()`、`df.describe()`
+### 1.1 数据加载与初步探索
 
-
-
-**分组聚合**
+加载数据后，使用以下方法了解数据基本情况：
 
 ```python
-house_data.groupby('view_num',as_index=False)['district'].count()
+df.head()  # 查看前5行数据
+df.info()  # 查看数据结构和数据类型
+df.describe()  # 获取数值列的统计摘要
 ```
 
-- `as_index` 默认是True , 分组字段会作为分组结果的索引, 把它改成False之后, 分组字段会作为结果中的普通列。`as_index=False` 效果相当于`groupby('view_num')`   再 `reset_index()`
+### 1.2 分组聚合操作
 
-- 分组之后 count
-  - 如果数据没有缺失(null) 分组之后对任何一个字段count结果都相同
-  - 如果有些字段有缺失, count的时候, 需要注意要统计哪一列的数据
-
-- 分组之后, 聚合多个字段, 采用不同的聚合方式
-
-  ```python
-  # agg aggregate 聚合  {'字段':'聚合方法名字'} 可以实现不同的字段, 用不同的聚合方法来聚合
-  house_data.groupby('house_type').agg({'view_num':'sum','price':'mean'})
-  ```
-
-
-
-**绘图**
-
-pandas的`Plot()` 实际上调用的是**matplotlib**，matplotlib 中文显示问题：
+**基础分组计数**
 
 ```python
+house_data.groupby('view_num', as_index=False)['district'].count()
+```
+
+**参数说明：**
+
+- `as_index=False`：`as_index` 默认是True , 分组字段会作为分组结果的索引, 把它改成False之后, 分组字段作为普通列而非索引（等效于`groupby().reset_index()`）
+- 计数注意事项：
+  - 当数据无缺失值时，对任意列计数结果相同
+  - 存在缺失值时需明确指定计数列
+
+
+
+**多字段聚合**
+
+```python
+house_data.groupby('house_type').agg(
+    {'view_num': 'sum',   # 浏览量求和
+     'price': 'mean'}     # 价格求均值
+)
+```
+
+**语法解析：**
+
+- 使用字典格式 `{'字段': '聚合方法'}`
+- 支持不同字段应用不同聚合方法
+- 常用聚合函数：`sum`, `mean`, `count`, `max`, `min`
+
+
+
+### 1.3 数据可视化
+
+**中文显示配置**
+
+pandas的`Plot()` 实际上调用的是**matplotlib**，matplotlib 中文显示问题解决方案：
+
+```py
 import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif'] = ['Noto Sans CJK JP', 'WenQuanYi Micro Hei', 'SimHei'] # 正常显示汉字
-plt.rcParams['axes.unicode_minus'] = False # 正常显示负号
+
+# 解决中文显示问题
+plt.rcParams['font.sans-serif'] = [
+    'Noto Sans CJK JP', 
+    'WenQuanYi Micro Hei', 
+    'SimHei'
+] 
+
+# 解决负号显示问题
+plt.rcParams['axes.unicode_minus'] = False
 ```
 
-plot 几个参数：
+**条形图绘制**
 
-```python
-house_data.groupby('house_type')['district'].count().sort_values(ascending=False).plot(kind = 'bar',figsize=(16,8))
+```py
+house_data.groupby('house_type')['district']      # 按户型分组
+    .count()                                      # 计数
+    .sort_values(ascending=False)                 # 降序排序
+    .plot(kind='bar', figsize=(16, 8))            # 创建条形图
 ```
 
-- kind 指定画什么图：bar条形图/柱状图
-- `figsize = (16,8)` ：指定绘图区域的大小 16 宽度, 8 高度
+**plot参数详解：**
+
+| 参数      | 说明     | 示例值                            |
+| :-------- | :------- | :-------------------------------- |
+| `kind`    | 图表类型 | `'bar'`(条形图), `'line'`(折线图) |
+| `figsize` | 图像尺寸 | `(宽度, 高度)` 单位英寸           |
 
 
 
@@ -60,28 +86,53 @@ house_data.groupby('house_type')['district'].count().sort_values(ascending=False
 
 ### 2.1 concat连接
 
-应用场景：两个DataFrame 有**相同的结构**：行名一样or 列名一样
+**应用场景**
+
+适用于**结构相同**的 DataFrame 连接：
+
+- 列名一致 → 纵向堆叠（行增加）
+- 行索引一致 → 横向拼接（列增加）
 
 
 
 典型场景,  每个df 记录了一天的数据, 记录的列名都一致, 把n天的数据放到一起分析
 
 ```python
-pd.concat([df1,df2,df3], ingnore_index = False , axis = 0)
+pd.concat(
+    [df1, df2, df3],     # 需要连接的DataFrame列表
+    ignore_index=False,  # 是否重建索引
+    axis=0               # 连接方向
+)
 ```
 
-- `ingnore_index`  忽略索引, 默认是False。连接之后会保留原来的索引，设置为True会重建从0开始的索引
-- `axis` ：对齐方式
-  - **0**：上下连接(列名对齐)
-  - **1**：左右连接(行索引对齐)
+**参数说明**
+
+| 参数           | 说明         | 默认值  | 注意事项                   |
+| :------------- | :----------- | :------ | :------------------------- |
+| `ignore_index` | 是否重建索引 | `False` | True 时创建 0-N 的新索引   |
+| `axis`         | 连接方向     | `0`     | `0`=纵向(行), `1`=横向(列) |
 
 > 上下连接, 如果列名不一致, 会多出列, 出现NaN；左右连接, 如果行索引不一致, 会多出行, 出现NaN
 
-**df.appen(df)** 作用跟concat类似, 已经过时了, 在新版本的pandas中这个方法已经被删除了, 使用concat可以实现完全一样的效果
+> **重要提示**：`df.append()` 方法已在新版 Pandas 中弃用，推荐统一使用 `concat()`
+
+
 
 
 
 ### 2.2 merge连接 (相当于SQL 的join)
+
+**连接原理**：基于**键值列**匹配数据，类似 SQL JOIN 操作
+
+
+
+
+
+
+
+
+
+
 
 ```python
 import sqlite3
@@ -104,32 +155,36 @@ tracks_subset = tracks.loc[[0,62,76,98,110,193,204,281,322,359]]
 genres.merge(tracks_subset,how='outer',on='GenreId')
 ```
 
-**how 参数：**
 
-- `how = 'left'`   对应SQL中的 left outer 保留左侧表中的所有key
 
-- `how = 'right'` 对应SQL中的 right outer 保留右侧表中的所有key
-- `how = 'outer'` 对应SQL中的 full outer 保留左右两侧侧表中的所有key
-- `how = 'inner'` 对应SQL中的 inner 只保留左右两侧都有的key
+**how 参数（连接类型）**
 
-**on参数：**
+| 类型    | SQL 等效         | 说明                        |
+| :------ | :--------------- | :-------------------------- |
+| `inner` | INNER JOIN       | 仅保留左右两侧都有的key     |
+| `left`  | LEFT OUTER JOIN  | 保留左侧表中的所有key       |
+| `right` | RIGHT OUTER JOIN | 保留右侧表中的所有key       |
+| `outer` | FULL OUTER JOIN  | 保留左右两侧侧表中的所有key |
 
--  连接的字段, 如果左右两张表 连接的字段名字相同直接使用on
 
-- 如果名字不同，left_on、right_on
+
+**on参数（键值匹配方式）：**
 
 ```python
-left = pd.DataFrame({
-    'key_left': ['A', 'B', 'C'],
-    'value_left': [1, 2, 3]
-})
+# 单键匹配（连接的字段, 如果左右两张表 连接的字段名字相同直接使用on）
+df1.merge(df2, on='id')
 
-right = pd.DataFrame({
-    'key_right': ['A', 'B', 'D'],
-    'value_right': [4, 5, 6]
-})
+# 多键匹配
+df1.merge(df2, on=['country', 'city'])
 
-# 合并两个 DataFrame，按左侧的 key_left 和右侧的 key_right 匹配
+# 异名列匹配(如果名字不同，left_on、right_on)
+df1.merge(
+    df2, 
+    left_on='employee_id', 
+    right_on='staff_id'
+)
+
+# 使用pd.merge()
 result = pd.merge(
     left, 
     right, 
@@ -139,41 +194,67 @@ result = pd.merge(
 )
 ```
 
-连接之后, 两张表中如果有相同名字的字段, 默认会加上后缀 默认值  _x, _y。可以通过_`suffixes=("_ x", "_ y")`参数来修改
+
+
+**列名冲突处理**
+
+连接之后, 两张表中如果有相同名字的字段, 默认会加上后缀 默认值\_x,\_y。可以通过_`suffixes=("_ x", "_ y")`参数来修改
+
+```python
+# 默认后缀处理
+   id  value_x  value_y
+0   1      100      200
+
+# 自定义后缀
+df1.merge(df2, on='id', suffixes=('_left', '_right'))
+```
 
 
 
-### 2.3 join连接 (了解)
+### 2.3 join连接（索引对齐-了解）
 
-两种应用场景
+**核心特性**
 
-- 第一种：类似于concat  但是只能是左右连接, 不能上下连接 使用index(行索引) 对齐
+- 默认基于**行索引**匹配
+- 本质是 `merge()` 的简化版
+- 适合索引对齐的快速合并
 
-  ```python
-  stock_2016 = pd.read_csv('data/stocks_2016.csv')
-  stock_2017 = pd.read_csv('data/stocks_2017.csv')
-  stock_2018 = pd.read_csv('data/stocks_2018.csv')
-  stock_2016.join(stock_2017,lsuffix='_2016',rsuffix='_2017',how='outer')
-  ```
 
->stock_2016 直接 join stock_2017 两张表index相同的部分会连在一起
->
->如果两张表有同名字段, 必须指定 lsuffix 左表后缀  rsuffix 右表后缀
->
->how 连接方式 inner outer left right 默认inner
 
-- 第二种  df的一列跟右表的index(行索引) 的值进行关联
+**场景1：索引对齐连接**
+
+类似于concat，但是只能是左右连接, 不能上下连接 使用index(行索引) 对齐
+
+```python
+stock_2016 = pd.read_csv('data/stocks_2016.csv')
+stock_2017 = pd.read_csv('data/stocks_2017.csv')
+stock_2018 = pd.read_csv('data/stocks_2018.csv')
+stock_2016.join(stock_2017,lsuffix='_2016',rsuffix='_2017',how='outer')
+```
+
+**参数解释：**
+
+- stock_2016 直接 `join` stock_2017，两张表index相同的部分会连在一起
+- 如果两张表有同名字段, 必须指定 lsuffix 左表后缀  rsuffix 右表后缀
+- how 连接方式 inner outer left right 默认inner
+
+
+
+**场景2：列与索引匹配**
+
+df的一列跟右表的index(行索引) 的值进行关联
 
 ```python
 stock_2016.join(stock_2018.set_index('Symbol'),lsuffix='_2016',rsuffix='_2018',on='Symbol')
 ```
 
->stock_2016 的 on='Symbol'  Symbol这一列 和  stock_2018.set_index('Symbol') 行索引 匹配
->
->这种用法可以用concat / merge 替换
->
->- merge 把 stock_2018 和 stock_2016 要连接的列, 通过reset_index 都变成一列
->- cancat 把 stock_2016 的 Symbel 通过set_index 也设置为Index
+- **核心逻辑**：左表 `stock_2016` 的 `Symbol` 列与右表 `stock_2018` 的行索引（由 `set_index('Symbol')` 生成）进行关联。
+- **关键点**：`on='Symbol'` 指定左表的列，右表需提前将匹配字段设为索引。
+
+这种用法可以用concat / merge 替换
+
+- merge 把 stock_2018 和 stock_2016 要连接的列, 通过`reset_index` 都变成一列
+- cancat 把 stock_2016 的 Symbel 通过`set_index` 也设置为Index
 
 
 
@@ -186,6 +267,8 @@ stock_2016.join(stock_2018.set_index('Symbol'),lsuffix='_2016',rsuffix='_2018',o
 | **键值匹配** | 不需要键值，直接拼接                   | 必须指定`on`（列名）或`left_on`/`right_on` | 基于索引（默认）或列名          |
 | **索引处理** | 保留原始索引或生成新索引               | 默认生成新索引                             | 默认保留左索引                  |
 | **适用场景** | 简单堆叠数据                           | 复杂键值关联                               | 索引对齐的快速合并              |
+
+
 
 **适用场景总结**
 
@@ -201,99 +284,103 @@ stock_2016.join(stock_2018.set_index('Symbol'),lsuffix='_2016',rsuffix='_2018',o
 
 ## 3、缺失值处理
 
-### 3.1 缺失值简介和如何判断缺失值
+### 3.1 缺失值简介与判断方法
 
-数据中出现缺失值是很常见的
+数据中出现缺失值是数据分析中的常见现象，主要来源包括：
 
-- 计算的过程中, 两个表join 可能会有缺失
-- 原始的数据中也有可能直接带着缺失值
+- 数据合并操作（如两个表 JOIN）可能产生缺失
+- 原始数据本身包含缺失值
 
-数据处理和模型训练的时候, 有很多场景要求必须先把缺失值处理掉, 想处理缺失值先要在数据中找到缺失值
+在数据处理和模型训练前，通常需要先处理缺失值。**判断缺失值**的常用方法：
 
 ```python
-pd.isnull() 
-pd.isna() 
-pd.notnull() 
-pd.notna()
+# Pandas提供的缺失值检测方法
+pd.isnull()  # 检查是否为缺失值
+pd.isna()    # 功能同上
+pd.notnull() # 检查是否非缺失值
+pd.notna()   # 功能同上
 ```
 
-- `np.nan`、`np.NAN`、`np.NaN` 都是缺失值, 这个类型比较特殊, **不能通过 == 方式判断**, 只能通过API来判断
+⚠️ 特殊注意事项
+
+NumPy中的缺失值 `np.nan`、`np.NAN`、`np.NaN` 具有特殊性质：
+
+- **不能通过 `==` 运算符直接判断**，只能通过API来判断
+- 缺失值之间互不相等
 
 ```python
 import numpy as np
-print(np.NAN==True)
-print(np.NAN==False)
-print(np.NAN=='')
-print(np.NAN==0)
-```
 
->False
->False
->False
->False
+# 缺失值与其他值的比较
+print(np.NAN == True)   # False
+print(np.NAN == False)  # False
+print(np.NAN == '')     # False
+print(np.NAN == 0)      # False
 
-```python
-# 两两之间互不相等
-print(np.NAN==np.NaN)
-print(np.NAN==np.nan)
-print(np.NaN==np.nan)
-```
+# 缺失值之间的比较
+print(np.NAN == np.NaN)  # False
+print(np.NAN == np.nan)  # False
+print(np.NaN == np.nan)  # False
 
->False
->False
->False
-
-```python
+# 正确检测方法
 import pandas as pd
-print(pd.isnull(np.NAN))
-print(pd.isnull(np.nan))
-print(pd.isnull(''))
+print(pd.isnull(np.NAN))  # True
+print(pd.isnull(np.nan))  # True
+print(pd.isnull(''))      # False
+
+print(pd.notnull(np.NAN))  # False
+print(pd.notnull(np.nan))  # False
+print(pd.notnull(''))      # True
 ```
-
->True
->True
->False
-
-```python
-print(pd.notnull(np.NAN))
-print(pd.notnull(np.nan))
-print(pd.notnull(''))
-```
-
->False
->
->False
->
->True
 
 
 
 ### 3.2 读取包含缺失值的数据
 
+Pandas 提供灵活的缺失值处理选项：
+
 ```python
-pd.read_csv('data/survey_visited1.csv',na_values=['?'],keep_default_na=False)
+# 读取CSV时处理缺失值
+df = pd.read_csv(
+    'data/survey_visited1.csv',
+    na_values=['?'],      # 指定额外缺失值标识符
+    keep_default_na=False # 是否保留默认缺失值识别
+)
 ```
 
->na_values = 除了空白值之外, 还有哪些值在加载数据的过程中被按照缺失值对待, 上面传入了?  说明数据中的?加载之后会用 NaN 来表示
->
->keep_default_na = 是否把空白的内容作为缺失值来加载（是否加载成NaN）
+参数说明：
+
+- `na_values`：除空白值外，额外视为缺失值的符号（如 `?`），上面传入了`?`，说明数据中的`?`加载之后会用 NaN 来表示
+- `keep_default_na`：是否将空白内容识别为缺失值（默认True）
 
 
 
-### 3.3 缺失值处理
+### 3.3 缺失值处理技术
+
+**缺失值检测**
 
 ```python
 titanic = pd.read_csv('data/titanic_train.csv')
 titanic.head()
-titanic.isnull().sum() # 快速计算是否包含缺失值
+
+# 统计各列缺失值数量
+titanic.isnull().sum()
 ```
 
-可以通过可视化的方式来展示数据缺失的情况
 
-- `pip install missingno`
+
+**缺失值可视化**
+
+使用 `missingno` 库直观展示缺失情况：
+
+```bash
+pip install missingno
+```
 
 ```python
 import missingno as msno
+
+# 缺失值条形图
 msno.bar(titanic)
 ```
 
@@ -306,58 +393,96 @@ msno.heatmap(titanic)
 
 ![image-20230902151658320](assets/image-20230902151658320.png)
 
-**删除缺失值**
+#### 3.3.1 **缺失值删除**
 
 ```python
-titanic.dropna(subset=None,how='any',inplace=False,axis=0)
+titanic.dropna(
+    subset=None,    # 指定检查缺失的列（默认所有列）
+    how='any',      # 删除条件：'any'（有缺失即删）/ 'all'（全缺失才删）
+    inplace=False,  # 是否修改原数据
+    axis=0          # 操作轴向：0=行，1=列
+)
 ```
 
->subset=None  默认是有缺失值的行, 就会被删除, 可以通过这个参数来指定, 哪些列有缺失值才会被删除
->
->subset = ['Age']  只有当年龄有缺失才会被删除
->
->inplace=False  通用参数, 是否修改原始数据默认False
->
->axis=0 通用参数 按行按列删除 默认行
->
->how='any'  只要有缺失就会删除 还可以传入'all' 全部都是缺失值才会被删除
+**参数说明：**
 
+**`subset`**
 
-
-**缺失值填充**：
-
-- 非时序数据
-  - 非时序数据的缺失值填充, 直接使用`fillna(值, inplace)`
-    - 可以使用统计量  众数 , 平均值, 中位数 ...
-    - 也可以使用默认值来填充  
+- 默认值：`None`（检查所有列，即有缺失值的行, 就会被删除）
+- 功能：指定需要检查缺失值的列
+- 示例：
 
 ```python
-titanic1['Age'].fillna(titanic1['Age'].mean(),inplace=True)
+subset=['Age']  # 仅当'Age'列有缺失时删除该行
 ```
 
-- 时序数据
-  - 数值的变化, 跟时间相关 气温/天气情况/用电量 ....
+
+
+**`how`**：可选值
+
+- `'any'`：行/列中**任一**缺失即删除（默认）
+- `'all'`：行/列**全部**缺失才删除
+
+
+
+**`inplace`**：通用参数，控制是否直接修改原数据
+
+- `False`：返回新对象（默认）
+- `True`：原地修改，不返回新对象
+
+
+
+**`axis`**：通用参数，指定操作方向：
+
+- `0` 或 `'index'`：按行删除（默认）
+- `1` 或 `'columns'`：按列删除
+
+
+
+
+
+#### 3.3.2 **缺失值填充**：
+
+**🧾 非时序数据填充**
+
+**方法**：直接使用 `fillna(值, inplace=True)`
+
+**常用填充策略**：
+
+- 统计量填充：众数、平均值、中位数等
+- 也可以使用默认值来填充 
 
 ```python
-city_day = pd.read_csv('data/city_day.csv',parse_dates=['Date'],index_col='Date')
+# 示例：用年龄平均值填充缺失值
+titanic1['Age'].fillna(titanic1['Age'].mean(), inplace=True)
+```
+
+
+
+**⏳ 时序数据填充**
+
+**场景**：与时间相关的数值变化（如气温/天气情况/用电量等）
+
+```python
+# 加载时序数据并解析日期
 # parse_dates 解析日期, 指定日期列 Date 加载的时候自动会把它处理成日期时间类型
+city_day = pd.read_csv('data/city_day.csv', 
+                      parse_dates=['Date'],  # 自动转换日期格式
+                      index_col='Date')     # 设日期为索引
+
+# 提取部分数据（索引50-64行）
 city_day['Xylene'][50:64]
 ```
 
->筛选部分数据进行处理
+**填充方法**：
 
 ```python
 city_day['Xylene'][50:64].fillna(method='ffill') # 使用缺失值前面的有效值来填充
 city_day['Xylene'][50:64].fillna(method='bfill') # 使用缺失值后面的有效值来填充
-```
 
-线性插值
-
-```python
+# 线性插值,利用缺失值前面和后面两个有效值连线, 填充的缺失值从线上找
 city_day['Xylene'][50:64].interpolate(limit_direction='both')
 ```
-
->利用缺失值前面和后面两个有效值连线, 填充的缺失值从线上找
 
 
 
@@ -365,56 +490,74 @@ city_day['Xylene'][50:64].interpolate(limit_direction='both')
 
 缺失值处理的套路：
 
-- 能不删就不删 , 如果某列数据, 有大量的缺失值(50% 以上是缺失值, 具体情况具体分析)
+- 能不删就不删 , 如果某列数据, 除非有大量的缺失值(50% 以上是缺失值, 具体情况具体分析)
 - 如果是类别型的, 可以考虑使用 '缺失' 来进行填充
 - 如果是数值型 可以用一些统计量 (均值/中位数/众数) 或者业务的默认值来填充
 
 
 
-## 4 Apply 自定义函数
+## 4、Apply 自定义函数
 
-应用场景：当Pandas自带的API不能满足需求, 我们需要遍历的对Series中的每一条数据/DataFrame中的一列或一行数据做相同的自定义处理, 就可以使用Apply自定义函数
+**应用场景**：当 Pandas 内置 API 无法满足需求时，我们需要遍历 Series 中的每个数据点或 DataFrame 中的列/行数据执行相同的自定义处理逻辑，此时可以使用 Apply 自定义函数。
 
 ### 4.1 Series的apply方法
 
 ```python
 import pandas as pd
-df = pd.DataFrame({'a':[10,20,30],'b':[20,30,40]})
+
+# 创建示例 DataFrame
+df = pd.DataFrame({
+    'a': [10, 20, 30],
+    'b': [20, 30, 40]
+})
 ```
 
-- 创建一个方法, 接收一个参数(一个值), 也可以接收多个参数(使用的时候, 第一个参数来自Series 后面的参数可以自己传递)
+创建一个方法, 接收一个参数(一个值), 也可以接收多个参数(使用的时候, 第一个参数来自Series，后面的参数可以自己传递)
 
 ```python
+# 单参数函数
 def my_sq(x):
-    return x**2
-# 方法传递多个参数
-def my_sq2(x,e):
-    return x**e
+    """计算平方值"""
+    return x ** 2
+
+# 多参数函数
+def my_sq2(x, e):
+    """计算任意指数幂"""
+    return x ** e
 ```
 
-- series 调用apply
+**series 调用apply**
 
 ```python
-df['a'].apply(my_sq)
-df['a'].apply(my_sq,e=3)
+# 应用单参数函数
+df['a_squared'] = df['a'].apply(my_sq)
+
+# 应用多参数函数（传递额外参数）
+df['a_cubed'] = df['a'].apply(my_sq2, e=3)
 ```
 
->apply 传入方法名字, 不是方法的调用, 方法是由apply 来进行调用的
+>**关键说明**：
 >
->apply 相当于遍历了Series中的每一个取值, 一个一个传给自定函数, 把返回值整理成series
+>- `apply` 接收函数名而非函数调用（即 `my_sq` 而非 `my_sq()`）
+>- `apply` 遍历 Series 中的每个值，将其传入自定义函数
+>- 函数返回值会被整合为新的 Series
 
 
 
 ### 4.2 DataFrame的apply方法
 
-`df.apply(func, axis = )`
+**`df.apply(func, axis=)`**
 
-- axis = 0 按列传递数据 传入一列数据(Series)
-- axis = 1 按行传递数据 传入一列数据(Series)
+- **axis=0**：按列操作（传入整列数据作为 Series）
+- **axis=1**：按行操作（传入整行数据作为 Series）
 
 
 
-练习： 把titanic 的数据中, 年龄替换成年龄段
+### 4.3 实战案例：泰坦尼克数据集分析
+
+#### **案例 1：年龄分段处理**
+
+把titanic 的数据中, 年龄替换成年龄段
 
 ```python
 def cut_age(age):
@@ -435,6 +578,8 @@ titanic['Age'].apply(cut_age).value_counts()
 ```
 
 ![image-20230902172520841](assets/image-20230902172520841.png)
+
+#### **案例 2：VIP 乘客识别**
 
 创建一个字段 vip 
 
@@ -457,57 +602,7 @@ titanic['vip'].value_counts()
 
 ![image-20230902172641130](assets/image-20230902172641130.png)
 
-
-
-
-
-## 5 内容回顾
-
-**数据组合**：就是把多张有关联的表连接到一起, 有两种连接方式
-
-- 上下连接：场景, 多天的数据合并到一起(每一天有一张表, 每张表统计的都是相同的信息就是列名一样)
-  - pd.concat()
-- 左右连
-  - pd.concat
-  - df.merge
-  - df.join
-
-**concat/merge** 使用的最多 区别
-
-- concat 是使用索引关联 , 要么行索引相同, 要么列名相同
-- merge 两列数据的值建立关联, 相当于SQL join
-
-df.join
-
-- 既可以使用两个表的索引建立关联
-- 也可以是df的一列和它join表的行索引(index) 建立关联
-
-**缺失值处理**
-
-- nan/NAN/NaN
-- pd.isnull() pd.notnull()
-- 加载数据的时候可以直接读取出缺失值来 
-- 处理方法 删除/填充/赋值为缺失
-  - 原则能不删就不删
-  - 关键信息缺失的行, 缺失值占比过高的列 考虑删除
-  - 填充
-    - 时序数据 考虑到数据随时间变化的情况, 可以使用缺失值的前一个非空值/缺失值的后一个非空值来填充, 线性插值
-    - 非时序数据
-      - 统计量/默认值
-      - 类别型 可以创建一个新的取值类型 缺失
-- df.dropna()
-- df.fillna({'列名1':'列1填充值', '列名2':'列2填充值'})
-  - df['列名'].fillna()
-- df.interpolate()
-
-**apply自定义函数**
-
-自己创建的函数要有返回值, 写函数的时候, 需要注意, 要想清楚, 传入的到底是一列, 还是一行, 还是一个数值
-
-- series.apply() 
-  - 传入的是每一个值
-- df.apply(axis) 
-  - 传入的是一行/一列数据
+其他：pycharm链接sqlite数据库文件
 
 
 
