@@ -1,82 +1,91 @@
-1. ## 今日重点
+## 1、向量化函数/lambda表达式
 
-
-### 1、向量化函数/lambda表达式
+### 1.1 向量化函数问题分析
 
 ```python
-def avg_test(x,y):
-    if x==20:
+def avg_test(x, y):
+    if x == 20:  # 无法处理Series类型的条件判断
         return np.NaN
     else:
-        return (x+y)/2
-avg_test(df['a'],df['b'])
+        return (x + y) / 2
+
+avg_test(df['a'], df['b'])  # 报错：if无法处理Series类型	
 ```
 
 ![image-20230903093048874](assets/image-20230903093048874.png)
 
-> 上面的方法调用之所以报错，就是因为 if 需要传入的是一个True/False , 但是我们传入的是一个True/False 组成的Series。此时if不能做出判断, 抛出了错误。想让上面的代码正常的执行, 我们需要把 Series里的每一个值遍历的传递给if做多次判断, 此时必须要自己写for循环, 可以通过 `np.vectorize(avg_test2)` 这种方式, 把这个方法变成一个向量化的方法(会遍历每一个值(分量)，多次调用这个方法)。
->
+**错误原因**：`if`语句需要布尔值，但传入的是包含布尔值的Series。解决方案需遍历Series中的每个值进行单独判断。
+
+> 想让上面的代码正常的执行, 我们需要把 Series里的每一个值遍历的传递给`if`做多次判断, 此时必须要自己写`for`循环，也可以通过 `np.vectorize(avg_test)` 这种方式, 把这个方法变成一个向量化的方法(会遍历每一个值(分量)，多次调用这个方法)。
+
+
 
 **`np.vectorize` 两种用法**
 
-- **方法1：**
+**方法1：显式向量化**
 
 ```python
 import numpy as np
+
 def avg_test(x,y):
     if x==20:
         return np.NaN
     else:
         return (x+y)/2
-avg_vec = np.vectorize(avg_test)
+
+# 创建向量化版本
+avg_vec = np.vectorize(avg_test) 
+avg_vec(df['a'], df['b'])  # 正确执行
 ```
 
-- **方法2：**通过装饰器来调用的方式
+**方法2：装饰器向量化**		
 
 ```python
-@np.vectorize
+@np.vectorize  # 装饰器模式
 def avg_test(x,y):
     if x==20:
         return np.NaN
     else:
         return (x+y)/2
-avg_test(df['a'],df['b'])
+
+avg_test(df['a'], df['b'])  # 直接调用
 ```
 
 
 
-#### 拓展：**装饰器**
+### 1.2 拓展：**装饰器**
 
-1.**什么是装饰器？**
+#### 1.2.1 装饰器是什么？
 
-装饰器是一种**高阶函数**，它接受一个函数作为参数，并返回一个新的函数。通过装饰器，我们可以在不修改原函数代码的前提下，动态地为其添加额外的功能。
-简单来说，装饰器就是**函数的包装器**，它可以在函数执行前后添加一些操作。
+**高阶函数**：接受函数作为参数，返回新函数
+**核心作用**：在不修改原函数代码的前提下添加额外功能。简单来说，装饰器就是**函数的包装器**，它可以在函数执行前后添加一些操作。
 
-2.装饰器的基本语法
+#### 1.2.2 基础语法
 
 在Python中，装饰器通常使用 `@` 符号来应用于函数或类。下面是一个简单的装饰器示例：
 
 ```python
-def my_decorator(func):
-    def wrapper():
-        print("函数执行前的操作")
-        func()
-        print("函数执行后的操作")
+def my_decorator(func):          # 装饰器定义
+    def wrapper(*args, **kwargs):
+        print("前置操作")         # 添加的功能
+        result = func(*args, **kwargs)
+        print("后置操作")
+        return result
     return wrapper
 
-@my_decorator
+@my_decorator                   # 应用装饰器
 def say_hello():
     print("Hello!")
 
-say_hello()
+say_hello()                     # 输出包含装饰器逻辑
 ```
 
-**输出：**
+**执行效果**：
 
 ```she
-函数执行前的操作
+前置操作
 Hello!
-函数执行后的操作
+后置操作
 ```
 
 在这个例子中：
@@ -88,7 +97,7 @@ Hello!
 
 
 
-**lambda表达式**
+### **1.3 Lambda表达式应用**
 
 使用`apply`的时候, 如果自定义处理逻辑比较简单, 一行代码就可以搞定, 可以使用`lambda`, 不用再`def` 一个起名字的函数, 使用`lambda` 创建一个匿名函数就可以了
 
@@ -98,42 +107,81 @@ df.apply(lambda x:x.isnull().sum())
 
 
 
-### 2、数据分组
+## 2、数据分组
 
-#### 2.1 分组聚合
+### 2.1 分组聚合
 
-分组聚合函数语法：
+**基本语法**
 
 ```python
-# 分组之后，对一个字段进行聚合
+# 分组后对单个字段聚合
 df.groupby('分组字段')['聚合字段'].count()
 
-# 分组之后，对多个字段进行聚合
-df.groupby('分组字段')[['聚合字段1','聚合字段2']].count()
+# 分组后对多个字段聚合
+df.groupby('分组字段')[['聚合字段1', '聚合字段2']].count()
 
-# 不同字段按照不同方式进行聚合
-df.groupby('year').agg({'lifeExp':'mean','pop':'median','gdpPercap':'max'})
+# 不同字段不同聚合方式
+df.groupby('year').agg({
+    'lifeExp': 'mean',
+    'pop': 'median',
+    'gdpPercap': 'max'
+})
 ```
 
 
 
-分组之后想调用非**Pandas**的聚合函数, 需要使用**agg**|**aggregate** 方法, 聚合函数可以自定义：
+**使用自定义聚合函数**
+
+当需要使用非Pandas内置函数时，需使用**`agg`**/**`aggregate`**方法：
 
 ```python
 import numpy as np
+
+# 使用numpy函数聚合
 df.groupby('continent')['lifeExp'].aggregate(np.mean)
 
-# 自定义聚合函数
-def my_mean_diff(s,global_mean):
+# 自定义聚合函数示例
+def my_mean_diff(s, global_mean):
     return s.mean() - global_mean
 
 global_mean = df['lifeExp'].mean()
-df.groupby('continent')['lifeExp'].agg(my_mean_diff,global_mean = global_mean)
+df.groupby('continent')['lifeExp'].agg(
+    my_mean_diff, 
+    global_mean=global_mean
+)
 ```
 
 
 
-#### 2.2 分组转换
+### 2.2 分组转换
+
+#### 2.2.1 概念说明
+
+在 pandas 中，**分组转换（GroupBy + Transform）** 操作：
+
+- 对分组后的数据应用函数
+- 返回与原数据相同形状的结果
+- 类似 SQL 中的**窗口函数**
+
+
+
+#### 2.2.2 基本用法
+
+```python
+import pandas as pd
+
+df = pd.DataFrame({
+    'Group': ['A', 'A', 'B', 'B', 'B'],
+    'Value': [10, 20, 30, 40, 50]
+})
+
+# 计算每组的均值，返回与原数据相同长度的结果
+df['GroupMean'] = df.groupby('Group')['Value'].transform('mean')
+```
+
+
+
+#### 2.2.3 实际应用示例
 
 - 数据准备工作
 
@@ -141,8 +189,8 @@ df.groupby('continent')['lifeExp'].agg(my_mean_diff,global_mean = global_mean)
 # 加载小费数据集
 tips = pd.read_csv('data/tips.csv')
 
-#random_state 具体的取值没有啥意义, 但是把这个值固定下来, 多次运行采样的代码, 采样出来的数据是一样的
-tips_10 = tips.sample(10,random_state=42) # sample采样 
+# 随机采样10条数据（固定随机种子保证可复现）
+tips_10 = tips.sample(10, random_state=42)
 
 import numpy as np
 
@@ -168,25 +216,7 @@ tips_10.groupby('sex')['tip'].transform(fillna_mean)
 
 
 
-在 pandas 中，**分组转换（ Group By  + Transform）** 是一种常用的操作，用于对分组后的数据应用函数，并返回与原数据相同形状的结果。（类似与`SQL`中的**窗口函数**）
-
-- **基本用法**
-
-`transform()` 方法会对每个分组应用一个函数，并将结果广播到原数据的每一行，保持形状一致。
-
-```python
-import pandas as pd
-
-df = pd.DataFrame({
-    'Group': ['A', 'A', 'B', 'B', 'B'],
-    'Value': [10, 20, 30, 40, 50]
-})
-
-# 计算每组的均值，并返回与原数据相同长度的结果
-df['GroupMean'] = df.groupby('Group')['Value'].transform('mean')
-```
-
-- **常见场景**
+#### 2.2.4 常见应用场景
 
 ```python
 # 场景 1：标准化（Z-Score）
@@ -209,30 +239,42 @@ df['Filled'] = df.groupby('Group')['Value'].transform(
 df['Rank'] = df.groupby('Group')['Value'].transform('rank', ascending=False)
 ```
 
-- 与 `apply` 的区别
-  - `transform` 要求输出与输入**形状相同**，适合逐元素操作。
-  - `apply` 更灵活，可以返回任意形状的结果（但需手动对齐）。
-
-通过 `groupby.transform`，你可以高效实现按组计算并保持数据对齐的需求。
 
 
+**与`apply`的区别**
 
-#### 2.3 分组转换练习
+| 特性         | `transform`              | `apply`                                        |
+| :----------- | :----------------------- | :--------------------------------------------- |
+| **输出形状** | 必须与原数据相同         | 可返回任意形状                                 |
+| **适用场景** | 逐元素操作，保持数据对齐 | 更灵活，可以返回任意形状的结果（但需手动对齐） |
+
+> 通过 `groupby.transform`，你可以高效实现按组计算并保持数据对齐的需求。
+>
+
+
+
+### 2.3 分组转换练习
 
 **任务：比较Bob 和 Amy 1-4月每月减重效果**
 
 
 
-- **第一步：**加载减重数据
+**数据说明**
 
-数据中包含了Bob和Amy 从1月到4月每周的体重数据(每个月4周, 一共32条数据)
+- 包含Bob和Amy从1月到4月每周体重数据
+- 每月4周，共32条记录
+
+
+
+**实现步骤**
+
+- **第一步：**加载数据
 
 ```python
-# 数据中包含了Bob和Amy 从1月到4月每周的体重数据(每个月4周, 一共32条数据)
-weight_loss = pd.read_csv('data/weight_loss.csv')
+weight_loss = pd.read_csv('data/weight_loss.csv')  # 读取体重数据
 ```
 
-- **第二步：**编写减重函数
+- **第二步：**定义减重函数
 
 我们要使用分组转换来计算Bob和Amy每个月的减重效果 (每个月每周的体重减去当月第一周的体重), 定义一个自定义函数
 
@@ -240,7 +282,7 @@ weight_loss = pd.read_csv('data/weight_loss.csv')
 # 计算减重的比例
 def find_perc_loss(s):
     # s.iloc[0] 每个月的第一周, 体重
-    return (s.iloc[0]-s)/s.iloc[0]
+    return (s.iloc[0]-s)/s.iloc[0]  # (首周体重-当前周体重)/首周体重	
 ```
 
 - **第三步：**分组转换，调用编写的减重函数
@@ -252,16 +294,18 @@ def find_perc_loss(s):
 weight_loss['减重比例'] = weight_loss.groupby(['Name','Month'])['Weight'].transform(find_perc_loss)
 ```
 
-- **第四步：**比较减重效果
+- **第四步：**比较减重效果（分析第4周数据）
 
 ```python
-# 提取第4周的数据用于比较， 看谁的减重效果更明显
-week4_result = weight_loss.query('Week=="Week 4"')[['Name','Month','减重比例']]
-week4_amy = week4_result[week4_result['Name']=='Amy']
-week4_bob = week4_result.query("Name=='Bob'")
+# 提取第4周数据
+week4 = weight_loss.query('Week == "Week 4"')[['Name', 'Month', '减重比例']]
 
-# 将月份设置为行索引, 方便两份数据进行计算
-week4_bob[['Month','减重比例']].set_index('Month') - week4_amy[['Month','减重比例']].set_index('Month')
+# 分离两人数据,将月份设置为行索引, 方便两份数据进行计算
+amy_week4 = week4.query('Name == "Amy"').set_index('Month')
+bob_week4 = week4.query('Name == "Bob"').set_index('Month')
+
+# 计算减重差异
+(bob_week4 - amy_week4).rename(columns={'减重比例': 'Bob减重比例 - Amy减重比例'})
 ```
 
 ![image-20230903112123650](assets/image-20230903112123650.png)
@@ -358,9 +402,28 @@ df.query(f'{col} > 2')  # 或者 df.query('@col > 2')
 
 
 
-#### 2.4 分组过滤
+**🛠️ Pandas技巧：`query()` vs 布尔索引**
+
+| 维度         | `query()` 方法                          | 布尔索引                             |
+| :----------- | :-------------------------------------- | :----------------------------------- |
+| **语法**     | `df.query('A>2 & B<50')`                | `df[(df.A>2) & (df.B<50)]`           |
+| **可读性**   | ★★★★★ (类自然语言)                      | ★★★☆☆ (需重复df引用)                 |
+| **运算符**   | 支持`and`/`or`                          | 必须用`&`/`|`                        |
+| **列名处理** | 空格列名需反引号: ``col name` > 10`     | 直接引用: `df['col name'] > 10`      |
+| **变量引用** | 需`@`符号: `df.query('A > @threshold')` | 直接使用变量: `df[df.A > threshold]` |
+
+
+
+### 2.4 分组过滤
 
 **groupby** 分组之后, 接 **filter** 方法, 传入一个返回 **True** / **False** 的方法, 当数据传入这个方法中,返回True的会被留下, 返回False的会被过滤掉。
+
+**核心概念**
+使用`groupby.filter()`可按组过滤数据：
+
+- 对每个分组应用自定义函数
+- 返回`True` → 保留整个分组
+- 返回`False` → 过滤掉整个分组
 
 ```python
 # 使用就餐人数进行分组, 过滤掉条目数少于5条的组
@@ -369,11 +432,12 @@ tips.groupby('size').filter(lambda x:x['size'].count()>5)
 
 
 
-#### 2.5 DataFrameGroupby对象
+### 2.5 DataFrameGroupby对象
 
 DataFrameGroupBy对象是pandas中分组操作的核心，它由`groupby()`方法创建，提供了强大的数据分组和聚合功能。
 
 ```python
+# 创建分组对象,按性别分组
 grouped = tips_10.groupby('sex')
 
 # 返回了分组的情况 {'组中的取值':[取值对应的条目索引列表]}
@@ -381,16 +445,23 @@ grouped.groups  # {'Female': [198, 124, 101], 'Male': [24, 6, 153, 211, 176, 192
 
 # 可以获取每组中的数据 (DataFrame)
 grouped.get_group('Female')
-```
 
-![image-20230903121614962](assets/image-20230903121614962.png)
-
-```python
 # 可以遍历这个DataFrameGroupby对象，每个group 都是一个元组 (分组的值, 这一组对应数据的DataFrame)
 for group in grouped:
     # print(group)
     print(type(group[1]))
+
+
 ```
+
+ **核心属性与方法**
+
+| 操作             | 代码示例                       | 返回值说明                       |
+| :--------------- | :----------------------------- | :------------------------------- |
+| **查看分组结构** | `grouped.groups`               | 返回字典：`{'组值': [索引列表]}` |
+| **获取单组数据** | `grouped.get_group('Female')`  | 返回指定组的完整DataFrame        |
+| **遍历分组**     | `for name, df in grouped: ...` | 每次迭代返回(组名, 组DataFrame)  |
+| **分组统计**     | `grouped['size'].mean()`       | 返回各组指定列的聚合结果         |
 
 
 
@@ -408,19 +479,19 @@ tips_10.groupby(['sex','time'],as_index = False)
 
 
 
-### 3、会员分析和数据透视表
+## 3、会员分析和数据透视表
 
 **任务：分析会员运营的基本情况**
 
-- 从量的角度分析会员运营情况：
-  - 整体会员运营情况（存量，增量）
-  - 不同渠道（线上，线下）的会员运营情况
-  - 线下业务，拆解到不同的地区、门店会员运营情况
+从量的角度分析会员运营情况：
+- 整体会员运营情况（存量，增量）
+- 不同渠道（线上，线下）的会员运营情况
+- 线下业务，拆解到不同的地区、门店会员运营情况
 
-- 从质的角度分析会员运营情况：
-  - 会销比 会员消费占整体消费的占比
-  - 连带率 是不是每次购买商品的时候, 都购买一件以上
-  - 复购率 是不是买了之后, 又来买
+从质的角度分析会员运营情况：
+- 会销比 会员消费占整体消费的占比
+- 连带率 是不是每次购买商品的时候, 都购买一件以上
+- 复购率 是不是买了之后, 又来买
 
 
 
@@ -430,13 +501,14 @@ tips_10.groupby(['sex','time'],as_index = False)
 df.pivot_table(index= , columns = , values= , aggfunc= )
 ```
 
-- **index**：行索引，传入原始数据的列名， 这一列中每一个取值会作为透视表结果的一个行索引；
-
-- **columns**：列索引，传入原始数据的列名,  这一列中每一个取值会作为透视表结果的一列；
-
-- **values**: 要做聚合操作的列名；
-
-- **aggfunc**：聚合函数；
+| 参数           | 说明         | 示例                  |
+| :------------- | :----------- | :-------------------- |
+| `index`        | 行分组字段   | `index='地区编码'`    |
+| `columns`      | 列分组字段   | `columns='年月'`      |
+| `values`       | 聚合数值字段 | `values='消费数量'`   |
+| `aggfunc`      | 聚合函数     | `aggfunc='sum'`       |
+| `margins`      | 添加总计行列 | `margins=True`        |
+| `margins_name` | 总计行列名称 | `margins_name='总计'` |
 
 
 
@@ -476,7 +548,7 @@ df['列名'].cumsum()
 
 
 
-#### 3.1 会员增量和存量分析
+### 3.1 会员增量和存量分析
 
 ```python
 import pandas as pd
@@ -541,7 +613,7 @@ month_count['会员存量'].plot(kind = 'bar',figsize=(16,8))
 
 
 
-#### **3.2 统计月增量会员中的会员等级分布**
+### **3.2 统计月增量会员中的会员等级分布**
 
 ```python
 # unstack()是pandas中一个用于重塑数据的重要方法，它可以将多级索引的行转换为列，实现数据的"旋转"或"透视"。
@@ -594,7 +666,7 @@ member_level[['白银会员占比','黄金会员占比']].plot(color=['r','g'],y
 
 ![image-20230903161033577](assets/image-20230903161033577.png)
 
-####  3.3 整体等级分布      
+###  3.3 整体等级分布      
 
 ```python
 ratio = customer_info.groupby('会员等级')[['会员卡号']].count()
@@ -623,7 +695,7 @@ ratio.loc[['白银会员','铂金会员','黄金会员','钻石会员'],'占比'
 
 ![image-20230903161157708](assets/image-20230903161157708.png)
 
-#### 3.4 线上线下会员增量分析 
+### 3.4 线上线下会员增量分析 
 
 - **统计数据**     
 
@@ -652,7 +724,7 @@ plt.show()
 
 ![image-20230903161503502](assets/image-20230903161503502.png)
 
-#### 3.5 按地区统计会员数量
+### 3.5 按地区统计会员数量
 
 
 
@@ -710,7 +782,7 @@ plt.show()
 
 ![image-20230903182711641](assets/image-20230903182711641.png)
 
-#### 3.6 各地区会销比
+### 3.6 各地区会销比
 
 - 加载数据
 
@@ -756,38 +828,3 @@ country_sales
 ```python
 area_sales/country_sales
 ```
-
-
-
-## 今日小结
-
-数据分组
-
-df.groupby().agg()
-
-df.groupby().transform()
-
-df.groupby().filter()
-
-数据透视表
-
-df.pivot_table(index= columns=  values=  aggfunc=,margins=True , margins_name)
-
-cumsum() 累计求和
-
-绘图
-
-s.plot.bar() #条形图
-
-s.plot.pie() # 饼图
-
-- figsize = () 画布大小
-- grid= True 网格线
-- legend = True 显示图例
-- color=['r','g']  # 控制颜色
-- xlabel /ylabel  x.y轴标签
-
-
-
-concat/merge 区别
-
