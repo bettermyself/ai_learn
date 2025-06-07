@@ -126,7 +126,7 @@ result.iloc[:,1]/result.iloc[:,0]
 
 ### 2.1 日期时间类型简介
 
-**pandas**的日期时间类型默认是 **datetime64[ns]**。在加载了下面的数据之后, 发现日期数据列是**Object**类型。
+**Pandas** 的日期时间类型默认是 **datetime64[ns]**。加载数据后，日期列通常为**Object**类型：	
 
 ```python
 import pandas as pd
@@ -145,7 +145,7 @@ ebola = pd.read_csv('data/country_timeseries.csv')
 
 **转换为日期时间类型：**
 
-- 使用 `pd.to_datetime()` 转换为 Pandas 的日期时间格式：
+- 使用 `pd.to_datetime()` 转换：
 
 ```python
 ebola['date_dt'] = pd.to_datetime(ebola['Date'])
@@ -154,8 +154,11 @@ ebola['date_dt'] = pd.to_datetime(ebola['Date'])
 - 也可以在读取数据的时候, 直接指定, 某一列解析成日期时间的格式：
 
 ```python
-ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=[0])  # 指定第一列为日期时间格式
-ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=['Date'])  # 按列名指定为日期时间格式
+# 按列索引指定
+ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=[0])
+
+# 按列名指定
+ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=['Date'])
 ```
 
 |      | Date       | Day  | Deaths\_Guinea | Deaths\_Liberia | Deaths\_SierraLeone |
@@ -168,14 +171,15 @@ ebola = pd.read_csv('data/country_timeseries.csv',parse_dates=['Date'])  # 按�
 
 
 
-其他时间类型：**TimeStamp 时间戳**
+其他时间类型：**时间戳 (Timestamp)**
 
-**`Timestamp`**：表示单个时间点（类似 Python 的 `datetime.datetime`），精度可到纳秒。
+**`Timestamp`**：表示单个时间点（类似 Python 的 `datetime.datetime`），精度可到纳秒：
 
 ```python
 import pandas as pd
 
-pd.Timestamp(2023,9,1)
+# 创建时间戳
+pd.Timestamp(2023, 9, 1)
 pd.Timestamp("2023-10-01 12:30:45")
 ```
 
@@ -184,11 +188,11 @@ pd.Timestamp("2023-10-01 12:30:45")
 **提取不同维度的日期信息：**
 
 ```python
-# 单个时间点的提取
+# 单个时间点提取
 time_stamp = pd.to_datetime('2023-09-01')
-time_stamp.year
-time_stamp.month
-time_stamp.day
+time_stamp.year  # 2023
+time_stamp.month  # 9
+time_stamp.day   # 1
 
 # 如果是一列日期时间的数据ebola['Date'].dt.XXX
 ebola['year']=ebola['Date'].dt.year
@@ -200,21 +204,23 @@ ebola['day'] = ebola['Date'].dt.day
 
 ### 2.2 日期时间索引
 
-**datetimeIndex**：把日期时间类型的数据（ **datetime64[ns]**）设置为索引, 优势就是方便进行时间范围的选择, 进行时间维度的切片操作会变得十分简单。
+**DatetimeIndex**：将日期时间类型设置为索引，简化时间范围选择和时间维度切片操作。
 
 
 
-**案例：**筛选2015年8月的tesla股票数据
+**案例：筛选2015年8月Tesla股票数据**
 
 ##### 方法一：布尔索引/query
 
 ```python
-# 之前的筛选方法：
 tesla_stock = pd.read_csv('data/TSLA.csv',parse_dates=[0])
 
-# 要筛选出2015年8月的股票信息, 如果Date是一列, 需要使用下面的布尔索引的写法
-tesla_stock[(tesla_stock['Date'].dt.year==2015)&(tesla_stock['Date'].dt.month==8)]  # 布尔索引写法
-tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")  # query写法。query() 内部会自动解析 and 为逐元素操作（无需使用 &）
+# 布尔索引写法
+mask = (tesla_stock['Date'].dt.year == 2015) & (tesla_stock['Date'].dt.month == 8)
+tesla_stock[mask]
+
+# query写法
+tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")  # query() 内部会自动解析 and 为逐元素操作（无需使用 &）
 ```
 
 
@@ -320,10 +326,10 @@ tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")
 
 **总结**
 
-| 场景                | 正确操作                | 错误操作    |
-| :------------------ | :---------------------- | :---------- |
-| 标量布尔运算        | `and`、`or`             | `&`、`|`    |
-| Pandas 布尔序列运算 | `&`、`|`、`~`（带括号） | `and`、`or` |
+| 场景                | 正确操作                | 错误操作           |
+| :------------------ | :---------------------- | :----------------- |
+| 标量布尔运算        | `and`、`or`、`not`      | `&`、`|`、**`~`**  |
+| Pandas 布尔序列运算 | `&`、`|`、`~`（带括号） | `and`、`or`、`not` |
 
 
 
@@ -332,25 +338,26 @@ tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")
 - 把**Date**设置为日期时间索引, 这类操作就会变得十分简单
 
 ```python
-tesla_stock.set_index('Date',inplace=True)
-tesla_stock.loc['2015-08']
+tesla_stock.set_index('Date', inplace=True)
+tesla_stock.loc['2015-08']  # 正确写法
+# tesla_stock['2015-08']   # Pandas 2.0+ 已废弃
 ```
 
->tesla_stock['2015-08']  这种写法在2.0的版本已经被删除了
 
 
-
-
+**时间差索引 (TimedeltaIndex)**
 
 在 Pandas 中，`timedelta64` 类型用于表示时间差（时间间隔），例如计算两个时间点之间的差异，或对时间序列进行偏移操作。把timedelta64这个类型的数据设置为索引, 就是时间差值索引timedeltaIndex：
 
 ```python
 tesla_stock.reset_index(inplace=True)
 
-tesla_stock['ref_date'] = tesla_stock['Date']-tesla_stock['Date'].min()
-tesla_stock.set_index('ref_date',inplace=True)
+# 创建时间差列
+tesla_stock['ref_date'] = tesla_stock['Date'] - tesla_stock['Date'].min()
+tesla_stock.set_index('ref_date', inplace=True)
 
-tesla_stock.loc['0 days':'4 days']
+# 时间差切片
+tesla_stock.loc['0 days':'4 days']  # 包含端点值
 ```
 
 >上面的切片操作, 4 days在数据中不存在, 依然能正确返回结果, 就是TimeDeltaIndex 优势
@@ -360,7 +367,7 @@ tesla_stock.loc['0 days':'4 days']
 ### 2.3 生成日期时间序列
 
 ```python
-pd.date_range('起始时间','结束时间', freq= 生成时间序列的方式)
+pd.date_range('起始时间','结束时间', freq= '生成时间序列的方式')
 ```
 
 freq可能取值：
@@ -405,10 +412,14 @@ freq可能取值：
 
 
 ```python
+# 生成工作日序列
 pd.date_range('2023-08-01','2023-10-30',freq='B')  # 工作日
 pd.date_range('2023-08-01','2023-10-30',freq='2B')  # 隔一个工作日获取一个工作日
 
-pd.date_range('2023-08-01','2023-10-30',freq='WOM-1THU') # 每个月的第一个星期4 WOM： week of month  THU Thursday	
+# 每月第一个星期四
+pd.date_range('2023-08-01','2023-10-30',freq='WOM-1THU') # WOM：week of month THU Thursday
+
+# 每月第三个星期五
 pd.date_range('2023-08-01','2023-10-30',freq='WOM-3FRI')  # Friday 星期五
 ```
 
@@ -418,37 +429,47 @@ pd.date_range('2023-08-01','2023-10-30',freq='WOM-3FRI')  # Friday 星期五
 
 Pandas日期时间数据类型：
 
-- **TimeStamp**： 时间戳，就是一个时间点
-- **Datetime64**： 一列时间数据  →DatetimeIndex
-- **TimeDelta64**：两列时间的差值  → TimeDeltaIndex
+| 类型            | 描述       | 应用场景                     |
+| :-------------- | :--------- | :--------------------------- |
+| **Timestamp**   | 单个时间点 | 精确时间表示                 |
+| **Datetime64**  | 日期时间列 | 时间序列分析(DatetimeIndex)  |
+| **Timedelta64** | 时间差     | 持续时间计算(TimeDeltaIndex) |
 
 
 
+**最佳实践**
 
-如果数据中包含了日期时间的数据，并且后续计算/数据的处理需要用到日期时间类型数据的特性，需要把他转换成日期时间类型
+**转换日期列**：如果数据中包含了日期时间的数据，并且后续计算/数据的处理需要用到日期时间类型数据的特性，需要把他转换成日期时间类型
 
-- pd.to_datetime(一列数据)  
-- pd.read_csv(parse_dates= [列名/序号]) 加载的时候直接进行转换
+```python
+# pd.to_datetime(一列数据)  
+df['date'] = pd.to_datetime(df['date_str'])
+
+# pd.read_csv(parse_dates= [列名/序号]) 加载的时候直接进行转换
+df = pd.read_csv('data.csv', parse_dates=['date_col'])
+```
+
+**特征工程**：在特征处理/数据处理，看见日期时间类型数据需要马上反映出通过这一列数据,可以做出很多列特征来
+
+```python
+df['year'] = df['date'].dt.year
+df['month'] = df['date'].dt.month
+df['quarter'] = df['date'].dt.quarter
+df['dayofweek'] = df['date'].dt.dayofweek  # 周一=0,周日=6
+```
+
+**高效查询**：如果想快速的对日期进行切片/范围选取的操作, 可以把它转换成日期时间索引
+
+```python
+df.set_index('date', inplace=True)
+df.loc['2023-01':'2023-03']  # 日期范围切片
+```
 
 
 
-可以通过Pandas提供的API生成日期时间的序列
+### 2.5 高级应用技巧
 
-- pd.date_range('起始时间','结束时间', freq= 生成时间序列的方式)
-
-
-
-在特征处理/数据处理，看见日期时间类型数据需要马上反映出通过这一列数据,可以做出很多列特征来
-
-- df['Date'].dt.year /df['Date'].dt.month /df['Date'].dt.quarter 季度 df['Date'].dt.dayofweek 星期几
-
-- 如果想快速的对日期进行切片/范围选取的操作, 可以把它转换成日期时间索引
-
-
-
-### 2.5 日期时间数据类型的练习
-
-把日期时间设置为Index 行索引之后, 可以使用
+**时间范围筛选：**把日期时间设置为Index 行索引之后, 可以使用
 
 ```python
 crime.between_time('2:00','5:00',include_start=False)  # between_time 在两个时刻的范围内
@@ -457,7 +478,7 @@ crime.at_time('5:43')  # at_time 在某个具体的时刻
 
 
 
-**日期时间索引的重采样**：
+**时间重采样**：
 
 - `crime.resample('W')` 将数据按周进行分组 , 分组之后可以接聚合函数, 类似于groupby之后的聚合；
 
@@ -465,35 +486,64 @@ crime.at_time('5:43')  # at_time 在某个具体的时刻
 
 - `crime.resample('Q')` 将数据按季度进行分组, 分组之后可以接聚合函数, 类似于groupby之后的聚合；
 
+```python
+# 按周重采样
+crime.resample('W').mean()
+
+# 按月重采样
+crime.resample('M').sum()
+
+# 按季度重采样
+crime.resample('Q').count()
+```
 
 
-如果需要对DatetimeIndex这个类型的数据进行切片操作, 建议先排序, 再切片, 效率更高。
+
+**性能优化：**如果需要对DatetimeIndex这个类型的数据进行切片操作, 建议先排序, 再切片, 效率更高。
+
+```py
+# 排序后切片提高效率
+crime.sort_index(inplace=True)
+crime.loc['2023-01-01':'2023-06-30']
+```
 
 
 
-## 3 数据可视化
+## 3、数据可视化
 
 ### 3.1 可视化库的介绍
 
-基于Matplotlib 绘制静态图形：pandas、seaborn
-
-基于javaScript：pyecharts/echarts、plotly
+| 库类型         | 代表库                   | 特点                       |
+| :------------- | :----------------------- | :------------------------- |
+| **静态图形**   | Matplotlib（基础）       | Python 最基础的绘图库      |
+|                | Pandas（内置Matplotlib） | 简化DataFrame/Series可视化 |
+|                | Seaborn（高级封装）      | 统计图形，美化默认样式     |
+| **交互式图形** | Pyecharts/Echarts        | 基于JavaScript，丰富交互   |
+|                | Plotly                   | 创建交互式Web可视化        |
 
 
 
 ### 3.2 Matplotlib可视化
 
-#### Matplotlib api介绍
+#### 3.2.1 Matplotlib api介绍
 
-- 准备数据
+**两种绘图方式：**
+
+1. **面向过程API（plt.）** - 快速简单
+2. **面向对象API（Figure/Axes）** - 精细控制
 
 ```python
-# 准备数据
-x = [-3,5,7]  # 所有坐标点的 x坐标
-y = [10,2,5]  # 所有坐标点的 y坐标
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 示例数据
+x = [-3, 5, 7]
+y = [10, 2, 5]
 ```
 
-- 绘制折线图：使用plt. 这一套API（面向过程）
+
+
+**面向过程示例：**
 
 ```python
 # 创建绘图区域
@@ -511,11 +561,12 @@ plt.show()
 
 ![image-20230905164509887](assets/image-20230905164509887.png)
 
-- 绘制折线图,使用面向对象这一套API
+**面向对象示例：**
 
 ```python
 fig,ax = plt.subplots(figsize=(12,5)) # ax 坐标系
-# 在坐标系中 画图
+
+# 在坐标系中画图
 ax.plot(x,y) # 调用ax 坐标系的绘图方法
 ax.set_xlim(-3,7) # 调用ax 坐标系的设置方法
 ax.set_ylim(2,11)
@@ -527,24 +578,21 @@ plt.show()
 
 
 
-
-
-#### anscombe数据集可视化：数据可视化的重要性
+#### 3.2.2 Anscombe 数据集：可视化重要性
 
 
 
-- 通过Anscombe数据集说明数据可视化的重要性
-- Anscombe数据集由英国统计学家Frank Anscombe创建
-- 数据集包含4组数据，每组数据包含两个连续变量。
-- 每组数据的平均值、方差、相关性基本相同，但是当它们可视化后，就会发现每组数据的模式明显不同。
+**数据集背景：**
+
+- 由统计学家 Frank Anscombe 创建
+- 包含4组（I, II, III, IV）数据
+- 每组数据统计特性相同，但分布模式完全不同
 
 ```python
 import pandas as pd
 anscombe = pd.read_csv('data/anscombe.csv')
 anscombe.dataset.value_counts()
 ```
-
-
 
 4组数据, 放在一个数据集中, 分别用I, II, III , IV 加以区分
 
@@ -557,6 +605,8 @@ anscombe.dataset.value_counts()
 
 
 
+**统计特性对比：**
+
 ```python
 anscombe.groupby('dataset').describe().T
 ```
@@ -567,7 +617,7 @@ anscombe.groupby('dataset').describe().T
 
 
 
-数据可视化：
+**可视化揭示差异：**
 
 ```python
 # 上面的数据一共可以分成4分 I II III IV  我们把这四份数据分别可视化, 画4张小图, 放到一个画布中
@@ -580,10 +630,12 @@ axes2 = fig.add_subplot(2,2,2)
 axes3 = fig.add_subplot(2,2,3)
 # 在画布中 设置一个两行两列的框, 第四个框 对应axes4
 axes4 = fig.add_subplot(2,2,4)
-axes1.scatter(anscombe[anscombe['dataset']=='I']['x'],anscombe[anscombe['dataset']=='I']['y'])
+
+axes1.scatter(anscombe[anscombe['dataset']=='I']
+['x'],anscombe[anscombe['dataset']=='I']['y'])
 axes2.scatter(anscombe[anscombe['dataset']=='II']['x'],anscombe[anscombe['dataset']=='II']['y'])
 axes3.scatter(anscombe[anscombe['dataset']=='III']['x'],anscombe[anscombe['dataset']=='III']['y'])
-axes4.scatter(anscombe[anscombe['dataset']=='IV']['x'],anscombe[anscombe['dataset']=='IV']['y'])
+axes4.scatter(anscombe[anscombe['dataset']=='IV']['x'],anscombe[anscombe['dataset']=='IV']['y'])	
 plt.show()
 ```
 
@@ -591,41 +643,49 @@ plt.show()
 
 
 
-#### Matplotlib 单变量可视化
+### 3.3 Matplotlib 单变量可视化
 
-直方图：直方图能反应一个变量数据的分布情况
+#### 3.3.1 直方图 (Histogram)
+
+展示连续变量的分布情况：
 
 ```python
 tips = pd.read_csv('data/tips.csv')
 # 创建绘图区域
 plt.figure(figsize=(16,8))
+
 # 绘制账单金额的直方图, 指定把账单金额均匀分成10组
 plt.hist(tips['total_bill'],bins=10)
+
+# 填写标签
 plt.title('总账单金额的分布情况')
 plt.xlabel('账单金额')
 plt.ylabel('出现次数')
 ```
 
->import numpy as np
->np.linspace(3.07,50.81,11)  # bins = 10 相当于在账单的最小值, 和最大值范围内生成了11值的等差数列
->
->11个值划分10个区间, 直方图的高度, 就是落到每个区间中的数据的条目数
->
->![image-20230905161225242](assets/image-20230905161225242.png)
-
-
-
-#### Matplotlib双变量/多变量可视化
-
-
-
-**双变量可视化：**
-
-- 散点图用于表示一个连续变量随另一个连续变量的变化所呈现的大致趋势
-
-了解账单金额和消费之间的关系可以绘制散点图
+**直方图原理：**
 
 ```python
+# 计算直方图的bin边界
+bill_min = tips['total_bill'].min()  # 3.07
+bill_max = tips['total_bill'].max()  # 50.81
+bin_edges = np.linspace(bill_min, bill_max, 11)  # 11个点形成10个区间,直方图的高度, 就是落到每个区间中的数据的条目数
+
+print("Bin边界值：\n", np.round(bin_edges, 2))
+```
+
+![image-20230905161225242](assets/image-20230905161225242.png)
+
+
+
+### 3.4 Matplotlib双变量与多变量可视化
+
+**散点图 (Scatter Plot)**
+
+散点图用于表示一个连续变量随另一个连续变量的变化所呈现的大致趋势
+
+```python
+# 了解账单金额和消费之间的关系可以绘制散点图
 plt.figure(figsize=(12,8))
 plt.scatter(tips['total_bill'],tips['tip'])
 plt.xlabel('账单金额')
@@ -637,8 +697,7 @@ plt.grid(True)
 
 **多变量可视化：**
 
-- 在散点图的基础上, 可以通过颜色来区分不同的类别
-- 散点的大小也可以用来表示一个变量
+- 通过颜色、大小、透明度添加更多维度：
 
 ```python
 # 添加一列, 用来区分不同性别显示的颜色
@@ -654,6 +713,7 @@ tips['sex_color'] = tips['sex'].apply(recode_sex)
 
 ```python
 plt.figure(figsize=(12,8))
+
 # c=tips['sex_color'] 区分颜色；s = tips['size']*10 区分大小；alpha=0.5 设置点的透明度
 plt.scatter(tips['total_bill'],tips['tip'],c=tips['sex_color'],s = tips['size']*10,alpha=0.5)
 plt.xlabel('账单金额')
@@ -667,38 +727,51 @@ plt.legend(tips['sex'])
 
 
 
-## 4 Pandas绘图
+## 4、Pandas绘图
 
 ### 4.1 Pandas 单变量可视化
 
-如果是类别型
+**数据类型与可视化选择**
 
-- 柱状
-- 饼图 (类别相对较少 5-6个 或者更少), 所有的类别加起来是1个整体
+| 数据类型       | 推荐可视化类型         | 使用建议                                        |
+| :------------- | :--------------------- | :---------------------------------------------- |
+| **类别型数据** | 柱状图                 | 展示各类别数量对比                              |
+|                | 饼图                   | 仅适用于类别数较少(5-6个以内)且所有类别构成整体 |
+| **数值型数据** | 折线图 (`plot.line()`) | 展示数据变化趋势                                |
+|                | 直方图 (`plot.hist()`) | 展示数据分布特征                                |
 
-如果是数值型
+**直方图绘制注意事项**
 
-- 看变化趋势 折线 plot.line()
-- 看分布直方plot.hist()
-  - 绘制直方图的时候,需要注意, 如果数据分布不均匀(倾斜的数据, 有取值数量较少的极大, 极小值) 这个时候如果不做数据的处理, 直接绘制直方图, 不能反映出数据的分布来, 只能得到一个柱子
-    - 可以把极值单独取出来讨论
-    - 把去掉极值的部分再绘制直方图
+当数据分布不均匀（倾斜的数据, 有取值数量较少的极大, 极小值）时，这个时候如果不做数据的处理, 直接绘制直方图, 不能反映出数据的分布来, 只能得到一个柱子
+
+- 将极值单独取出分析
+- 对去除极值后的数据绘制直方图
+
+
+
+#### **0 数据准备与概览**
 
 ```python
 import pandas as pd
-reviews = pd.read_csv('data/winemag-data_first150k.csv',index_col=0)
+
+# 读取数据集
+reviews = pd.read_csv('data/winemag-data_first150k.csv', index_col=0)
+
+# 查看数据基本信息
 reviews.info()
 ```
 
 ![](assets/image-20230905173404220.png)
 
 ```python
+# 数值型数据统计描述
 reviews.describe()
 ```
 
 ![image-20230905173433840](assets/image-20230905173433840.png)
 
 ```python
+# 非数值型数据统计描述
 reviews.describe(include=object)
 ```
 
