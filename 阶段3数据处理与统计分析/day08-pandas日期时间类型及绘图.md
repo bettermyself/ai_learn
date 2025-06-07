@@ -749,7 +749,7 @@ plt.legend(tips['sex'])
 
 
 
-#### **0 数据准备与概览**
+**数据准备与概览**
 
 ```python
 import pandas as pd
@@ -779,12 +779,18 @@ reviews.describe(include=object)
 
 
 
-#### 1 柱状图
+#### 4.1.1 柱状图
 
-- 统计葡萄酒出产种类最多的10个省份
+**案例：统计葡萄酒出产种类最多的10个省份**
 
 ```python
-kwargs = dict(figsize=(16,8),fontsize=20,color = ['b','orange','g','r','purple','brown','pink','gray','cyan','y'])
+# 基础柱状图
+kwargs = dict(
+    figsize=(16, 8),
+    fontsize=20,
+    color=['b','orange','g','r','purple','brown','pink','gray','cyan','y']
+)
+
 reviews['province'].value_counts().head(10).plot.bar(**kwargs)
 ```
 
@@ -798,35 +804,39 @@ fig,ax = plt.subplots(figsize=(16,8))
 # 设置坐标轴为百分比形式展示 decimals=1表示百分比的小数位数为1
 ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1,decimals=1))
 
-kwargs = dict(fontsize=20,color = ['b','orange','g','r','purple','brown','pink','gray','cyan','y'])
-reviews['province'].value_counts(1).head(10).plot.bar(**kwargs)
+kwargs = dict(
+    fontsize=20,
+    color=['b','orange','g','r','purple','brown','pink','gray','cyan','y']
+)
+
+reviews['province'].value_counts(normalize=True).head(10).plot.bar(**kwargs)
 ```
 
 ![image-20230905183506956](assets/image-20230905183506956.png)		
 
-#### 2  折线图和面积图
+#### 4.1.2 折线图与面积图
 
-- 绘制分数的分布情况
+**案例：绘制葡萄酒评分的分布情况**
 
 ```python
+# 折线图展示评分分布，为了方便绘图 sort_index 对行索引进行排序
 reviews['points'].value_counts().sort_index().plot.line(grid=True)
 ```
 
 
 
 ```python
-# 为了方便绘图 sort_index 对行索引进行排序
+# 面积图展示评分分布
 reviews['points'].value_counts().sort_index().plot.area(grid=True)
 ```
 
 ![image-20230905173241492](assets/image-20230905173241492.png)
 
-#### 3 直方图
+#### 4.1.3 直方图应用
 
-- 绘制直方图的时候需要注意, 如果数据是有偏的, 需要先将数据进行处理
-  - 这里葡萄酒的价格分布并不均匀, 高于500元的葡萄酒种类很少, 先从数据中截取价格<150的再绘制直方图
-
+绘制直方图的时候需要注意, 如果数据是有偏的, 需要先将数据进行处理：这里葡萄酒的价格分布并不均匀, 高于500元的葡萄酒种类很少, 先从数据中截取价格<150的再绘制直方图
 ```python
+# 处理价格极值后绘制直方图
 reviews[reviews['price']<150]['price'].plot.hist(bins=15)
 ```
 
@@ -841,7 +851,7 @@ reviews['price'].quantile(0.9994)
 
 
 
-#### 4 饼图
+#### 4.1.4 饼图应用
 
 - 饼图适合统计类别数量不多, 组合起来是1的数据的可视化
 
@@ -851,48 +861,14 @@ reviews['province'].value_counts().head(10).plot.pie()
 
 
 
-## 5 今日内容小结
+#### 4.1.5 可视化选择建议表
 
+| 数据类型 | 分析目标       | 推荐图表       |
+| :------- | :------------- | :------------- |
+| 类别型   | 各类别数量对比 | 柱状图         |
+| 类别型   | 各类别占比     | 饼图（类别≤6） |
+| 数值型   | 数据分布       | 直方图         |
+| 数值型   | 变化趋势       | 折线图         |
+| 数值型   | 累计分布       | 面积图         |
 
-
-**日期时间类型数据**：Pandas关于日期时间的数据，有如下几种数据类型
-
-- TimeStamp 时间戳 就是一个时间点
-- Datetime64 一列时间数据  →DatetimeIndex
-- TimeDelta64 两列时间的差值  → TimeDeltaIndex
-
-
-
-pd.to_datetime()
-
-df['日期列'].dt.year/df['日期列'].dt.month/df['日期列'].dt.day/df['日期列'].dt.weekday
-
-DatetimeIndex 转换成日期时间索引后方便做切片处理
-
-
-
-**数据可视化**
-
-matplotlib 图片
-
-- pandas
-- seaborn
-- 最核心的两句  
-  - 创建绘图区域 plt.figure(figsize=())  / fig, ax = plt.subplots(figsize=())
-  - plt.plot(x,y) /plt.scatter(x,y)/plt.hist(x)
-
-
-
-javascript 网页中展示的
-
-绘图的图形
-
-- 单变量可视化
-
-  - 柱状 bar 饼 pie
-
-  - 折线 line  直方hist
-
-- 双变量/多变量可视化
-  - 双变量 散点
-  - 多标量 三维 / 在散点scatter基础上 加颜色区分 大小的区分 ..
+**最佳实践提示**：当处理有偏分布数据时，建议先进行数据预处理（如去除极值、分箱等）再可视化，以获得更清晰的分布特征。
