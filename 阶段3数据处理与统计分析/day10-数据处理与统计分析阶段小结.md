@@ -11,40 +11,33 @@
 
 #### 1.2.1 数据结构
 
-- **Series**
-  - 属性：`dtype`, `index`, `name`, `values`
-  - 方法：`value_counts()`, `describe()`, `apply()`
-- **DataFrame**
-  - 属性：`shape`, `columns`, `index`, `dtypes`, `values`
-  - 方法：`info()`, `head()`, `tail()`, `describe()`
+| **类型**      | **属性**                                        | **方法**                                   |
+| :------------ | :---------------------------------------------- | :----------------------------------------- |
+| **Series**    | `dtype`, `index`, `name`, `values`              | `value_counts()`, `describe()`, `apply()`  |
+| **DataFrame** | `shape`, `columns`, `index`, `dtypes`, `values` | `info()`, `head()`, `tail()`, `describe()` |
 
 
 
 #### 1.2.2 数据增删改
 
-- **增加列**：`df['新列'] = values`
-
-- **删除数据**：
-
 ```python
+# 增加列
+df['新列'] = values
+
+# 删除数据
 df.drop('A', axis=0)  # 删除单行
 df.drop('col1', axis=1)  # 删除单列
-
-# 使用 index 或 columns 参数时，无需再指定 axis。
-df.drop(index=['A', 'B'])  # 删除多行
+df.drop(index=['A', 'B'])  # 删除多行,使用 index 或 columns 参数时，无需再指定 axis。
 df.drop(columns=['col1', 'col2'])  # 删除多列
 
-# df.drop_duplicates()
-df_unique = df.drop_duplicates()  # 默认：所有列值完全相同的行会被删除，保留第一个出现的行
-df_unique = df.drop_duplicates(subset=['col1', 'col2'])  # 根据 'col1' 和 'col2' 列判断重复行
-```
+# 删除重复行
+df_unique = df.drop_duplicates()  # 默认删除完全相同的行，保留第一个出现的行
+df_unique = df.drop_duplicates(subset=['col1', 'col2'])  # 根据指定列删除重复行
 
-- **修改列名**：
-
-```py
+# 修改列名
 df.rename(columns={'旧列名':'新列名'}, inplace=True)
-df.columns = ['列1', '列2']  # 批量修改
-df.index = ['行1','行2']
+df.columns = ['列1', '列2']  # 批量修改列名
+df.index = ['行1','行2']  # 修改索引名
 ```
 
 > `df.columns.to_list()`、`df.index.to_list()`
@@ -53,25 +46,20 @@ df.index = ['行1','行2']
 
 #### 1.2.3 数据清洗
 
-**缺失值处理**：
-
 ```python
-df.fillna(value=0)        # 填充缺失值
-df.dropna(axis=0)         # 删除含缺失值的行
-```
+# 缺失值处理
+df.fillna(value=0)  # 填充缺失值
+df.dropna(axis=0)   # 删除含缺失值的行
 
-**异常值处理**（IQR法示例）：
-
-```python
-# 目前采取的策略都是删除这部分数据
-
+# 异常值处理（IQR法示例）,目前采取的策略都是删除这部分数据
 Q1 = df['列名'].quantile(0.25)
 Q3 = df['列名'].quantile(0.75)
 IQR = Q3 - Q1
 df = df[(df['列名'] >= Q1-1.5*IQR) & (df['列名'] <= Q3+1.5*IQR)]
-```
 
-- **重复值处理**：`df.drop_duplicates(subset=['列名'])`
+# 重复值处理
+df.drop_duplicates(subset=['列名'])
+```
 
 
 
@@ -206,7 +194,9 @@ pd.merge(df1, df2, on='关联列', how='inner')  # how outer inner left right
 
 ```python
 df['日期列'] = pd.to_datetime(df['日期列'])
-df['年份'] = df['日期列'].dt.year  # 提取年份
+df['年份'] = df['日期列'].dt.year
+df['月份'] = df['日期列'].dt.month
+df['星期'] = df['日期列'].dt.day_name()
 ```
 
 
@@ -215,10 +205,11 @@ df['年份'] = df['日期列'].dt.year  # 提取年份
 
 #### 1.2.7 可视化
 
-- matplotlib/pandas/seaborn
-- seaborn  自带颜色配色比较靠谱, 如果做ppt给别人讲问题, 推荐用seaborn绘图
-- pandas 自己来发现数据中的规律找模式 可以使用pandas
-- matplotlib  控制比较精细的时候使用
+| **场景**   | **推荐工具** | **特点**              |
+| :--------- | :----------- | :-------------------- |
+| 探索性分析 | Pandas内置   | 快速简便，`df.plot()` |
+| 正式报告   | Seaborn      | 美观统计图形          |
+| 高度定制   | Matplotlib   | 精细控制              |
 
 
 
@@ -240,7 +231,7 @@ np.linspace(0, 10, 5)      # 生成等差数组 [0, 2.5, 5, 7.5, 10]
 
 ### 1.4 SQL 核心语法
 
-#### 1 .4.1 DDL（数据定义）
+#### 1.4.1 DDL（数据定义）
 
 ```sql
 create database if not exists 数据库名字 charset=utf-8
@@ -267,7 +258,7 @@ alter table 表名 change 旧列名 新列名 类型(长度) [约束];
 
 alter table 表名 drop 列名 ;
 
-rename table 表名 to  新表名
+rename table 表名 to 新表名
 ```
 
 
@@ -397,11 +388,40 @@ FROM products;
 select 窗口函数 over(partition by 分组字段 order by 排序字段)
 ```
 
-- count/sum/min/max/mean  分组之后, 组内的每一个值和聚合值之间进行计算
-  - 开窗partition by 接聚合  和 group by 分组聚合之间的区别
-    -  group by 分组 之后 聚合的结果和分组字段有多少个取值相关
-    -  开窗partition by 接聚合  原始数据有多少条, 结果还有多少条
-- row_number()/rank()/dense_rank()  组内排序
+##### a、聚合类窗口函数
+
+对组内每个值与聚合函数进行计算（如 `COUNT/SUM/MIN/MAX/AVG`），**不减少原表行数**。
+
+```sql
+-- 示例：
+SELECT 
+    user_id, 
+    order_amount,
+    SUM(order_amount) OVER(PARTITION BY user_id) AS user_total
+FROM orders;
+```
+
+`窗口函数`🆚 与 `GROUP BY` 的区别
+
+| **特性**             | `GROUP BY` 分组聚合       | `PARTITION BY` 窗口聚合       |
+| :------------------- | :------------------------ | :---------------------------- |
+| **结果行数**         | 等于分组字段的取值数量    | **等于原始数据行数**          |
+| **聚合值展示位置**   | 每个分组单独一行展示      | 每行显示对应分组的聚合值      |
+| **能否保留原始字段** | 只能显示分组字段+聚合结果 | 可同时显示所有原始字段+聚合值 |
+
+
+
+##### b、排序类窗口函数
+
+在分组内按指定字段排序并编号（需配合 `ORDER BY`）。
+
+常用函数对比：
+
+| **函数**       | **特点**                     | **示例结果** (分数：100, 95, 95, 90) |
+| :------------- | :--------------------------- | :----------------------------------- |
+| `ROW_NUMBER()` | 唯一连续编号（不处理重复值） | 1, 2, 3, 4                           |
+| `RANK()`       | 相同值同序号，后续**跳号**   | 1, 2, 2, 4                           |
+| `DENSE_RANK()` | 相同值同序号，后续**不跳号** | 1, 2, 2, 3                           |
 
 
 
@@ -409,49 +429,37 @@ select 窗口函数 over(partition by 分组字段 order by 排序字段)
 
 ### 2.1 基本命令
 
-**1. 目录操作**
-
-- **`cd`**：切换目录
-  - `cd /path`（绝对路径）
-  - `cd ../`（相对路径，返回上级目录）
-  - `cd ~` 进入用户主目录
-- **`ls`**：列出目录内容
-  - `ls -l` 显示详细信息
-  - `ls -a` 显示隐藏文件
-
-
-
-**2. 路径类型**
+**1. 路径类型**
 
 - **绝对路径**：从根目录 `/` 开始，如 `/home/user/file.txt`
 - **相对路径**：相对于当前目录，如 `./file.txt`（当前目录） 或 `../folder`（上级目录）
 
 
 
-**3. 文件/目录操作**
+**2. 基本命令速查**
 
-- **创建**
-  - `touch file.txt`：创建空文件
-  - `mkdir dir`：创建目录
-    - `mkdir -p dir1/dir2`：递归创建多级目录
-- **查看内容**
-  - `cat file.txt`：显示全部内容（适合小文件）
-  - `more file.txt` 或 `less file.txt`：分页查看（支持上下翻页）
-  - `head -n 5 file.txt`：查看前5行
-  - `tail -n 5 file.txt`：查看后5行
-- **复制/移动**
-  - `cp file.txt newfile.txt`：复制文件
-    - `cp -r dir1 dir2`：递归复制目录
-  - `mv file.txt newdir/`：移动文件
-    - `mv oldname.txt newname.txt`：重命名
-- **删除**
-  - `rm file.txt`：删除文件
-    - `rm -r dir`：递归删除目录（⚠️ 谨慎使用）
-    - `rm -rf dir`：强制删除（无确认）
+| **分类**     | **命令**    | **功能**           | **常用参数**                                      |
+| :----------- | :---------- | :----------------- | :------------------------------------------------ |
+| **目录操作** | `cd`        | 切换目录           | `cd ~`，`cd /path`，`cd ../`                      |
+|              | `ls`        | 列出目录内容       | `-l`（详情），`-a`（隐藏文件）                    |
+| **文件操作** | `touch`     | 创建文件           | `touch file.txt`（创建空文件）                    |
+|              | `mkdir`     | 创建目录           | `-p`（递归创建）`mkdir -p dir1/dir2`              |
+|              | `cat`       | 查看文件           | `cat file.txt`（显示全部内容（适合小文件））      |
+|              | `more`      | 查看文件，支持分页 | `more file.txt`                                   |
+|              | `less`      | 查看文件，支持分页 | `less file.txt`                                   |
+|              | `head/tail` | 查看文件头/尾      | `-n 5`（指定行数）`head -n 5 file.txt`：查看前5行 |
+|              | `cp`        | 复制文件           | `-r`（递归）`cp file.txt newfile.txt`：复制文件   |
+|              | `cp`        | 复制文件夹         | `cp -r dir1 dir2`：递归复制目录                   |
+|              | `mv`        | 移动文件           | `mv file.txt newdir/`：移动文件                   |
+|              | `mv`        | 重命名             | `mv oldname.txt newname.txt`：重命名              |
+|              | `rm`        | 删除               | `-rf`（强制递归删除）                             |
+| **查找**     | `find`      | 文件搜索           | `-name "*.txt"`                                   |
+|              | `grep`      | 内容搜索           | `-i`（忽略大小写）                                |
+| **编辑器**   | `vi/vim`    | 文本编辑           | 三种模式切换                                      |
 
 
 
-**4. 查找命令**
+**4. 查找**
 
 - **`which`**：查找命令的绝对路径
   - `which python` → 输出 `/usr/bin/python`
