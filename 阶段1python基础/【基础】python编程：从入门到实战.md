@@ -1022,215 +1022,450 @@ if age>=18 and score>60:
 
 ## 第五章、字典
 
-### 使用字典
+### 5.1 使用字典
+
+- **定义**：
+  - 字典（dictionary）是一系列**键值对**的集合。
+  - 每个**键**与一个**值**关联（键映射到值）。
+  - 值可以是数字、字符串、列表、字典或其他任意Python对象。
+- **表示**：
+  - 字典用花括号 `{}` 表示。
+  - 键值对之间用逗号 `,` 分隔。
+  - 键和值之间用冒号 `:` 分隔。
+
+```python
+alien_0 = {'color': 'green', 'points': 5}  # 示例字典
+```
+
+- **访问值**：
+  - 指定字典名和键（放在方括号内）。
+
+```python
+print(alien_0['color'])  # 输出: green
+```
+
+- **添加键值对**：
+  - 指定字典名、用方括号括起的新键、以及关联的值。
+
+```py
+alien_0['x_position'] = 0
+alien_0['y_position'] = 25
+print(alien_0)  # 输出包含新键值对的字典
+```
+
+> 字典保留元素添加时的顺序。
+
+- **修改值**：
+  - 指定字典名、键（方括号内）和新的关联值。
+
+```python
+alien_0['color'] = 'yellow'  # 修改 'color' 键的值
+print(alien_0['color'])      # 输出: yellow
+```
+
+- **删除键值对**：
+  - 使用 `del` 语句，指定字典名和要删除的键。
+
+```python
+del alien_0['points']  # 永久删除键 'points' 及其关联值
+print(alien_0)         # 'points' 键值对已消失
+```
 
-- 在 Python 中，字典（dictionary）是⼀系列键值对。
+- **存储同类对象**：
+  - 字典常用于存储多个对象的同一种信息。
 
-	- 每个键都与⼀个值关联，可以使⽤键来访问与之关联的值。与键相关联的值可以是数、字符串、列表乃⾄字典。事实上，可将任意 Python 对象⽤作字典中的值。
+```python
+favorite_languages = {
+    'jen': 'python',
+    'sarah': 'c',
+    'edward': 'ruby',
+    'phil': 'python',  # 最后一个键值对后的逗号是良好实践，便于后续添加
+}
+```
+
+- **使用 `get()` 访问值**：
+  - 避免键不存在时出错（`KeyError`）。
+  - 第一个参数是必需的键。
+  - 第二个可选参数指定键不存在时返回的默认值（默认为 `None`）。
+
+```python
+point_value = alien_0.get('points', 'No point value assigned.')
+print(point_value)  # 若'points'已删除，则输出: No point value assigned.
+
+# 不指定默认值
+speed = alien_0.get('speed')  # speed 不存在，返回 None
+print(speed)                  # 输出: None (不报错)
+```
+
+
 
-- 在 Python 中，字典⽤放在花括号（{}）中的⼀系列键值对表⽰
+### 5.2 遍历字典
+
+- **遍历所有键值对**：
+  - 使用 `for` 循环和 `items()` 方法。
+  - 声明两个变量分别接收键和值。
+
+```python
+for key, value in alien_0.items():
+    print(f"Key: {key}")
+    print(f"Value: {value}\n")
+```
+
+- **遍历所有键**：
+  - 使用 `keys()` 方法。
+  - 遍历字典默认就是遍历所有键，`keys()` 常用于明确意图或获取键列表。
+
+```python
+# 显式使用 keys()
+for name in favorite_languages.keys():
+    print(name.title())
+
+# 默认遍历键 (效果相同)
+for name in favorite_languages:
+    print(name.title())
+
+# 使用键访问值
+for name in favorite_languages.keys():
+    language = favorite_languages[name]
+    print(f"{name.title()}'s favorite language is {language}.")
+
+# 检查键是否存在
+if 'erin' not in favorite_languages.keys():
+    print("Erin, please take our poll!")
+```
+
+- **按特定顺序遍历键**：
+  - 在循环中对键列表使用 `sorted()` 函数排序。
+
+```python
+for name in sorted(favorite_languages.keys()):
+    print(f"{name.title()}, thank you for taking the poll.")
+```
+
+- **遍历所有值**：
+  - 使用 `values()` 方法。
+  - 使用 `set()` 去除重复值。
+
+```python
+# 遍历所有值 (包含重复)
+print("Languages mentioned:")
+for language in favorite_languages.values():
+    print(language.title())
+
+# 遍历唯一值 (使用集合 set)
+print("\nUnique languages mentioned:")
+for language in set(favorite_languages.values()):
+    print(language.title())
+
+# 直接创建集合示例
+languages_set = {'python', 'c', 'ruby', 'python'}
+print(languages_set)  # 输出: {'ruby', 'python', 'c'} (无序且唯一)
+```
+
+> 集合和字典很容易混淆，因为它们都是⽤⼀对花括号定义的。当花括号内没有键值对时，定义的很可能是集合。不同于列表和字典，集合不会以特定的顺序存储元素。
+
+
+
+### 5.3 嵌套
+
+- **概念**：将字典存储在列表中、将列表存储在字典中、或将字典存储在字典中。
+- **字典列表**：
+  - 列表中每个元素都是一个字典。
 
-	- 键值对包含两个相互关联的值。当你指定键时，Python 将返回与之关联的值。键和值之间⽤冒号分隔，⽽键值对之间⽤逗号分隔。
+```python
+aliens = []  # 创建一个存储外星人的空列表
+# 创建30个绿色的外星人
+for alien_number in range(30):
+    new_alien = {'color': 'green', 'points': 5, 'speed': 'slow'}
+    aliens.append(new_alien)
 
-- 访问字典中的值
+# 修改前三个外星人
+for alien in aliens[:3]:
+    if alien['color'] == 'green':
+        alien['color'] = 'yellow'
+        alien['speed'] = 'medium'
+        alien['points'] = 10
 
-	- 要获取与键关联的值，可指定字典名并把键放在后⾯的⽅括号内
+# 显示前5个外星人
+for alien in aliens[:5]:
+    print(alien)
+print(f"Total number of aliens: {len(aliens)}")
+```
 
-		-  
+- **在字典中存储列表**：
 
-- 添加键值对
+  - 字典的值是一个列表。
 
-	- 字典是⼀种动态结构，可随时在其中添加键值对。要添加键值对，可依次指定字典名、⽤⽅括号括起来的键和与该键关联的值
+  - 访问列表后，可能需要再次遍历。
 
-		- 字典会保留定义时的元素排列顺序。如果将字典打印出来或遍历其元素，将发现元素的排列顺序与其添加顺序相同
+```python
+pizza = {
+    'crust': 'thick',
+    'toppings': ['mushrooms', 'extra cheese'],  # 键 'toppings' 的值是一个列表
+}
 
-- 修改字典中的值 
+# 访问整个列表
+print(f"You ordered a {pizza['crust']}-crust pizza "
+      "with the following toppings:")  # 长字符串分行写法,当函数调⽤print() 中的字符串很⻓，需要分成多⾏书写时，可以在合适的位置分⾏，在每⾏末尾都加上引号，并且对于除第⼀⾏外的其他各⾏，都在⾏⾸加上引号并缩进。这样，Python 将⾃动合并括号内的所有字符串。
 
-	- 要修改字典中的值，可依次指定字典名、⽤⽅括号括起来的键和与该键关联的新值。
+# 遍历存储在字典中的列表
+for topping in pizza['toppings']:
+    print(f"\t{topping}")
+```
 
-		-  
+- **在字典中存储字典**：
+  - 字典的值是另一个字典。
 
-- 删除键值对
+```python
+users = {
+    'aeinstein': {  # 用户名作为键
+        'first': 'albert',      # 值是一个包含用户信息的字典
+        'last': 'einstein',
+        'location': 'princeton',
+    },
+    'mcurie': {
+        'first': 'marie',
+        'last': 'curie',
+        'location': 'paris',
+    },
+}
 
-	- 对于字典中不再需要的信息，可使⽤ del 语句将相应的键值对彻底删除。在使⽤ del 语句时，必须指定字典名和要删除的键
+for username, user_info in users.items():  # 遍历外层字典
+    print(f"\nUsername: {username}")
+    full_name = f"{user_info['first']} {user_info['last']}"  # 访问内层字典的值
+    location = user_info['location']
+    print(f"\tFull name: {full_name.title()}")
+    print(f"\tLocation: {location.title()}")
+```
 
-		- del 语句让 Python 将键 'points' 从字典 alien_0 中删除，同时删除与这个键关联的值。
-注意：删除的键值对永远消失了。
 
-- 由类似的对象组成的字典
 
-	- 字典也可以使⽤字典来存储众多对象的同⼀种信息
+## 第六章、用户输入和 while 循环
 
-		- ⼀种不错的做法是，在最后⼀个键值对后⾯也加上逗号，为以后添加键值对做好准备。
+### 6.1 `input()` 函数
 
-- 使⽤ get() 方法来访问值
+#### 6.1.1 工作原理
 
-	- 使⽤放在⽅括号内的键从字典中获取感兴趣的值，可能会引发问题：如果指定的键不存在，就将出错。
+- 函数作用：暂停程序运行，等待用户输入文本，输入内容会被赋值给变量
+- 参数说明：接受一个提示文本（prompt），告知用户需要输入的信息
+- 编写清晰的提⽰技巧：
+  - 在提示末尾添加空格（如冒号后），分隔提示与用户输入
+  - 多行提示的处理：
+    ```python
+    # 示例：多行提示的写法
+    prompt = "请告诉我们您的旅行偏好：" 
+    prompt += "\n(输入'quit'可结束)"
+    user_input = input(prompt)
+    ```
 
-		- 就字典⽽⾔，为避免出现这样的错误，可使⽤ get() ⽅法在指定的键不存在时返回⼀个默认值。get() ⽅法的第⼀个参数⽤于指定键，是必不可少的；第⼆个参数为当指定的键不存在时要返回的值，是可选的
 
-			- 注意：在调⽤ get() 时，如果没有指定第⼆个参数且指定的键不存在，Python 将返回值 None，这个特殊的值表⽰没有相应的值。这并⾮错误，None 只是⼀个表⽰所需值不存在的特殊值
 
-### 遍历字典
+#### **6.1.2 数值输入处理**
 
-- 遍历所有的键值对
+- 问题：`input()` 始终返回字符串类型，无法直接用于数值比较
+- 解决方案：使用 `int()` 函数转换字符串为整数
+  ```python
+  age = input("请输入年龄：")
+  age = int(age)  # 字符串 → 整数
 
-	- 可使⽤ for 循环来遍历这个字典
 
-		- 要编写遍历字典的 for 循环，可声明两个变量，分别⽤于存储键值对中的键和值。
 
-		- for 语句的第⼆部分包含字典名和⽅法 items()，这个⽅法返回⼀个键值对列表。接下来，for 循环依次将每个键值对赋给指定的两个变量。
+#### 6.1.3 求模运算符
 
-- 遍历字典中的所有键
+- 符号：`%`
+- 功能：返回两数相除的余数
+- 典型应用：奇偶判断
 
-	- 在不需要使⽤字典中的值时，keys() ⽅法很有⽤
 
-		- 在遍历字典时，会默认遍历所有的键。因此，如果将上述代码中的
 
-			- 替换为以下代码，输出将不变
+### 6.2 while 循环
 
-		- 在这种循环中，可使⽤当前的键来访问与之关联的值。
+| 特性        | 说明                                     |
+| :---------- | :--------------------------------------- |
+| 与 for 区别 | 持续运行直到条件不满足（非固定次数循环） |
+| 基础结构    | `while condition:` + 缩进代码块          |
+| 退出控制    | 通过修改循环条件变量或使用 `break`       |
+| 避免死循环  | 确保循环条件最终会变为 `False`           |
 
-		- 还可以使⽤ keys() 确定某个⼈是否接受了调查。
+#### 6.2.1 while循环控制技巧
 
-			- keys() ⽅法并⾮只能⽤于遍历：实际上，它会返回⼀个列表，其中包含字典中的所有键。因此 if 语句只核实 'erin' 是否在这个列表中。
+- **用户主动退出**
 
-	- 按特定的顺序遍历字典中的所有键
+```python
+message = ""  # 初始化空字符串
+while message != 'quit':
+    message = input("输入指令：")
+    print(message)
+```
 
-		- 遍历字典时将按插⼊元素的顺序返回其中的元素，但是在⼀些情况下，你可能要按与此不同的顺序遍历字典。
+- **标志位控制**
 
-			- 要以特定的顺序返回元素，⼀种办法是在 for 循环中对返回的键进⾏排序。为此，可使⽤sorted() 函数来获得按特定顺序排列的键列表的副本
+```python
+active = True  # 程序运行标志
+while active:
+    command = input("> ")
+    if command == 'exit':
+        active = False  # 安全终止循环
+    else:
+        print(f"执行命令: {command}")
+```
 
-- 遍历字典中的所有值
+> 在要求满⾜很多条件才继续运⾏的程序中，可定义⼀个变量，⽤于判断整个程序是否处于活动状态。这个变量称为标志（flag），充当程序的交通信号灯。可以让程序在标志为 True 时继续运⾏，并在任何事件导致标志的值为 False 时让程序停⽌运⾏。这样，在 while 语句中就只需检查⼀个条件：标志的当前值是否为 True。然后将所有测试（是否发⽣了应将标志设置为 False 的事件）都放在其他地⽅，从⽽让程序更整洁。
 
-	- 如果你感兴趣的是字典包含的值，可使⽤ values() ⽅法。它会返回⼀个值列表，不包含任何键。
+- **中断与跳过**
 
-		- 这种做法提取字典中所有的值，⽽没有考虑值是否有重复。为剔除重复项，可使⽤集合（set）。集合中的每个元素都必须
-			是独⼀⽆⼆的。
+  - `break`：立即退出整个循环
 
-			- 通过将包含重复元素的列表传⼊ set()，可让 Python 找出列表中独⼀⽆⼆的元素，并使⽤这些元素来创建⼀个集合。
+  - `continue`：跳过本次迭代，返回循环开头
 
-			- 注意：可以使⽤⼀对花括号直接创建集合，并在其中⽤逗号分隔元素：
+```python
+# 打印 1-10 的奇数
+num = 0
+while num < 10:
+    num += 1
+    if num % 2 == 0: 
+        continue  # 跳过偶数
+    print(num)
+```
 
-### 嵌套
+> 注意：在所有 Python 循环中都可使⽤ break 语句。例如，可使⽤break 语句来退出遍历列表或字典的 for 循环
 
-- 有时候，需要将多个字典存储在列表中或将列表作为值存储在字典中，这称为嵌套。可以在列表中嵌套字典，在字典中嵌套列表，甚⾄在字典中嵌套字典。
 
-- 字典列表
 
-	-  
+### 6.3 while循环处理列表和字典
 
-- 在字典中存储列表
+> **注意**：遍历时修改列表应使用 `while` 而非 `for`，避免元素跟踪错误。for 循环是⼀种遍历列表的有效⽅式，但不应该在 for 循环中修改列表，否则将导致 Python 难以跟踪其中的元素。要在遍历列表的同时修改它，可使⽤ while 循环。
 
-	- 在下⾯的⽰例中，存储了⽐萨两个⽅⾯的信息：外⽪类型和配料列表。配料列表是⼀个与键 'toppings' 关联的值。要访问该列表，我们使⽤字典名和键 'toppings'，就像访问字典中的其他值⼀样。这将返回⼀个配料列表，⽽不是单个值。
+#### 6.3.1 列表操作示例
 
-		- 当函数调⽤print() 中的字符串很⻓，需要分成多⾏书写时，可以在合适的位置分⾏，在每⾏末尾都加上引号，并且对于除第⼀⾏外的其他各⾏，都在⾏⾸加上引号并缩进。这样，Python 将⾃动合并括号内的所有字符串。
+- **元素迁移**
 
-		- 每当需要在字典中将⼀个键关联到多个值时，都可以在字典中嵌套⼀个列表。
+```python
+unverified = ['user1', 'user2', 'user3']
+verified = []
 
-		- 需要遍历列表中的数据，需要再用一个for循环
+while unverified:
+    current = unverified.pop()
+    print(f"验证用户: {current}")
+    verified.append(current)
+```
 
-			- 注意：列表和字典的嵌套层级不应太多。如果嵌套层级⽐前⾯的⽰例多得多，很可能有更简单的解决⽅案。
+- **删除特定值**
 
-- 在字典中存储字典
+```python
+pets = ['dog', 'cat', 'goldfish', 'cat', 'rabbit']
+while 'cat' in pets:
+    pets.remove('cat')  # 删除所有'cat'
+```
 
-	- 如果有⼀⽹站有多个⽤户，每个⽤户都有独特的⽤户名，可在字典中将⽤户名作为键，然后将每个⽤户的信息存储在⼀个字典中，并将该字典作为与⽤户名关联的值。
 
-		-  
 
-## 第六章、用户输入和while循环
+#### 6.3.2 字典动态填充
 
-### input() 函数的⼯作原理
+```python
+responses = {}
+while True:
+    name = input("\n姓名：")
+    answer = input("喜欢的编程语言：")
+    responses[name] = answer  # 动态添加键值对
+    
+    repeat = input("继续添加？(yes/no)")
+    if repeat == 'no':
+        break
+```
 
-- input() 函数让程序暂停运⾏，等待⽤户输⼊⼀些⽂本。获取⽤户输⼊后，Python 将其赋给⼀个变量，以便使⽤。
 
-	- input() 函数接受⼀个参数，即要向⽤户显⽰的提⽰（prompt），让⽤户知道该输⼊什么样的信息。
 
-- 编写清晰的提⽰
+### 6.4 最佳实践总结
 
-	- 通过在提⽰末尾（这⾥是冒号后⾯）添加⼀个空格，可将提⽰与⽤户输⼊分开，让⽤户清楚地知道其输⼊始于何处，如下所⽰
+| 场景           | 推荐方案               |
+| :------------- | :--------------------- |
+| 简单循环       | `for` 循环             |
+| 未知次数的循环 | `while` + 条件判断     |
+| 多退出条件     | 标志位 (`active=True`) |
+| 立即终止循环   | `break` 语句           |
+| 跳过单次迭代   | `continue` 语句        |
+| 遍历时修改集合 | `while` 循环           |
 
-		- 有时候，提⽰可能超过⼀⾏
 
-			- 在这种情况下，可先将提⽰赋给⼀个变量，再将这个变量传递给input() 函数。这样，即便提⽰超过⼀⾏，input() 语句也会⾮常清晰。
-
-- 使⽤ int() 来获取数值输⼊
-
-	- 在使⽤ input() 函数时，Python 会将⽤户输⼊解读为字符串。当试图将该输⼊⽤于数值⽐较时，Python 会报错，因为它⽆法将字符串和整数进⾏⽐较
-
-		- 为了解决这个问题，可使⽤函数 int() 将输⼊的字符串转换为数值，确保能够成功地执⾏⽐较操作
-
-- 求模运算符
-
-	- 在处理数值信息时，求模运算符（%）是个很有⽤的⼯具，它将两个数相除并返回余数
-
-### while 循环简介
-
-- for 循环⽤于针对集合中的每个元素执⾏⼀个代码块，⽽ while 循环则不断地运⾏，直到指定的条件不再满⾜为⽌
-
-- 使⽤ while 循环
-
-	- 可以使⽤ while 循环来数数
-
-- 让⽤户选择何时退出
-
-	- 可以使⽤ while 循环让程序在⽤户愿意时不断地运⾏，如下⾯的程序parrot.py 所⽰。我们在其中定义了⼀个退出值，只要⽤户输⼊的不是这个值，程序就将⼀直运⾏
-
-		- 我们将变量 message 的初始值设置为空字符串 让Python 在⾸次执⾏ while 代码⾏时有可供检查的东⻄。如果没有可供⽐较的东⻄，Python 将⽆法继续运⾏程序。为解决这个问题，必须给变量 message 指定初始值。
-
-- 使⽤标志
-
-	- 当导致程序结束的事件有很多时，如果在⼀条 while 语句中检查所有这些条件，将既复杂⼜困难
-
-		- 在要求满⾜很多条件才继续运⾏的程序中，可定义⼀个变量，⽤于判断整个程序是否处于活动状态。这个变量称为标志（flag），充当程序的交通信号灯。可以让程序在标志为 True 时继续运⾏，并在任何事件导致标志的值为 False 时让程序停⽌运⾏。这样，在 while 语句中就只需检查⼀个条件：标志的当前值是否为 True。然后将所有测试（是否发⽣了应将标志设置为 False 的事件）都放在其他地⽅，从⽽让程序更整洁。
-
-			- 这样，添加测试（如 elif 语句）以检查是否发⽣了其他导致 active变为 False 的事件，就会很容易。在复杂的程序（⽐如有很多事件会导致程序停⽌运⾏的游戏）中，标志很有⽤：在任意⼀个事件导致活动标志变成 False 时，主游戏循环将退出。
-
-- 使⽤ break 退出循环
-
-	- 如果不管条件测试的结果如何，想⽴即退出 while 循环，不再运⾏循环中余下的代码，可使⽤ break 语句。
-
-		- 注意：在所有 Python 循环中都可使⽤ break 语句。例如，可使⽤break 语句来退出遍历列表或字典的 for 循环
-
-- 在循环中使⽤ continue
-
-	- 要返回循环开头，并根据条件测试的结果决定是否继续执⾏循环，可使⽤continue 语句，它不像 break 语句那样不再执⾏余下的代码并退出整个循环。例如，来看⼀个从 1 数到 10，只打印其中奇数的循环：
-
-- 避免⽆限循环
-
-### 使⽤ while 循环处理列表和字典
-
-- for 循环是⼀种遍历列表的有效⽅式，但不应该在 for 循环中修改列表，否则将导致 Python 难以跟踪其中的元素。要在遍历列表的同时修改它，可使⽤ while 循环。通过将 while 循环与列表和字典结合起来使⽤，可收集、存储并组织⼤量的输⼊，供以后查看和使⽤
-
-- 在列表之间移动元素
-
-	- 假设有⼀个列表包含新注册但还未验证的⽹站⽤户。验证这些⽤户后，如何将他们移到已验证⽤户列表中呢？
-
-- 删除为特定值的所有列表元素
-
-	- 我们使⽤ remove() 函数来删除列表中的特定值。这之所以可⾏，是因为要删除的值在列表中只出现了⼀次。如果要删除列表中所有为特定值的元素，该怎么办呢
-
-- 使⽤⽤户输⼊填充字典
-
-	- 可以使⽤ while 循环提⽰⽤户输⼊任意多的信息
 
 ## 第七章、函数
 
-### 定义函数
+### 7.1 定义函数
+```python
+def greet_user():  # 函数定义以 def 开头，括号内可为空
+    """显示简单的问候语"""  # 文档字符串（docstring）
+    print("Hello!")  # 函数体必须缩进
 
-- 第⼀⾏代码使⽤关键字 def 来告诉Python，你要定义⼀个函数。这是函数定义，向 Python 指出了函数名，还可以在括号内指出函数为完成任务需要什么样的信息。在这⾥，函数名为greet_user()，它不需要任何信息就能完成⼯作，因此括号内是空的（即便如此，括号也必不可少）。最后，定义以冒号结尾。
+# 调用函数
+greet_user()
+```
 
-	- 紧跟在 def greet_user(): 后⾯的所有缩进⾏构成了函数体。第⼆⾏的⽂本是称为⽂档字符串（docstring）的注释，描述了函数是做什么的。Python 在为程序中的函数⽣成⽂档时，会查找紧跟在函数定义后的字符串。这些字符串通常前后分别⽤三个双引号引起，能够包含多⾏。
 
-		- 要使⽤这个函数，必须调⽤它。函数调⽤让Python 执⾏函数中的代码。要调⽤函数，可依次指定函数名以及⽤括号括起的必要信息。
 
-- 向函数传递信息
+#### 7.1.1 向函数传递信息
 
-	- 为此，可在函数定义 def greet_user() 的括号内添加username。这样，可让函数接受你给username 指定的任何值。现在，这个函数要求你在调⽤它时给 username 指定⼀个值，因此在调⽤greet_user() 时，可将⼀个名字传递给它，如下所⽰：
+```python
+def greet_user(username):  # 添加形参
+    print(f"Hello, {username.title()}!")
 
-- 实参和形参
+greet_user('jesse')  # 传递实参
+```
 
-	- 在 greet_user() 函数的定义中，变量 username 是⼀个形参（parameter），即函数完成⼯作所需的信息。在代码greet_user('jesse') 中，值 'jesse' 是⼀个实参（argument），即在调⽤函数时传递给函数的信息。
+| 术语     | 说明                   | 示例       |
+| :------- | :--------------------- | :--------- |
+| **形参** | 函数定义中声明的变量   | `username` |
+| **实参** | 调用函数时传入的具体值 | `'jesse'`  |
+
+
+
+### 7.2 传递实参的三种方式
+
+#### ▶ 位置实参（顺序敏感）
+
+```python
+def describe_pet(animal_type, pet_name):
+    print(f"\nI have a {animal_type} named {pet_name}.")
+
+describe_pet('hamster', 'harry')  # 顺序必须匹配
+```
+
+#### ▶ 关键字实参（顺序无关）
+
+```python
+describe_pet(pet_name='harry', animal_type='hamster')  # 显式指定参数名
+```
+
+#### ▶ 默认参数值
+
+```python
+def describe_pet(pet_name, animal_type='dog'):  # 默认参数必须在后
+    print(f"\nI have a {animal_type} named {pet_name}.")
+
+describe_pet('willie')          # 使用默认类型'dog'
+describe_pet('harry', 'hamster')# 覆盖默认值
+```
+
+> ```python
+> # 以下调用效果相同
+> describe_pet('willie')
+> describe_pet(pet_name='willie')
+> 
+> describe_pet('harry', 'hamster')
+> describe_pet(pet_name='harry', animal_type='hamster')
+> ```
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### 传递实参
 
