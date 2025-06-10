@@ -1,7 +1,3 @@
----
-
----
-
 # python编程：从入门到实战
 
 
@@ -2783,115 +2779,205 @@ def greet_user():
 
 ## 第十章、测试代码
 
-### 使⽤ pip 安装 pytest
+### **10.1 使用 pip 安装 pytest**
 
-- 虽然 Python 通过标准库提供了⼤量的功能，但 Python 开发⼈员还是需要频繁⽤到第三⽅包。
+#### **1. 为什么需要第三方包？**
 
-- 更新 pip
+> Python 标准库功能丰富，但开发者仍需频繁使用第三方包扩展功能。
 
-	- Python 提供了⼀款名为 pip 的⼯具，可⽤来安装第三⽅包。因为 pip 帮我们安装来⾃外部的包，所以更新频繁，以消除潜在的安全问题。有鉴于此，我们先来更新 pip。
+#### **2. 更新 pip**
 
-		- 这个命令的第⼀部分（python -m pip）让 Python 运⾏ pip 模块；第⼆部分（install --upgrade）让 pip 更新⼀个已安装的包；⽽最后⼀部分（pip）指定要更新哪个第三⽅包。
+- **目的**：`pip` 是安装第三方包的工具，需定期更新以修复安全问题。
 
-		- 可使⽤下⾯的命令更新系统中安装的任何包：
+- **命令**：
 
-- 安装 pytest
+  ```python
+  python -m pip install --upgrade pip
+  ```
 
-	- pip install pytest
+  - `python -m pip`：运行 pip 模块
+  - `install --upgrade`：更新已安装的包
+  - `pip`：指定更新的包名
 
-### 测试函数
+- **通用更新语法**：
 
-- 测试以下函数：
+  ```python
+  python -m pip install --upgrade 包名
+  ```
 
-	- 为了核实get_formatted_name() 会像期望的那样⼯作，我们编写⼀个使⽤这个函数的程序。
+#### **3. 安装 pytest**
 
-- 单元测试和测试⽤例
+```python
+pip install pytest
+```
 
-	- 软件的测试⽅法多种多样。⼀种最简单的测试是单元测试（unit test），⽤于核实函数的某个⽅⾯没有问题。测试⽤例（test case）是⼀组单元测试，这些单元测试⼀道核实函数在各种情况下的⾏为都符合要求
 
-		- 全覆盖（full coverage）测试⽤例包含⼀整套单元测试，涵盖了各种可能的函数使⽤⽅式。对于⼤型项⽬，要进⾏全覆盖测试可能很难。通常，最初只要针对代码的重要⾏为编写测试即可，等项⽬被⼴泛使⽤时再考虑全覆盖。
 
-- 可通过的测试
+### 10.2 测试函数
 
-	- 使⽤ pytest 进⾏测试，会让单元测试编写起来⾮常简单。我们将编写⼀个测试函数，它会调⽤要测试的函数，并做出有关返回值的断⾔。如果断⾔正确，表⽰测试通过；如果断⾔不正确，表⽰测试未通过。
+#### **1. 单元测试与测试用例**
 
-		- 测试⽂件的名称很重要，必须以test_打头。当你让 pytest 运⾏测试时，它将查找以 test_打头的⽂件，并运⾏其中的所有测试。
+| 概念           | 说明                                                         |
+| :------------- | :----------------------------------------------------------- |
+| **单元测试**   | 核实函数的某个具体行为是否正确。                             |
+| **测试用例**   | 一组单元测试，覆盖函数在各种场景下的行为。                   |
+| **全覆盖测试** | 包含所有可能使用方式的测试用例（大型项目初期可不强制覆盖所有情况）。 |
 
-		- 在这个测试⽂件中，⾸先导⼊要测试的 get_formatted_name() 函数，然后，定义⼀个测试函数 test_first_last_name()（⻅❶）。这个函数名⽐以前使⽤的都⻓，原因有⼆。第⼀，测试函数必须以 test_ 打头。在测试过程中，pytest 将找出并运⾏所有以 test_ 打头的函数。第⼆，测试函数的名称应该⽐典型的函数名更⻓，更具描述性。你⾃⼰不会调⽤测试函数，⽽是由 pytest 替你查找并运⾏它们。因此，测试函数的名称应⾜够⻓，让你在测试报告中看到它们时，能清楚地知道它们测试的是哪些⾏为。
 
-		- 最后，做出⼀个断⾔（⻅❸）。断⾔（assertion）就是声称满⾜特定的条件：这⾥声称 formatted_name 的值为 'Janis Joplin'。
 
-- 运⾏测试
+#### **2. 编写可通过的测试**
 
-	- 如果直接运⾏⽂件 test_name_function.py，将不会有任何输出，因为我们没有调⽤这个测试函数。相反，应该让 pytest 替我们运⾏这个测试⽂件。
+- **测试文件命名规则**：**必须**以 `test_` 开头（如 `test_name_function.py`）。
 
-	- 为此，打开⼀个终端窗⼝，并切换到这个测试⽂件所在的⽂件夹。在终端窗⼝中执⾏命令 pytest
+- **测试函数命名规则**：以 `test_` 开头，名称需具描述性（如 `test_first_last_name()`）。
 
-		- ⽂件名后⾯的句点表明有⼀个测试通过了，⽽ 100% 指出运⾏了所有的测试。在可能有数百乃⾄数千个测试的⼤型项⽬中，句点和完成百分⽐有助于监控测试的运⾏进度
+- **示例代码**：
 
-		- 上述输出表明，在给定包含名和姓的姓名时，get_formatted_name()函数总是能正确地处理。修改 get_formatted_name() 后，可再次运⾏这个测试。如果它通过了，就表明在给定 Janis Joplin 这样的姓名时，这个函数依然能够正确地处理。
+  ```python
+  # test_name_function.py
+  from name_function import get_formatted_name
+  
+  def test_first_last_name():
+      formatted_name = get_formatted_name('janis', 'joplin')
+      assert formatted_name == 'Janis Joplin'  # ✅ 断言结果
+  ```
 
-- 未通过的测试
+  
 
-	- 我们来修改get_formatted_name()，使其能够处理中间名，但同时故意让这个函数⽆法正确地处理像 Janis Joplin 这样只有名和姓的姓名
+#### **3. 运行测试**
 
-		- 这次运⾏ pytest 时
+```python
+pytest
+```
 
-		- ⾸先，输出中有⼀个字⺟ F（⻅❶），表明有⼀个测试未通过。然后是FAILURES 部分（⻅❷），这是关注的焦点，因为在运⾏测试时，通常应该关注未通过的测试。接下来，指出未通过的测试函数是test_first_last_name()（⻅❸）。右尖括号（⻅❹）指出了导致测试未能通过的代码⾏。下⼀⾏中的 E（⻅❺）指出了导致测试未通过的具体错误：缺少必不可少的位置实参 'last'，导致 TypeError。在末尾的简短⼩结中，再次列出了最重要的信息
+- **输出解读**：
+  - `.`：测试通过
+  - `F`：测试失败
+  - `100%`：所有测试已执行
 
-- 在测试未通过时怎么办
+> 如果在执⾏命令 pytest 时没有指定任何参数，pytest 将运⾏它在当前⽬录中找到的所有测试。为了专注于⼀个测试⽂件，可将该测试⽂件的名称作为参数传递给 pytest。
+>
+> ```py
+> pytest test_survey.py
+> ```
 
-	- 如果检查的条件没错，那么测试通过意味着函数的⾏为是对的，⽽测试未通过意味着你编写的新代码有错。因此，在测试未通过时，不要修改测试。因为如果你这样做，即便能让测试通过，像测试那样调⽤函数的代码也将突然崩溃。相反，应修复导致测试不能通过的代码
 
-		- 就这⾥⽽⾔，最佳的选择是让中间名变为可选的。这样，不仅在使⽤类似于 Janis Joplin的姓名进⾏测试时可以通过，⽽且这个函数还能接受中间名。
 
-		- 要将中间名设置为可选的，可在函数定义中将形参 middle 移到形参列表末尾，并将其默认值指定为⼀个空字符串。还需要添加⼀个 if 测试，以便根据是否提供了中间名相应地创建姓名
+#### **4. 处理未通过的测试**
 
-			- 为了确定这个函数依然能够正确地处理像 Janis Joplin 这样的姓名，再次运⾏测试，测试通过了。
+- **失败示例**（函数修改后不兼容旧逻辑）：
 
-- 添加新测试
+  ```python
+  # 修改后的函数（强制要求中间名）
+  def get_formatted_name(first, middle, last):
+      ...
+  
+  # 运行 pytest 输出：
+  # F  ❌ test_first_last_name 失败
+  # E  TypeError: 缺少参数 'last'
+  ```
 
-	- 确定 get_formatted_name() ⼜能正确地处理简单的姓名后，我们再编写⼀个测试，⽤于测试包含中间名的姓名。为此，在⽂件test_name_function.py 中添加⼀个测试函数：
+- **修复原则**：
+  **不修改测试代码**，而是调整函数逻辑（如将中间名设为可选参数）：
 
-		- 我们将这个新函数命名为 test_first_last_middle_name()。记住，函数名必须以 test_ 打头，这样该函数才会在我们运⾏ pytest 时⾃动运⾏。这个函数名清楚地指出了它测试的是 get_formatted_name() 的哪个⾏为，如果该测试未通过，我们就能⻢上知道受影响的是哪种类型的姓名。
+  ```python
+  def get_formatted_name(first, last, middle=''):
+      if middle:
+          return f"{first} {middle} {last}"
+      return f"{first} {last}"
+  ```
 
-### 测试类
+  > 测试函数的名称应该⽐典型的函数名更⻓，更具描述性。你⾃⼰不会调⽤测试函数，⽽是由 pytest 替你查找并运⾏它们。因此，测试函数的名称应⾜够⻓，让你在测试报告中看到它们时，能清楚地知道它们测试的是哪些⾏为。
 
-- 各种断⾔
+#### **5. 添加新测试**
 
-	- 在编写测试时，可做出任何可表⽰为条件语句的断⾔。
+```python
+def test_first_last_middle_name():
+    formatted_name = get_formatted_name('wolfgang', 'mozart', 'amadeus')
+    assert formatted_name == 'Wolfgang Amadeus Mozart'  # ✅ 测试包含中间名
+```
 
-- ⼀个要测试的类
+> 写一个函数，测试，改函数功能,先测试原来的,在编写测试改后的函数
 
-	- 类的测试与函数的测试相似，所做的⼤部分⼯作是测试类中⽅法的⾏为。下⾯来编写⼀个要测试的类
 
-		- 为了证明 AnonymousSurvey 类能够正确地⼯作，编写⼀个使⽤它的程序：
 
-- 测试 AnonymousSurvey 类
+### **10.3 测试类**
 
-	- 下⾯来编写⼀个测试，对 AnonymousSurvey 类的⾏为的⼀个⽅⾯进⾏验证。我们要验证的是，如果⽤户在⾯对调查问题时只提供⼀个答案，这个答案也能被妥善地存储
+#### **1. 测试类的方法**
 
-		- ⾸先，导⼊要测试的 AnonymousSurvey 类。第⼀个测试函数验证：调查问题的单个答案被存储后，它会包含在调查结果列表中。
+- **被测类示例**：
 
-		- 要测试类的⾏为，需要创建其实例。在❷处，使⽤问题"What language did you first learn to speak?" 创建⼀个名为language_survey 的实例，然后使⽤ store_response() ⽅法存储单个答案 English。接下来，通过断⾔ English 在列表language_survey.responses 中，核实这个答案被妥善地存储了
+  ```python
+  # survey.py
+  class AnonymousSurvey:
+      def __init__(self, question):
+          self.question = question
+          self.responses = []
+      
+      def store_response(self, response):
+          self.responses.append(response)
+  ```
 
-	- 如果在执⾏命令 pytest 时没有指定任何参数，pytest 将运⾏它在当前⽬录中找到的所有测试。为了专注于⼀个测试⽂件，可将该测试⽂件的名称作为参数传递给 pytest。
+  
 
-	- 下⾯来核实，当⽤户提供三个答案时，它们都将被妥善地存储。为此，再添加⼀个测试函数
+#### **2. 编写测试用例**
 
-		- 前述做法的效果很好，但这些测试有重复的地⽅。下⾯使⽤ pytest 的另⼀项功能来提⾼效率。
+```python
+# test_survey.py
+from survey import AnonymousSurvey
 
-- 使⽤夹具
+def test_store_single_response():
+    """测试单个答案是否被正确存储"""
+    survey = AnonymousSurvey("首选语言？")
+    survey.store_response("Python")
+    assert "Python" in survey.responses  # ✅
 
-	- 在前⾯的 test_survey.py 中，我们在每个测试函数中都创建了⼀个AnonymousSurvey 实例。虽然这对于这个简单的⽰例来说不是问题，但在包含数⼗乃⾄数百个测试的项⽬中是个⼤问题。
+def test_store_three_responses():
+    """测试三个答案是否被正确存储"""
+    survey = AnonymousSurvey("喜欢的编程语言？")
+    responses = ["Python", "Java", "Go"]
+    for r in responses:
+        survey.store_response(r)
+    assert survey.responses == responses  # ✅
+```
 
-	- 在测试中，夹具（fixture）可帮助我们搭建测试环境。这通常意味着创建供多个测试使⽤的资源。
 
-		- 在 pytest 中，要创建夹具，可编写⼀个使⽤装饰器 @pytest.fixture 装饰的函数。装饰器（decorator）是放在函数定义前⾯的指令。在运⾏函数前，Python 将该指令应⽤于函数，以修改函数代码的⾏为。
 
-	- 下⾯使⽤夹具创建⼀个 AnonymousSurvey 实例，让 test_survey.py 中的两个测试函数都可使⽤它
+#### **3. 使用夹具（Fixture）优化**
 
-		- 现在需要导⼊ pytest，因为我们使⽤了其中定义的⼀个装饰器。。我们将装饰器 @pytest.fixture（⻅❶）应⽤于新函数language_survey()（⻅❷）。这个函数创建并返回⼀个AnonymousSurvey 对象。
+在前⾯的 test_survey.py 中，我们在每个测试函数中都创建了⼀个AnonymousSurvey 实例。虽然这对于这个简单的⽰例来说不是问题，但在包含数⼗乃⾄数百个测试的项⽬中是个⼤问题。
 
-		- 请注意，两个测试函数的定义都变了（⻅❸和❺）：都有⼀个名为language_survey 的形参。当测试函数的⼀个形参与应⽤了装饰器@pytest.fixture 的函数（夹具）同名时，将⾃动运⾏夹具，并将夹具返回的值传递给测试函数。
+- **目的**：避免重复创建资源（如多个测试中重复实例化类）。
+- **实现**：用 `@pytest.fixture` 装饰器创建共享资源。
 
+```python
+import pytest
+from survey import AnonymousSurvey
+
+@pytest.fixture
+def language_survey():  # 🔧 夹具函数
+    '''一个可供所有测试函数使用的AnonymousSurvey 实例'''
+    return AnonymousSurvey("你使用的语言？")
+
+def test_single_response(language_survey):  # ⚡️ 自动注入夹具
+    language_survey.store_response("中文")
+    assert "中文" in language_survey.responses
+
+def test_multi_responses(language_survey):  # ⚡️ 复用同一个夹具
+    responses = ["中文", "English", "日本語"]
+    for r in responses:
+        language_survey.store_response(r)
+    assert language_survey.responses == responses
+```
+
+> 在想要使⽤夹具时，可编写⼀个函数来⽣成供多个测试函数使⽤的资源，再对这个函数应⽤装饰器 @pytest.fixture，并让使⽤该资源的每个测试函数都接受⼀个与该函数同名的形参。这样，测试将更简洁，编写和维护起来也将更容易。
+
+#### **4. 关键总结**
+
+| 主题         | 要点                                                         |
+| :----------- | :----------------------------------------------------------- |
+| **测试文件** | 文件名以 `test_` 开头（如 `test_module.py`）。               |
+| **测试函数** | 函数名以 `test_` 开头（如 `test_feature()`）。               |
+| **断言**     | 用 `assert` 验证结果（`assert result == expected`）。        |
+| **夹具**     | 用 `@pytest.fixture` 创建可复用的测试资源，通过同名参数自动注入。 |
+| **测试原则** | 测试失败时优先修复代码逻辑，而非修改测试用例。               |
