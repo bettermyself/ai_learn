@@ -130,9 +130,9 @@ from sklearn.neighbors import KNeighborsClassifier,KNeighborsRegressor
 # 2.数据(特征工程)
 # 分类
 # x = [[0,2,3],[1,3,4],[3,5,6],[4,7,8],[2,3,4]]
-# y = [0,0,1,1,0]
+# y = [0,0,1,1,0] 整型为分类
 x = [[0,1,2],[1,2,3],[2,3,4],[3,4,5]]
-y = [0.1,0.2,0.3,0.4]
+y = [0.1,0.2,0.3,0.4]  # 浮点数一般是回归
 
 # 3.实例化
 # model =KNeighborsClassifier(n_neighbors=3)
@@ -413,7 +413,7 @@ model = KNeighborsClassifier(n_neighbors=1)
 paras_grid = {'n_neighbors':[4,5,7,9]}
 # estimator =GridSearchCV(estimator=model,param_grid=paras_grid,cv=4)
 # estimator.fit(x_train,y_train)
-
+# 此时estimator为最后的一个模型
 # print(estimator.best_score_)
 # print(estimator.best_estimator_)
 # print(estimator.cv_results_)
