@@ -528,7 +528,7 @@ print(scaled_new)
 #### a、实现流程与关键步骤
 
 ```mermaid
-graph TD
+graph LR
 A[数据加载] --> B[数据探索]
 B --> C[数据集拆分]
 C --> D[特征标准化]
