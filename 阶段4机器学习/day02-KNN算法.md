@@ -23,13 +23,6 @@ $$
 
 
 
-![image-20230831143403932](assets/image-20230831143403932.png)
-
-> 欧式距离示意图
->
-
-
-
 ### **1.3 K值选择策略**
 
 - **过小 K 值**：模型对噪声敏感，易过拟合（决策边界崎岖）→ 高方差风险。
@@ -90,12 +83,12 @@ D --> E[预测结果]
 from sklearn.neighbors import KNeighborsClassifier
 
 # 2. 准备数据
-X = [[0,2,3], [1,3,4], [3,5,6], [4,7,8]]  # 特征
+x = [[0,2,3], [1,3,4], [3,5,6], [4,7,8]]   # 特征
 y = [0, 0, 1, 1]                           # 整数标签 → 分类
 
 # 3. 实例化 & 训练
 model = KNeighborsClassifier(n_neighbors=3)
-model.fit(X, y)
+model.fit(x, y)
 
 # 4. 预测
 print(model.predict([[2,3,4]]))  # 输出类别标签
@@ -110,12 +103,12 @@ print(model.predict([[2,3,4]]))  # 输出类别标签
 from sklearn.neighbors import KNeighborsRegressor
 
 # 2. 准备数据
-X = [[0,1,2], [1,2,3], [2,3,4], [3,4,5]]  # 特征
+x = [[0,1,2], [1,2,3], [2,3,4], [3,4,5]]  # 特征
 y = [0.1, 0.2, 0.3, 0.4]                  # 浮点标签 → 回归
 
 # 3. 实例化 & 训练
 model = KNeighborsRegressor(n_neighbors=3)
-model.fit(X, y)
+model.fit(x, y)
 
 # 4. 预测
 print(model.predict([[4,4,5]]))  # 输出连续值
@@ -257,8 +250,6 @@ M \leq d_p(\mathbf{x}, \mathbf{y}) \leq n^{1/p} \cdot M
 
 特征的**单位或者大小相差较大，或者某特征的方差相比其他的特征要大出几个数量级**，**容易影响（支配）目标结果**，使得一些模型（算法）无法学习到其它的特征。
 
-![image-20230831155159883](assets/image-20230831155159883.png)
-
 | **问题**               | **影响**               | **解决方案**  |
 | :--------------------- | :--------------------- | :------------ |
 | 特征尺度差异大 📏       | 大尺度特征支配模型结果 | 归一化/标准化 |
@@ -270,7 +261,7 @@ M \leq d_p(\mathbf{x}, \mathbf{y}) \leq n^{1/p} \cdot M
 
 #### 1. 归一化
 
-通过对原始数据进行变换把数据映射到(默认为[0,1])之间：
+通过对原始数据进行变换把数据映射到指定区间（默认为[0,1]）：
 
 ![image-20230831155813699](assets/image-20230831155813699.png)
 
@@ -290,7 +281,7 @@ scaler = MinMaxScaler(feature_range=(0, 1))  # 默认缩放到 [0,1] 区间
 | `feature_range`    | tuple    | 缩放目标区间             | `(0, 1)`   |
 | `fit_transform(X)` | 方法     | 拟合数据并转换           | -          |
 | `transform(X)`     | 方法     | 应用已有缩放器转换新数据 | -          |
-| `min_`             | 属性     | 每个特征的最小值         | 计算后生成 |
+| `min_`             | 属性     | 对应每个特征的偏移量     | 计算后生成 |
 | `scale_`           | 属性     | 缩放比例因子             | 计算后生成 |
 
 > 💡 **提示**：`feature_range` 可自定义缩放范围，如 `(-1, 1)`
@@ -329,15 +320,15 @@ print(scaled_data)
 
 ```python
 # 查看计算参数
-print("各特征最小值:", scaler.min_)
+print("各特征偏移量:", scaler.min_)
 print("缩放比例:", scaler.scale_)
-print("数据范围:", scaler.data_min_, "~", scaler.data_max_)
+print("数据范围:", scaler.data_min_, "~", scaler.data_max_)  
 ```
 
 **输出示例**：
 
 ```tex
-各特征最小值: [-90.  -2. -10.]
+各特征最小值: [-2. -1. -2.]
 缩放比例: [0.03333333 0.5        0.2       ]
 数据范围: [60  2 10] ~ [90  4 15]
 ```
@@ -387,8 +378,6 @@ print("含异常值归一化:", scaler_outlier[0])  # [1. 1. 1.]
 
 > 归一化受到最大值与最小值的影响，这种方法容易受到异常数据的影响, 鲁棒性较差，适合传统精确小数据场景
 >
-
-
 
 
 
@@ -649,64 +638,6 @@ print(f"模型准确率: {acc1:.2f} (两种方法结果一致)")
 
 
 
-```python
-# 0.导入工具包
-from sklearn.datasets import load_iris
-import seaborn as sns
-import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
-
-# 1.加载数据集
-iris_data = load_iris()
-# print(iris_data)
-# print(iris_data.target)
-
-
-# 2.数据展示
-iris_df = pd.DataFrame(iris_data['data'], columns=iris_data.feature_names)
-iris_df['label'] = iris_data.target
-# print(iris_data.feature_names)
-# sns.lmplot(x='sepal length (cm)',y='sepal width (cm)',data = iris_df,hue='label')
-# plt.show()
-
-
-# 3.特征工程(预处理-标准化)
-# 3.1 数据集划分
-x_train, x_test, y_train, y_test = train_test_split(iris_data.data, iris_data.target, test_size=0.3, random_state=22)
-print(len(iris_data.data))
-print(len(x_train))
-# 3.2 标准化
-process = StandardScaler()
-x_train = process.fit_transform(x_train)
-x_test = process.transform(x_test)
-# 4.模型训练
-# 4.1 实例化
-model = KNeighborsClassifier(n_neighbors=3)
-# 4.2 调用fit法
-model.fit(x_train,y_train)
-# 5.模型预测
-x = [[5.1, 3.5, 1.4, 0.2]]
-x=process.transform(x)
-y_predict =model.predict(x_test)
-print(model.predict_proba(x))
-
-# 6.模型评估(准确率)
-# 6.1 使用预测结果
-acc =accuracy_score(y_test,y_predict)
-print(acc)
-
-# 6.2 直接计算
-acc = model.score(x_test,y_test)
-print(acc)
-
-```
-
-
-
 ## 5、超参数选择的方法
 
 ### **5.1 交叉验证 (Cross-Validation)**
@@ -796,9 +727,11 @@ x_test=pre.transform(x_test)
 # 4.模型实例化+交叉验证+网格搜索
 model = KNeighborsClassifier(n_neighbors=1)
 paras_grid = {'n_neighbors':[4,5,7,9]}
-# estimator =GridSearchCV(estimator=model,param_grid=paras_grid,cv=4)
-# estimator.fit(x_train,y_train)
+
+estimator =GridSearchCV(estimator=model,param_grid=paras_grid,cv=4)
+estimator.fit(x_train,y_train)
 # 此时estimator为最后的一个模型
+
 # print(estimator.best_score_)
 # print(estimator.best_estimator_)
 # print(estimator.cv_results_)
@@ -810,17 +743,15 @@ x=pre.transform(x)
 y_prdict=model.predict(x_test)
 
 print(accuracy_score(y_test,y_prdict))
-
-
 ```
 
-### **核心优势对比**
+### 5.4 **核心优势对比**
 
-| **方法**     | **优点**                           | **缺点**                     |
-| :----------- | :--------------------------------- | :--------------------------- |
-| **交叉验证** | 减少数据划分随机性，评估更稳定     | 计算开销大（需训练 n*n* 次） |
-| **网格搜索** | 系统遍历参数组合，避免手动试错     | 参数过多时计算成本极高       |
-| **二者结合** | 自动化选择最优超参数，提高模型性能 | 依赖参数网格的合理性         |
+| **方法**     | **优点**                           | **缺点**                    |
+| :----------- | :--------------------------------- | :-------------------------- |
+| **交叉验证** | 减少数据划分随机性，评估更稳定     | 计算开销大（需训练 *n* 次） |
+| **网格搜索** | 系统遍历参数组合，避免手动试错     | 参数过多时计算成本极高      |
+| **二者结合** | 自动化选择最优超参数，提高模型性能 | 依赖参数网格的合理性        |
 
 > **注**：实际应用中优先使用 `GridSearchCV`，避免手动实现交叉验证循环。
 
@@ -866,28 +797,6 @@ MNIST手写数字识别 是计算机视觉领域中 "hello world"级别的数据
 ```
 
 ```
-
-
-
-## 作业
-
-1.完成KNN算法部分的思维导图
-
-
-
-2.说明常见的距离度量方法
-
-
-
-
-
-3.说明特征预处理的方法
-
-
-
-4.编写KNN代码实现鸢尾花分类案例
-
-
 
 
 
