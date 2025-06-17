@@ -400,7 +400,7 @@ $$
 
 几何意义上表示：向量 $(1,1)$，向量 $(1,2)$
 
-![image-20250617202831869](C:\Users\yangqiang\AppData\Roaming\Typora\typora-user-images\image-20250617202831869.png)
+![image-20250617202831869](assets\image-20250617202831869.png)
 
 - **向量基本运算**
 
@@ -483,19 +483,249 @@ $\|x\|_p = \left( |x_1|^p + |x_2|^p + \cdots + |x_n|^p \right)^{\frac{1}{p}}$
 
 #### 2.3.5 矩阵
 
-** 点乘 @ 点积的区别
+- 矩阵运算的 `*` 和 `@` 符号的区别
 
-![image-20230901145231388](assets/image-20230901145231388.png)
+  - `*` 运算符（逐元素乘法）
 
-<img src="assets/image-20230901145322438.png" alt="image-20230901145322438" />
+    - **作用**：执行 **逐元素乘法**（Hadamard 积）。
 
-![image-20230901145840373](assets/image-20230901145840373.png)
+    - **规则**：两个矩阵的 **形状必须完全相同**。
 
-![image-20230901150113602](assets/image-20230901150113602.png)
+    - **计算方式**：对应位置的元素相乘。
+      $$
+      \left[\begin{matrix}a_{11} & a_{12}\\a_{21} & a_{22}\end{matrix}\right]*\left[\begin{matrix}b_{11} & b_{12}\\b_{21} & b_{22}\end{matrix}\right]=\left[\begin{matrix}a_{11}\times b_{11} & a_{12}\times b_{12}\\a_{21}\times b_{21} & a_{22}\times b_{22}\end{matrix}\right]
+      $$
+      
 
-### 一元线性回归的解析解
+  - `@` 运算符（矩阵乘法）
 
-![image-20230901150406897](assets/image-20230901150406897.png)
+    - **作用**：执行 **线性代数中的矩阵乘法**。
+
+    - **规则**：第一个矩阵的 **列数** 必须等于第二个矩阵的 **行数**。
+
+    - **计算方式**：行与列的点积求和。
+      $$
+      \begin{bmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{bmatrix} @ \begin{bmatrix} b_{11} & b_{12} \\ b_{21} & b_{22} \end{bmatrix} = \begin{bmatrix} a_{11}b_{11} + a_{12}b_{21} & a_{11}b_{12} + a_{12}b_{22} \\ a_{21}b_{11} + a_{22}b_{21} & a_{21}b_{12} + a_{22}b_{22} \end{bmatrix}
+      $$
+      
+
+- 矩阵是数学中的一种基本概念，表达 $m$ 行 $n$ 列的**数据**等
+
+
+
+- 矩阵在机器学习中的表达
+
+$$
+A = \begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix} \in \mathbb{R}^{2 \times 2}\quad A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} \in \mathbb{R}^{2 \times 3}
+$$
+
+一个矩阵 $m$ 行 $n$ 列：$A \in \mathbb{R}^{m \times n}$ ，**一个数据集 $X \in \mathbb{R}^{N \times D}$：$N$ 行数据，$D$ 特征数**
+
+
+
+- **矩阵加法和减法**
+
+$$
+\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} + \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} = \begin{bmatrix} 2 & 4 & 6 \\ 8 & 10 & 12 \end{bmatrix}\quad\quad\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} - \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} = \begin{bmatrix} 0 & 0 & 0 \\ 0 & 0 & 0 \end{bmatrix}
+$$
+
+
+
+- **矩阵乘法**：对于行列元素相乘后加和
+
+$$
+A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} \in \mathbb{R}^{2 \times 3}\quad B = \begin{bmatrix} 1 & 2 \\ 3 & 4 \\ 5 & 6 \end{bmatrix} \in \mathbb{R}^{3 \times 2}\quad C = \begin{bmatrix} 1 \cdot 1 + 2 \cdot 3 + 3 \cdot 5 & 1 \cdot 2 + 2 \cdot 4 + 3 \cdot 6 \\ 4 \cdot 1 + 5 \cdot 3 + 6 \cdot 5 & 4 \cdot 2 + 5 \cdot 4 + 6 \cdot 6 \end{bmatrix} = \begin{bmatrix} 22 & 28 \\ 49 & 64 \end{bmatrix} \in \mathbb{R}^{2 \times 2}
+$$
+
+$A \in \mathbb{R}^{m \times n}, \, B \in \mathbb{R}^{n \times d} \Rightarrow A \times B = C \in \mathbb{R}^{m \times d}$
+
+
+
+- **矩阵转置**
+
+$$
+A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} \in \mathbb{R}^{2 \times 3}\quad A^T = \begin{bmatrix} 1 & 4 \\ 2 & 5 \\ 3 & 6 \end{bmatrix} \in \mathbb{R}^{3 \times 2}
+$$
+
+
+
+- **矩阵@矩阵的转置**
+
+$A \times A^T$ 是方阵, $A^T \times A$ 是方阵，$A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} \in \mathbb{R}^{2 \times 3}$
+
+
+
+$A \times A^T =\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix}@ \begin{bmatrix} 1 & 4 \\ 2 & 5 \\ 3 & 6 \end{bmatrix}=\begin{bmatrix} 1 \cdot 1 + 2 \cdot 2 + 3 \cdot 3 & 1 \cdot 4 + 2 \cdot 5 + 3 \cdot 6 \\ 4 \cdot 1 + 5 \cdot 2 + 6 \cdot 3 & 4 \cdot 4 + 5 \cdot 5 + 6 \cdot 6 \end{bmatrix} = \begin{bmatrix} 14 & 32 \\ 32 & 77 \end{bmatrix}$
+
+$A^T \times A =\begin{bmatrix} 1 & 4 \\ 2 & 5 \\ 3 & 6 \end{bmatrix}@\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix}= \begin{bmatrix} 1 \cdot 1 + 4 \cdot 4 & 1 \cdot 2 + 4 \cdot 5 & 1 \cdot 3 + 4 \cdot 6 \\ 2 \cdot 1 + 5 \cdot 4 & 2 \cdot 2 + 5 \cdot 5 & 2 \cdot 3 + 5 \cdot 6 \\ 3 \cdot 1 + 6 \cdot 4 & 3 \cdot 2 + 6 \cdot 5 & 3 \cdot 3 + 6 \cdot 6 \end{bmatrix} = \begin{bmatrix} 17 & 22 & 27 \\ 22 & 29 & 36 \\ 27 & 36 & 45 \end{bmatrix}$
+
+
+
+- **方阵**：行数 = 列数的特殊矩阵
+
+
+
+- **对称方阵**：满足 $a_{ij} = a_{ji}$ 的方阵（主对角线对称）
+- **单位阵**：主对角线为1，其余为0的特殊方阵，记作 $I$ 或 $E$   例如： $I = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$
+
+- 矩阵乘法的性质
+
+  - **矩阵乘法不满足交换律**：$A \times B \neq B \times A$
+
+    - 例：$A \in \mathbb{R}^{5 \times 2}, B \in \mathbb{R}^{2 \times 5}\quad A \times B \in \mathbb{R}^{5 \times 5}\quad B \times A \in \mathbb{R}^{2 \times 2}$  
+    - 特殊条件：$A,B$ 是同阶方阵时满足 $A \times B = B \times A$ 。例：$A_{2 \times 2} \times B_{2 \times 2} = B_{2 \times 2} \times A_{2 \times 2}$
+
+    
+
+  - **矩阵乘法满足结合律**：$A \times (B \times C) = (A \times B) \times C$
+
+    - 例：$A \in \mathbb{R}^{5 \times 2}, B \in \mathbb{R}^{2 \times 5}, C \in \mathbb{R}^{5 \times 3}$    $(A \times B) \times C$ 数据形状 $\mathbb{R}^{5 \times 3}$
+
+  
+
+  - **单位矩阵性质**：矩阵与单位矩阵相乘等于矩阵本身。    $A \times I = A$，$I \times A = A$（$I$ 为单位矩阵）
+
+  - **矩阵的逆**：  若 $A = \begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix} \in \mathbb{R}^{2 \times 2}$，  存在 $B$ 使得 $A \times B = I$（单位矩阵），  则 $B$ 为 $A$ 的逆矩阵，记为 $A^{-1}$
+
+
+
+
+- 矩阵转置的性质
+
+  - $(A^T)^T = A$
+  - $$(A + B)^T = A^T + B^T$$
+
+  - $(kA)^T = kA^T$（$k$ 为常数）
+
+  - $(A \times B)^T = B^T \times A^T$
+
+
+例：  $
+\left( \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} \times \begin{bmatrix} 1 & 2 \\ 3 & 4 \\ 5 & 6 \end{bmatrix} \right)^T = \begin{bmatrix} 1 & 2 \\ 3 & 4 \\ 5 & 6 \end{bmatrix}^T \times \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix}^T
+$
+
+
+
+
+
+
+
+### 2.4 一元线性回归的解析解
+
+![image-20250617214103750](assets\image-20250617214103750.png)
+
+**最小二乘法：误差平方和**
+
+$$ j(w, b) = \sum_{i=0}^m (h(x^{(i)}) - y^{(i)})^2 $$
+
+- $\sum_{i=0}^m \cdots$ 代表求和，$m$ 代表样本个数
+- $h(x^{(i)})$ 代表第 $i$ 个样本的预测值
+- $y^{(i)}$ 代表第 $i$ 个样本的真实值
+
+**注意：**
+- $x^{(i)}$ 代表第 $i$ 个样本的特征值
+- $x^{(1)}$ 代表第 1 个样本的 $x$ 值
+- $x^{(2)}$ 代表第 2 个样本的 $x$ 值
+
+![image-20230901101931661](assets/image-20230901101931661.png)
+
+
+
+求解一元线性回归损失函数$ J(a, b) = \sum_{i=1}^m (h(x^{(i)}) - y^{(i)})^2 = \sum_{i=1}^m (ax^{(i)} + b - y^{(i)})^2 $的极小值
+
+损失函数是关于a、b的函数，对 $a$、$b$ 分别求偏导并令为 0。
+$$
+\frac{\partial f(a,b)}{\partial a} = \sum_{i=1}^m 2(ax^{(i)} + b - y^{(i)})^{(2-1)} * (ax^{(i)} + b - y^{(i)})' = \sum_{i=1}^m (2ax^{(i)^2} + 2bx^{(i)} - 2x^{(i)}y^{(i)}) = 0\quad \quad  ···1式
+$$
+
+$$
+\frac{\partial f(a,b)}{\partial b} = \sum_{i=1}^m 2(ax^{(i)} + b - y^{(i)})^{(2-1)} * (ax^{(i)} + b - y^{(i)})' = \sum_{i=1}^m (2ax^{(i)} + 2b - 2y^{(i)}) = 0\quad \quad  ···2式
+$$
+
+
+
+
+
+
+
+对1式、2式化简，$x^{(i)}$ 代表样本的特征值  ，$y^{(i)}$ 代表样本的预测值
+
+化简后得：  
+$$
+a \sum_{i=1}^m x^{(i)^2} + b \sum_{i=1}^m x^{(i)} - \sum_{i=1}^m x^{(i)}y^{(i)} = 0\quad \quad  ···3式
+$$
+
+$$
+a \sum_{i=1}^m x^{(i)} + b m - \sum_{i=1}^m y^{(i)} = 0\quad \quad  ···4式
+$$
+
+
+
+对3式、4式代入数据求解a，b：  
+$$
+a\times (160^2+166^2+172^2+174^2+180^2) + b \times (160+166+172+174+180)
+\\-(160*56.3+166*60.6+172*65.1+174*68.5+180*75) = 0\quad \quad  ···5式
+$$
+$a \times (160^2+166^2+172^2+174^2+180^2) + b \times (160^2+166^2+172^2+174^2+180^2)-(160^2+166^2+172^2+168.5+180^2)^2 = 0$ （5式）  
+$a \times (160^2+166^2+172^2+174^2+180^2) + b^2 - (56.3+60.6+65.1+68.5+75) = 0$ （6式）  
+$145416^2 + 852^2b - 55683.8 = 0$  
+$852^2a + 5^2b - 325.5 = 0$
+
+预测结果：  
+$a = 0.0397b = 60.7615y = 0.0397^2+76+60.7615 = 67$
+
+损失函数（变量为 $k, b$）：  
+$ (k, b) = \sum_{i=0}^m (h(x^{(i)}) - y^{(i)})^2 = \sum_{i=0}^m (h(x^{(i)} + b - y^{(i)})^2)$
+
+偏导数：  
+$\begin{array}{cccc} \frac{\partial f(k,b)}{\partial k} & \sum_{i=1}^m 2(ax^{(i)} + b - y^{(i)})^2 & \sum_{i=1}^m 2(2bx^{(i)} + 2bx^{(i)} - 2x^{(i)})y^{(i)} = 0 & \text{(1式)} \\ \frac{\partial f(a,b)}{\partial b} & \sum_{i=1}^m 2(ax^{(i)} + b - y^{(i)})^2 & \sum_{i=1}^m 2(2bx^{(i)} + 2bx^{(i)} - 2x^{(i)})y^{(i)} = 0 & \text{(2式)} \\ \end{array}$
+
+化简后得：  
+$k \sum_{i=1}^m x^{(i)} + b \sum_{i=1}^m x^{(i)} - \sum_{i=1}^m x^{(i)}y^{(i)} = 0$  
+$k \sum_{i=1}^m x^{(i)} + b m - \sum_{i=1}^m y^{(i)} = 0$
+
+代入数据求解：  
+$k \times (160^2+166^2+172^2+174^2+180^2) + b \times (160^2+166^2+172^2+174^2+180^2)-(160^2+166^2+172^2+168.5+180^2)^2 = 0$ （5式）  
+$k \times (160^2+166^2+172^2+174^2+180^2) + b^2 - (56.3+60.6+65.1+68.5+75) = 0$ （6式）  
+$145416^2k + 852^2b - 55683.8 = 0$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
