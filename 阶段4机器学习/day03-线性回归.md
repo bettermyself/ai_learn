@@ -775,7 +775,6 @@ $$
 
 特征矩阵 $X$ 和目标向量 $y$：
 $$
-
 X = \begin{bmatrix}
 1 & 2104 & 5 & 1 & 45 \\
 1 & 1416 & 3 & 2 & 40 \\
@@ -787,7 +786,7 @@ y = \begin{bmatrix}
 232 \\
 315 \\
 178 \\
-\end{bmatrix}
+\end{bmatrix}
 $$
 参数向量 $w$ 包含所有权重和偏置项，其中 $w_0$ 对应偏置项 $b$：
 $$
@@ -1151,7 +1150,7 @@ import numpy as np
 
 data_url = "http://lib.stat.cmu.edu/datasets/boston"
 raw_df = pd.read_csv(data_url, sep="\s+", skiprows=22, header=None)
-data = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])
+data = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])  # 这个切片形式代表什么呢
 target = raw_df.values[1::2, 2]
 
 # 2.数据集划分
@@ -1220,7 +1219,7 @@ import matplotlib.pyplot as plt
 np.random.seed(666)
 x = np.random.uniform(-3,3,size = 100)
 # 线性回归模型需要二维数组
-X = x.reshape(-1,1)
+X = x.reshape(-1,1)  # -1代表行不管多少行
 
 y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = 100)
 
