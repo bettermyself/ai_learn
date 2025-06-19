@@ -1022,6 +1022,8 @@ mean_squared_error(y_test,y_predict)
 
 ### 4.1 线性回归API
 
+
+
 ```python
 sklearn.linear_model.LinearRegression(fit_intercept=True)
 ```
@@ -1029,6 +1031,8 @@ sklearn.linear_model.LinearRegression(fit_intercept=True)
 - 通过正规方程优化
 - 参数：fit_intercept，是否计算偏置
 - 属性：LinearRegression.coef_ （回归系数） LinearRegression.intercept_（偏置）
+
+
 
 ```python
 sklearn.linear_model.SGDRegressor(loss="squared_loss", fit_intercept=True, learning_rate ='constant', eta0=0.01)
