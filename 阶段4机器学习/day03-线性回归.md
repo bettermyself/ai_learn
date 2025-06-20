@@ -1038,16 +1038,14 @@ sklearn.linear_model.LinearRegression(fit_intercept=True)
 sklearn.linear_model.SGDRegressor(loss="squared_loss", fit_intercept=True, learning_rate ='constant', eta0=0.01)
 ```
 
-- 参数：loss（损失函数类型），fit_intercept（是否计算偏置）learning_rate （学习率）
+- 参数：loss（损失函数类型），fit_intercept（是否计算偏置），learning_rate （学习率）
 - 属性：SGDRegressor.coef_ （回归系数）SGDRegressor.intercept_ （偏置）
 
-### 波士顿房价预测
+### 4.2 波士顿房价预测
 
-![image-20230913092037241](assets/image-20230913092037241.png)
+#### 4.2.1 案例背景介绍
 
-#### 案例背景介绍
-
-数据介绍
+数据介绍：
 
 <img src="assets/006tNbRwly1ga8u37zooxj317g0tc7dk.jpg" style="zoom:50%;" />
 
@@ -1057,17 +1055,18 @@ sklearn.linear_model.SGDRegressor(loss="squared_loss", fit_intercept=True, learn
 
 
 
-#### 案例分析
+#### 4.2.2 案例分析
 
-回归当中的数据大小不一致，是否会导致结果影响较大。所以需要做标准化处理。
+回归当中的数据大小不一致，会导致结果影响较大。所以需要做标准化处理。
 
 - 数据分割与标准化处理
+- 回归训练
 - 回归预测
 - 线性回归的算法效果评估
 
 
 
-####  回归性能评估
+####  4.2.3 回归性能评估
 
 均方误差(Mean Squared Error, MSE)评价机制：
 
@@ -1086,7 +1085,7 @@ sklearn.metrics.mean_squared_error(y_true, y_pred)
 
 
 
-#### 代码实现
+#### 4.2.4 代码实现
 
 ```python
 # 0.导包
@@ -1119,14 +1118,10 @@ model.fit(x_train,y_train)
 # print(model.intercept_)
 # 5.预测
 y_predict=model.predict(x_test)
-
 print(y_predict)
 
 # 6.模型评估
-
 print(mean_squared_error(y_test,y_predict))
-
-
 ```
 
 
@@ -1183,47 +1178,50 @@ print(mean_squared_error(y_test,y_predict))
 
 
 
-## 正则化
+## 5、正则化
 
-**学习目标：**
+###  5.1 欠拟合与过拟合
 
-1.掌握过拟合、欠拟合的概念
+| **特征**     | **过拟合**                                                   | **欠拟合**                                                   |
+| :----------- | :----------------------------------------------------------- | :----------------------------------------------------------- |
+| **定义**     | 模型在训练数据上表现很好，但在测试数据上表现差。             | 模型在训练数据和测试数据上表现均不佳。                       |
+| **原因**     | 模型过于复杂，学习了训练数据中的噪声或细节。                 | 模型过于简单，无法捕捉数据的关键特征。                       |
+| **训练误差** | 极低（甚至接近 0）                                           | 较高                                                         |
+| **测试误差** | 远高于训练误差                                               | 与训练误差相近，但整体偏高                                   |
+| **解决方法** | 增加训练数据 - 正则化(L1/L2) - 减少模型复杂度 - 早停（Early Stopping） | 增加模型复杂度 - 提取更多特征 - 减少正则化约束 - 延长训练时间 |
+| **图示**     | 模型拟合曲线“完美”贴合训练数据，但波动剧烈，泛化能力差。     | 模型拟合曲线过于平滑，无法反映数据真实趋势。                 |
 
-2.掌握过拟合、欠拟合产生的原因
+> **核心区别**
+>
+> - **过拟合**：模型“学过头”，泛化能力差。
+> - **欠拟合**：模型“没学会”，拟合能力不足。
 
-3.知道什么是正则化，以及正则化的方法
 
-###  欠拟合与过拟合
-
-过拟合：一个假设 **在训练数据上能够获得比其他假设更好的拟合， 但是在测试数据集上却不能很好地拟合数据** (体现在准确率下降)，此时认为这个假设出现了过拟合的现象。(模型过于复杂)
-
-欠拟合：一个假设 **在训练数据上不能获得更好的拟合，并且在测试数据集上也不能很好地拟合数据** ，此时认为这个假设出现了欠拟合的现象。(模型过于简单)
 
 过拟合和欠拟合的区别：
 
-<img src="assets/006tNbRwly1ga8u2rlw69j315m0oc40y.jpg" alt="æ¬ æåè¿æåå¾ç¤º" style="zoom: 33%;" />
+![image-20250620132917206](assets\image-20250620132917206-1750397359666-1.png)
 
-欠拟合在训练集和测试集上的误差都较大
 
-过拟合在训练集上误差较小，而测试集上误差较大
 
-![image-20230913101352444](assets/image-20230913101352444.png)
 
-### 通过代码认识过拟合和欠拟合
+
+### 5.2 通过代码认识过拟合和欠拟合
 
 绘制数据
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
 np.random.seed(666)
 x = np.random.uniform(-3,3,size = 100)
 # 线性回归模型需要二维数组
 X = x.reshape(-1,1)  # -1代表行不管多少行
 
-y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = 100)
+y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = (100,1))  # 广播机制
 
-from sklearn.linear_model import LinearRegression
 estimator = LinearRegression()
 estimator.fit(X,y)
 y_predict = estimator.predict(X)
@@ -1232,6 +1230,31 @@ plt.scatter(x,y)
 plt.plot(x,y_predict,color = 'r')
 plt.show()
 ```
+
+> **为什么需要 reshape？**
+>
+> scikit-learn 要求特征数据 `X` 必须是二维形状，你的 `x` 当前是一维数组（形状 `(100,)`），需要转换为 `(100, 1)`
+>
+> **reshape 参数说明**
+>
+> - `-1`：自动计算该维度大小（这里是样本数量 100）
+> - `1`：特征维度大小（单个特征）
+> - 等价于 `x.reshape(100, 1)`
+>
+> **可视化理解**
+>
+> | 转换前 (错误)         | 转换后 (正确)               |
+> | :-------------------- | :-------------------------- |
+> | `[x1, x2, ..., x100]` | `[[x1], [x2], ..., [x100]]` |
+> | 形状: `(100,)`        | 形状: `(100, 1)`            |
+>
+> **特殊情况：多特征不需要 reshape**
+>
+> 如果你的数据本来就是二维的（例如 CSV 读取的多列数据），则不需要 reshape
+>
+> **关键记忆点**：scikit-learn 要求 `X` 必须是二维矩阵，即使只有一个特征也要通过 `reshape(-1, 1)` 转换成列向量形式。
+
+
 
 ![1](assets/1.png)
 
@@ -1243,6 +1266,8 @@ mean_squared_error(y,y_predict)
 #3.0750025765636577
 ```
 
+
+
 添加二次项，绘制图像
 
 ```python
@@ -1252,7 +1277,11 @@ estimator2.fit(X2,y)
 y_predict2 = estimator2.predict(X2)
 
 plt.scatter(x,y)
-plt.plot(np.sort(x),y_predict2[np.argsort(x)],color = 'r')
+
+sorted_indices = np.argsort(x.flatten())  # 一维索引 (100,)
+y_sorted = y2_predict[sorted_indices].flatten()  # 形状 (100,)
+
+plt.plot(np.sort(x.flatten()), y_sorted, color='r')  # 确保 x 和 y 均为一维
 plt.show()
 ```
 
@@ -1287,6 +1316,8 @@ error
 ```
 
 ![](assets/3.png)
+
+
 
 通过上述观察发现，随着加入的高次项越来越多，拟合程度越来越高，均方误差也随着加入越来越小。说明已经不再欠拟合了。
 
@@ -1506,11 +1537,9 @@ array([ 9.91283840e-01,  5.24820573e-01,  1.57614237e-02,  2.34128982e-03,
 
 
 
-## 课堂笔记
 
-<img src="assets/image-20240730162748965.png" alt="image-20240730162748965" style="zoom:50%;" />
 
-![image-20240731120450448](assets/image-20240731120450448.png)
+
 
 
 
