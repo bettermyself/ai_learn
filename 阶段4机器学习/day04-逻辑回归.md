@@ -428,6 +428,8 @@ print(accuracy_score(y_test,y_predict))
 
 ####  ROC 曲线
 
+ROC曲线代表的意义？
+
 ROC 曲线：我们分别考虑正负样本的情况：
 
 1. 正样本中被预测为正样本的概率，即：TPR （True Positive Rate）
