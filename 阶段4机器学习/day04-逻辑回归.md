@@ -592,78 +592,148 @@ sklearn.metrics.classification_report(y_true, y_pred, labels=[], target_names=No
 
 ### 5.1 数据集介绍
 
-- 流失用户指的使用过产品因为某些原因不再使用该产品。随着产品的更新迭代，都会存在一定的流失情况，这时正常现象。流失用户的比例和变化趋势能够反映该产品当前是否存在问题以及未来的发展趋势。
-- 当用户群体庞大时，有限的人力和精力不能为每个用户都投入大量的时间。如果公司可以预测哪些用户可能提前流失，这样就能将主要精力聚焦于这些用户，实施有效的用户挽留策略，提高用户粘性。
-- 本项目旨在通过分析特征属性确定用户流失的原因，以及哪些因素可能导致用户流失。建立预测模型来判断用户是否流失，并提出用户流失预警策略。
-- 具体数据说明如下：数据集中总计7043条数据，21个特征字段，最终分类特征为Churn：用户是否流失，具体内容如下所示：
-  customerID：用户ID
-  gender：性别
-  SeniorCitizen：是否是老人
-  Partner：是否有伴侣
-  Dependents：是否有需要抚养的孩子
-  tenure：任职
-  PhoneService：是否办理电话服务
-  MultipleLines：是否开通了多条线路
-  InternetService：是否开通网络服务和开通的服务类型（光纤、电话拨号）
-  TechSupport：是否办理技术支持服务
-  OnlineBackup：是否办理在线备份服务
-  OnlineSecurity：是否办理在线安全服务
-  DeviceProtection：是否办理设备保护服务
-  StreamingTV：是否办理电视服务
-  StreamingMovies：是否办理电影服务
-  Contract：签订合约的时长
-  PaperlessBilling：是否申请了无纸化账单
-  PaymentMethod：付款方式（电子支票、邮寄支票、银行自动转账、信用卡自动转账）
-  MonthlyCharges：月消费
-  TotalCharges：总消费
-  Churn：用户是否流失
+**基本概念：**
 
-![image-20240801160336488](assets/image-20240801160336488.png)
+- **流失用户**：使用过产品但因某些原因不再使用的用户
+- **分析价值**：
+  - 反映产品当前问题及未来发展趋势
+  - 帮助公司聚焦高危用户，实施挽留策略
+  - 提高用户粘性和资源利用效率
 
-### 处理流程
+**项目目标：**
 
-1、数据基本处理
-
- 	查看数据的基本信息
-
-​	对类别数据数据进行one-hot处理
-
-​	查看标签分布情况
-
-2、特征筛选
-
-​	分析哪些特征对标签值影响大
-
-​	初步筛选出对标签影响比较大的特征，形成x、y
-
-3、模型训练
-
-​	模型训练
-
-​	交叉验证网格搜索等
-
-4、模型评估
-
-​	精确率
-
-​	Roc_AUC指标计算
-
-###  案例实现
+- 分析特征属性确定用户流失原因
+- 建立预测模型判断用户流失概率
+- 提出有效的用户流失预警策略
 
 
 
+数据集概览
+
+| 数据总量 | 特征字段数 | 目标变量 |
+| :------- | :--------- | :------- |
+| 7,043条  | 21个       | Churn    |
+
+特征字段说明
+
+| 类别         | 字段名           | 说明               |
+| :----------- | :--------------- | :----------------- |
+| **用户标识** | customerID       | 用户唯一标识符     |
+| **人口统计** | gender           | 用户性别           |
+|              | SeniorCitizen    | 是否是老年人       |
+|              | Partner          | 是否有伴侣         |
+|              | Dependents       | 是否有需抚养的孩子 |
+| **服务使用** | tenure           | 在网时长(月)       |
+|              | PhoneService     | 是否办理电话服务   |
+|              | MultipleLines    | 是否多线服务       |
+|              | InternetService  | 网络服务类型       |
+| **增值服务** | TechSupport      | 技术支持服务       |
+|              | OnlineBackup     | 在线备份服务       |
+|              | OnlineSecurity   | 在线安全服务       |
+|              | DeviceProtection | 设备保护服务       |
+|              | StreamingTV      | 电视流媒体服务     |
+|              | StreamingMovies  | 电影流媒体服务     |
+| **合同支付** | Contract         | 合约时长           |
+|              | PaperlessBilling | 无纸化账单         |
+|              | PaymentMethod    | 付款方式           |
+| **消费信息** | MonthlyCharges   | 月消费金额($)      |
+|              | TotalCharges     | 总消费金额($)      |
+| **目标变量** | Churn            | 是否流失           |
 
 
 
+### 5.2 用户流失预测处理流程
 
-## 作业
+#### 5.2.1 数据基本处理
 
-1. 使用思维导图总结逻辑回归的内容
+| 步骤 | 操作         | 说明                           | 工具/方法                           |
+| :--- | :----------- | :----------------------------- | :---------------------------------- |
+| 1.1  | 查看基本信息 | 检查数据维度、缺失值、数据类型 | `df.info()`, `df.describe()`        |
+| 1.2  | 类别数据编码 | 对分类变量进行One-Hot编码      | `pd.get_dummies()`                  |
+| 1.3  | 标签分布分析 | 检查目标变量是否平衡           | `sns.countplot()`, `value_counts()` |
+
+**关键注意事项**：
+
+- 处理缺失值（如TotalCharges中的空白值）
+- 对高基数分类变量考虑特殊处理
+- 记录编码后的特征维度变化
 
 
 
-2. 理解分类评估方法并进行详细的描述
+#### 5.2.2 特征筛选
+
+分析哪些特征对标签值影响大，初步筛选出对标签影响比较大的特征，形成`x`、`y`
+
+| 步骤 | 方法           | 说明                        | 可视化建议             |
+| :--- | :------------- | :-------------------------- | :--------------------- |
+| 2.1  | 单变量分析     | 分析各特征与标签的相关性    | 箱线图、条形图         |
+| 2.2  | 统计检验       | 卡方检验(分类)、ANOVA(连续) | -                      |
+| 2.3  | 特征重要性     | 使用树模型初步评估          | `feature_importances_` |
+| 2.4  | 多重共线性检查 | 检查特征间相关性            | 热力图                 |
 
 
 
-3.动手实现癌症分类和电信用户流失案例(数据处理，特征工程，CV。。。。)
+#### 5.2.3 模型训练
+
+| 模型类型 | 候选算法     | 调参重点                 | 训练方法       |
+| :------- | :----------- | :----------------------- | :------------- |
+| 基准模型 | Logistic回归 | 正则化参数C              | 5折交叉验证    |
+| 树模型   | RandomForest | n_estimators, max_depth  | GridSearchCV   |
+| 集成方法 | XGBoost      | learning_rate, max_depth | Early Stopping |
+
+
+
+#### 5.2.4 模型评估
+
+评估指标对比表
+
+| 指标     | 计算公式      | 适用场景     | 阈值  |
+| :------- | :------------ | :----------- | :---- |
+| 精确率   | TP/(TP+FP)    | 关注误报成本 | >0.7  |
+| 召回率   | TP/(TP+FN)    | 关注漏报成本 | >0.6  |
+| ROC-AUC  | 曲线下面积    | 综合评估     | >0.8  |
+| F1 Score | 2*(P*R)/(P+R) | 不平衡数据   | >0.65 |
+
+
+
+###  5.3 案例实现
+
+```python
+# 1.导入依赖包
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, roc_auc_score, classification_report
+
+# 2.数据处理
+data = pd.read_csv('churn.csv')
+print(f'data.info-->{data.info}')
+print(f'data.head()-->{data.head()}')
+print(f'data.describe()-->{data.describe()}')
+
+data = pd.get_dummies(data)
+data = data.drop(['Churn_No', 'gender_Male'], axis=1)
+data = data.rename(columns={'Churn_Yes': 'flag'})
+# print(data.flag.value_counts())
+
+# 3.特征工程
+sns.countplot(data=data, y='Contract_Month', hue='flag')
+plt.show()
+
+x = data[['PaymentElectronic', 'Contract_Month', 'internet_other']]
+y = data['flag']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, test_size=0.2, random_state=22)
+
+# 4.模型训练
+LR = LogisticRegression()
+LR.fit(x_train, y_train)
+
+# 5.模型评估
+y_predict = LR.predict(x_test)
+print(accuracy_score(y_test, y_predict))
+print(roc_auc_score(y_test, y_predict))
+print(classification_report(y_test, y_predict))
+```
