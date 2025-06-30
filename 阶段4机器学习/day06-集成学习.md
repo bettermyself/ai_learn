@@ -793,7 +793,7 @@ print(f'AdaBoost 训练集/测试集准确率: {ada_train_acc:.3f}/{ada_test_acc
   - 第三棵树拟合残差预测3岁 → 误差1岁
   - 最终预测：20+6+3=29岁（接近真实值）
 
-
+> 通过拟合残差可将多个弱学习器组成一个强学习器，这就是提升树的最朴素思想
 
 ```mermaid
 graph LR
@@ -812,40 +812,99 @@ F --> H
 
 ### 4.2 梯度提升树
 
-梯度提升树不再使用拟合残差，而是利用最速下降的近似方法，利用损失函数的负梯度作为提升树算法中的残差近似值。
+#### 4.2.1 改进点
 
-假设:
+| 对比项       | 传统提升树     | 梯度提升树           |
+| :----------- | :------------- | :------------------- |
+| **拟合目标** | 残差           | 损失函数的负梯度     |
+| **损失函数** | 仅支持平方损失 | 支持任意可导损失函数 |
+| **泛化能力** | 一般           | 更强                 |
 
-1. 我们前一轮迭代得到的强学习器是：f<sub>i-1</sub>(x)
-2. 损失函数是：L(y,f<sub>​i−1</sub>(x))
-3. 本轮迭代的目标是找到一个弱学习器：h<sub>i</sub>(x)
-4. 让本轮的损失最小化: L(y, f<sub>i</sub>(x))=L(y, f<sub>i−1</sub>(x)) + h<sub>i</sub>(x))
 
-当采用平方损失函数时:
 
-<img src="assets/23.png" style="zoom:33%;" />
+#### 4.2.2 核心假设
 
-则:
+- 前一轮迭代得到的强学习器：$$ f_{t-1}(x) $$
+- 损失函数：$$ L(y, f_{t-1}(x)) $$
+- 本轮迭代目标：找到弱学习器 $$ h_t(x) $$  
+- 最小化损失：  
+   $$
+   L(y, f_t(x)) = L(y, f_{t-1}(x) + h_t(x))
+   $$
 
-<img src="assets/24.png" style="zoom:33%;" />
 
-损失函数为平方损失, 则每个样本要拟合的负梯度为:
 
-<img src="assets/26.png" style="zoom:33%;" />
+#### 4.2.3 平方损失函数的推导
+当损失函数为平方损失时：  
+$$
+L(y, f_t(x)) = \left( y - f_t(x) \right)^2 = \left( y - f_{t-1}(x) - h_t(x) \right)^2
+$$
 
-此时, 我们发现 GBDT 拟合的负梯度就是残差，或者说对于回归问题，拟合的目标值就是残差。
+对 $$ h_t(x) $$ 求偏导：  
+$$
+\frac{\partial L}{\partial h_t(x)} = -2 \left( y - f_{t-1}(x) - h_t(x) \right)
+$$
 
-如果我们的 GBDT 进行的是分类问题，则损失函数变为 logloss，此时拟合的目标值就是该损失函数的负梯度值。
+令偏导为零解得：  
+$$
+y - f_{t-1}(x) - h_t(x) = 0 \implies \textcolor{blue}{h_t(x) = y - f_{t-1}(x)}
+$$
 
-### GBDT例子
 
-<img src="assets/28.png" />
+**负梯度的本质**
+
+损失函数为平方损失时，负梯度表达式为：  
+$$
+-\frac{\partial L(y, f(x_i))}{\partial f(x_i)} = \textcolor{red}{y_i - f(x_i)}
+$$
+
+**关键结论**：  
+
+- 在回归问题中，GBDT 拟合的负梯度等价于残差 $$ \textcolor{red}{y_i - f(x_i)} $$。
+- 在分类问题中（如使用 LogLoss），拟合目标变为该损失函数的负梯度值。
+
+> 解释
+>
+> 1. **最优解**：上述方程的解 $h_t(x) = y - f_{t-1}(x)$ 表示在当前样本上，弱学习器 $h_t(x)$ 应该拟合的目标值就是残差（真实值 $y$ 与当前模型预测值 $f_{t-1}(x)$ 的差）。
+>
+> 2. **残差拟合**：在平方损失下，负梯度（即损失函数关于 $f_{t-1}(x)$ 的负梯度）恰好等于残差：
+>
+> $$
+> \frac{\partial L(y, f_{t-1}(x))}{\partial f_{t-1}(x)} = y - f_{t-1}(x)
+> $$
+>
+> 因此，令偏导为零得到的解与用负梯度拟合的结果一致。
+
+
+
+### 4.3 GBDT例子
+
+| 时间   | 1    | 2    | 3    | 4    | 5    | 6    | 7    | 8    | 9    | 10   |
+| :----- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 目标值 | 5.56 | 5.70 | 5.91 | 6.40 | 6.80 | 7.05 | 8.90 | 8.70 | 9.00 | 9.05 |
+
+
 
 - 初始化弱学习器（CART树）
 
-我们通过计算当模型预测值为何值时，会使得第一个基学习器的平方误差最小，即：求损失函数对 f(x<sub>i</sub>) 的导数，并令导数为0.
+通过最小化平方误差损失函数确定初始预测值：
+$$
+L(y, f(x)) = \frac{1}{2} \sum_{i=1}^{n} (y_i - f(x_i))^2
+$$
+对损失函数求导并令导数为零：
 
-<img src="assets/29.png" style="zoom:33%;" />
+$$
+\begin{aligned}
+\frac{\partial L}{\partial f(x_i)} &= \sum_{i=1}^{n} (y_i - f(x_i)) = 0 \\
+\Rightarrow \sum_{i=1}^{n} f(x_i) &= \sum_{i=1}^{n} y_i \\
+\Rightarrow f(x_i) &= \frac{\sum_{i=1}^{n} y_i}{n}
+\end{aligned}
+$$
+
+
+> **计算结果**  
+>
+> 10个样本的初始输出值：  $$f(x_i) = 7.31$$
 
 <img src="assets/30.png" />
 
@@ -961,15 +1020,7 @@ print("gbc_report:",classification_report(gbc_y_pred,y_test))
 
 ## 5、XGBoost
 
-**学习目标：**
 
-1.知道XGBoost算法的思想
-
-2.理解XGBoost目标函数
-
-3.了解XGBoost的算法API
-
-4.实现红酒品质预测案例
 
 
 
@@ -1267,31 +1318,3 @@ cv = GridSearchCV(estimator,param_grid,cv=spliter)
 y_pred = cv.predict(x_valid)
 print(classification_report(y_true=y_valid, y_pred=y_pred))
 ```
-
-## 作业
-
-1.使用思维导图总结集成学习部分的内容
-
-
-
-2.说明集成学习的方式
-
-
-
-3.实现本部分所有的案例
-
-
-
-## 课堂笔记
-
-
-
-![image-20240804150652476](assets/image-20240804150652476.png)
-
-
-
-<img src="assets/image-20240804183228948.png" alt="image-20240804183228948" style="zoom:67%;" />
-
-<img src="assets/image-20240804183243687.png" alt="image-20240804183243687" style="zoom:67%;" />
-
-<img src="assets/image-20240804183254740.png" alt="image-20240804183254740" style="zoom:67%;" />
