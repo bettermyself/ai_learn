@@ -316,31 +316,30 @@ graph TD
 
 ###  2.3 随机森林泰坦尼克号生存预测
 
-这泰坦尼克号案例实战：
-
 ``` python
-#1.数据导入
+#1.数据加载与探索
 #1.1导入数据
 import pandas as pd
-#1.2.利用pandas的read.csv模块从互联网中收集泰坦尼克号数据集
 titanic=pd.read_csv("data/泰坦尼克号.csv")
 titanic.info() #查看信息
+
 #2人工选择特征pclass,age,sex
-X=titanic[['Pclass','Age','Sex']]
-y=titanic['Survived']
+X=titanic[['Pclass','Age','Sex']].copy()
+y=titanic['Survived'].copy()
+
 #3.特征工程
 #数据的填补
 X['Age'].fillna(X['Age'].mean(),inplace=True)
 X = pd.get_dummies(X)
+
 #数据的切分
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test =train_test_split(X,y,test_size=0.25,random_state=22)
 
-
 #4.使用单一的决策树进行模型的训练及预测分析
 from sklearn.tree import DecisionTreeClassifier
 dtc=DecisionTreeClassifier()
-dtc.fit(X_train,y_train)
+dtc.fit(X_train,y_train)	
 dtc_y_pred=dtc.predict(X_test)
 dtc.score(X_test,y_test)
 
@@ -353,8 +352,8 @@ rfc.score(X_test,y_test)
 
 #6.性能评估
 from sklearn.metrics import classification_report
-print("dtc_report:",classification_report(dtc_y_pred,y_test))
-print("rfc_report:",classification_report(rfc_y_pred,y_test))
+print(classification_report(y_test, dtc_y_predict, target_names=['died', 'survived']))  # classification_report 会按照标签的顺序（即 0、1）依次使用 target_names 列表中的名称。
+print(classification_report(y_test, rfc_y_predict, target_names=['died', 'survived']))
 ```
 
 超参数选择代码:
@@ -371,6 +370,20 @@ from sklearn.model_selection import GridSearchCV
 gc = GridSearchCV(rf, param_grid=param, cv=2)
 gc.fit(X_train, y_train)
 print("随机森林预测的准确率为：", gc.score(X_test, y_test))
+```
+
+
+
+```mermaid
+graph LR
+    A[数据加载] --> B[特征选择]
+    B --> C[特征工程]
+    C --> D[数据切分]
+    D --> E[单决策树模型]
+    D --> F[随机森林模型]
+    E --> G[性能对比]
+    F --> G
+    F --> H[超参数调优]
 ```
 
 
@@ -393,7 +406,7 @@ Adaboost自适应在于：“关注”被错分的样本，“器重”性能好
 
 主要过程演示如下：
 
-<img src="assets/boosting2.png" style="zoom:50%;" />
+<img src="assets/boosting2.png" style="zoom:80%;" />
 
 <img src="assets/boosting3.png" style="zoom:50%;" />
 
