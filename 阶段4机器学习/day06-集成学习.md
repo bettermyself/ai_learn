@@ -1345,6 +1345,81 @@ $$
 
 #### 5.2.2 泰勒公式展开
 
+进行 $t$ 次迭代的学习模型的目标函数如下为：
+$$
+obj^{(t)} = \sum_{i=1}^{n} L \left( y_i, \hat{y}_i^{(t)} \right) + \sum_{k=1}^{t} \Omega (f_k)= \sum_{i=1}^{n} L \left( y_i, \hat{y}_i^{(t-1)} + f_t(x_i) \right) + \sum_{k=1}^{t-1} \Omega (f_k) + \Omega (f_t)
+$$
+我们直接对目标函数求解比较困难，通过泰勒展开将目标函数换一种近似的表示方式。
+
+
+
+##### **a、泰勒展开**  
+
+将一个函数在某一点处展开成无限项的多项式表达式  
+$$
+f(x + \Delta x) = f(x) + f'(x) \cdot \Delta x + \frac{1}{2} f''(x) \cdot \Delta x^2 + \ldots + \frac{1}{n!} f^{(n)}(x) \cdot \Delta x^n
+$$
+
+- **一阶泰勒展开**  
+  $$
+  f(x + \Delta x) \approx f(x) + f'(x) \cdot \Delta x
+  $$
+
+- **二阶泰勒展开**  
+  $$
+  f(x + \Delta x) \approx f(x) + f'(x) \cdot \Delta x + \frac{1}{2} f''(x) \cdot \Delta x^2
+  $$
+
+
+
+接下来对 $y^{(t-1)}$ 进行泰勒二阶展开，得到如下近似表示的公式：
+$$
+obj^{(t)} \approx \sum_{i=1}^m \left[ L \left( y_i, \hat{y}_i^{(t-1)} \right) + g_i f_t (x_i) + \frac{1}{2} h_i f_t^2 (x_i) \right] + \sum_{k=1}^{t-1} \Omega (f_k) + \Omega (f_t)
+$$
+
+其中，$g_i$ 和 $h_i$ 分别为损失函数的一阶导、二阶导：
+
+$$
+g_i = \partial_{\hat{y}^{(t-1)}} L \left( y_i, \hat{y}^{(t-1)} \right)
+$$
+
+$$
+h_i = \partial^2_{\hat{y}^{(t-1)}} L \left( y_i, \hat{y}^{(t-1)} \right)
+$$
+
+
+
+##### b、**化简目标函数**
+
+观察目标函数，发现以下两项表示 $t-1$ 个弱学习器构成学习器的目标函数，都是常数，我们可以将其去掉：
+
+$$
+obj^{(t)} \approx \sum_{i=1}^{m} \left[L(y_i, y_i^{(t-1)}) + g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right] + \sum_{k=1}^{t-1} \Omega(f_k) + \Omega(f_t)
+$$
+
+简化后得到：
+
+$$
+obj^{(t)} \approx \sum_{i=1}^{m} \left[g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right] + \Omega(f_t)
+$$
+
+进一步展开正则项 $\Omega(f_t)$：
+
+$$
+obj^{(t)} \approx \sum_{i=1}^{m} \left[g_if_t(x_i) + \frac{1}{2}h_if_t^2(x_i)\right] + \gamma T + \frac{1}{2}\lambda \|w\|^2
+$$
+
+> 这个公式中只有 f<sub>t</sub> ，该公式可以理解为，当前这棵树如何构建能够降低损失。
+
+> **说明：**
+>
+> - **常数项移除**：  
+>    - $L(y_i, y_i^{(t-1)})$ 和 $\sum_{k=1}^{t-1} \Omega(f_k)$ 是前 $t-1$ 轮的损失和正则项，在当前轮次 $t$ 中为常数，不影响优化。
+> - **正则项分解**：  
+>    - $\Omega(f_t) = \gamma T + \frac{1}{2}\lambda \|w\|^2$，其中 $T$ 是叶子节点数，$\|w\|^2$ 是叶子权重向量的 $L_2$ 范数。
+> - **符号说明**：  
+>    - $g_i$ 和 $h_i$ 分别为损失函数的一阶和二阶梯度（泰勒展开系数）。
+>    - f<sub>t</sub>(x<sub>i</sub>) 表示样本的预测值
 
 
 
@@ -1353,52 +1428,6 @@ $$
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-我们直接对目标函数求解比较困难，通过泰勒展开将目标函数换一种近似的表示方式。接下来对 y<sub>i</sub><sup>(t-1)</sup> 进行泰勒二阶展开，得到如下近似表示的公式：
-
-<img src="assets/45.png" />
-
-其中，g<sub>i</sub> 和 h<sub>i</sub> 的分别为损失函数的一阶导、二阶导：
-
-<img src="assets/46-3996485.png" />
-
--  化简目标函数
-
-我们观察目标函数，发现以下两项都是常数项，我们可以将其去掉。
-
-<img src="assets/47.png" style="zoom: 33%;" />
-
-为什么说是常数项呢？这是因为当前学习器之前的学习器都已经训练完了，可以直接通过样本得出结果。化简之后的结果为：
-
-<img src="assets/48.png" />
-
-我们再将 Ω(f<sub>t</sub>) 展开，结果如下：
-
-<img src="assets/49.png" />
-
-这个公式中只有 f<sub>t</sub> ，该公式可以理解为，当前这棵树如何构建能够降低损失。
-
--  问题再次转换
-
-我们再次理解下这个公式表示的含义：
-
-1. g<sub>i</sub> 表示每个样本的一阶导，h<sub>i</sub> 表示每个样本的二阶导
-2. f<sub>t</sub>(x<sub>i</sub>) 表示样本的预测值
-3. T 表示叶子结点的数目
-4. ||w||<sup>2</sup> 由叶子结点值组成向量的模
 
 现在，我们发现公式的各个部分考虑的角度不同，有的从样本角度来看，例如：f<sub>t</sub>(x<sub>i</sub>) ，有的从叶子结点的角度来看，例如：T、||w||<sup>2</sup>。我们下面就要将其转换为相同角度的问题，这样方便进一步合并项、化简公式。我们统一将其转换为从叶子角度的问题：
 
