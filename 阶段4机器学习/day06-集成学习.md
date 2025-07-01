@@ -1043,154 +1043,329 @@ $$
 
 #### 4.3.3 构建第二个弱学习器（CART树）
 
-<img src="assets/34.png" />
+当前模型的残差（负梯度）计算结果如下：
 
-以 3.5 作为切分点损失最小，构建决策树如下：
+| $x$            | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     | 9    | 10   |
+| -------------- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ---- | ---- |
+| 目标值（残差） | -1.75 | -1.61 | -1.40 | -0.91 | -0.51 | -0.26 | 1.59  | 1.39  | 1.69 | 1.74 |
+| 预测值         | -1.07 | -1.07 | -1.07 | -1.07 | -1.07 | -1.07 | 1.60  | 1.60  | 1.60 | 1.60 |
+| 新负梯度       | -0.68 | -0.54 | -0.33 | 0.16  | 0.56  | 0.81  | -0.01 | -0.21 | 0.09 | 0.14 |
 
-<img src="assets/35.png" style="zoom:33%;" />
+> **注**：新负梯度 = 目标值（残差） - 预测值
 
-- 构建第三个弱学习器（CART树）
 
-<img src="assets/36.png" />
+
+**切分点选择与平方损失计算**
+
+各切分点的平方损失计算结果如下（**最小损失为0.79，切分点3.5**）：
+
+| 切分点   | 1.5  | 2.5  | 3.5      | 4.5  | 5.5  | 6.5  | 7.5  | 8.5  | 9.5  |
+| -------- | ---- | ---- | -------- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 平方损失 | 1.42 | 1.00 | **0.79** | 1.13 | 1.66 | 1.93 | 1.93 | 1.90 | 1.91 |
+
+**计算过程示例**（切分点3.5）
+
+- **数据划分**：
+   - 左子集($x \leq 3.5$): $\{-1.75, -1.61, -1.40\}$
+   - 右子集($x > 3.5$): $\{-0.91, -0.51, -0.26, 1.59, 1.39, 1.69, 1.74\}$
+
+- **子集预测值（均值）**：
+   - $c_L = \frac{-1.75-1.61-1.40}{3} = -1.5867$
+   - $c_R = \frac{-0.91-0.51-0.26+1.59+1.39+1.69+1.74}{7} = 0.5186$
+
+- **平方损失计算**：
+   - 左子集损失: $(-1.75+1.5867)^2 + (-1.61+1.5867)^2 + (-1.40+1.5867)^2 = 0.0266 + 0.0005 + 0.0348 = 0.0619$
+   - 右子集损失: $(-0.91-0.5186)^2 + \cdots + (1.74-0.5186)^2 = 2.0406 + \cdots + 1.4916 = 0.7281$
+   - 总损失: $0.0619 + 0.7281 = 0.79$
+
+
+
+**最佳切分点与决策树构建**
+
+- **最佳切分点**: 3.5（平方损失最小，为0.79）
+- **划分规则**：
+  - $x \leq 3.5$ → 左子叶（样本$x=1,2,3$）
+  - $x > 3.5$ → 右子叶（样本$x=4,5,6,7,8,9,10$）
+- **子叶输出值（残差均值）**：
+  - 左子叶: $-0.52$
+  - 右子叶: $0.22$
+
+
+
+<img src="assets/35.png" style="zoom: 80%;" />
+
+#### 4.3.4 构建第三个弱学习器（CART树）
+
+当前模型的残差（负梯度）计算结果如下：
+
+| $x$            | 1     | 2     | 3     | 4     | 5    | 6    | 7     | 8     | 9     | 10    |
+| -------------- | ----- | ----- | ----- | ----- | ---- | ---- | ----- | ----- | ----- | ----- |
+| 目标值（残差） | -0.68 | -0.54 | -0.33 | 0.16  | 0.56 | 0.81 | -0.01 | -0.21 | 0.09  | 0.14  |
+| 预测值         | -0.52 | -0.52 | -0.52 | 0.22  | 0.22 | 0.22 | 0.22  | 0.22  | 0.22  | 0.22  |
+| 新负梯度       | -0.16 | -0.02 | 0.19  | -0.06 | 0.34 | 0.59 | -0.23 | -0.43 | -0.13 | -0.08 |
+
+> **计算公式**：新负梯度 = 目标值（残差） - 预测值
+
+
+
+**切分点选择与平方损失计算**
+
+各切分点的平方损失计算结果如下（**最小损失为0.47，切分点6.5**）：
+
+| 切分点   | 1.5  | 2.5  | 3.5  | 4.5  | 5.5  | 6.5      | 7.5  | 8.5  | 9.5  |
+| -------- | ---- | ---- | ---- | ---- | ---- | -------- | ---- | ---- | ---- |
+| 平方损失 | 0.76 | 0.77 | 0.79 | 0.79 | 0.76 | **0.47** | 0.59 | 0.76 | 0.78 |
+
+
 
 以 6.5 作为切分点损失最小，构建决策树如下：
 
-<img src="assets/37.png" style="zoom:33%;" />
+<img src="assets/37.png" style="zoom: 80%;" />
 
--  最终强学习器
+#### 4.3.5 最终强学习器
 
 <img src="assets/38.png" style="zoom: 50%;" />
 
 
 
-- GBDT算法流程
+#### 4.3.6 GBDT算法流程
 
-1 初始化弱学习器（目标值的均值作为预测值）
+##### a. 初始化弱学习器
 
-2 迭代构建学习器，每一个学习器拟合上一个学习器的负梯度
+计算目标值的均值作为初始预测值：  $f_0(x) = \bar{y} = \frac{1}{N}\sum_{i=1}^{N} y_i$
 
-3 直到达到指定的学习器个数
+**示例**：初始预测值 $7.31$
 
-4 当输入未知样本时，将所有弱学习器的输出结果组合起来作为强学习器的输出
 
-### 泰坦尼克号案例实战
 
-该案例是在随机森林的基础上修改的，可以对比理解
+##### b. 迭代构建学习器（$m=1$ 到 $M$）
+
+对于每轮迭代：
+
+**计算负梯度（伪残差）**$r_{im} = y_i - f_{m-1}(x_i)$  
+
+**第一轮残差示例**：  
+
+$[-1.75, -1.61, -1.40, -0.91, -0.51, -0.26, 1.59, 1.39, 1.69, 1.74]$
+
+
+
+**训练CART树**
+
+最小化平方损失选择切分点：  
+
+$\min_{s} \left[ \min_{c_L} \sum_{x_i \in R_L} (r_{im} - c_L)^2 + \min_{c_R} \sum_{x_i \in R_R} (r_{im} - c_R)^2 \right]$
+
+**切分点选择示例**：
+
+| 切分点 | 1.5  | 2.5  | 3.5  | 4.5  | 5.5  | 6.5  | 7.5  | 8.5  | 9.5  |
+| ------ | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 损失   | 1.42 | 1.00 | 0.79 | 1.13 | 1.66 | 1.93 | 1.93 | 1.90 | 1.91 |
+
+
+
+**计算叶节点输出**
+
+$c_{jm} = \frac{1}{|R_j|}\sum_{x_i \in R_j} r_{im}$
+
+**示例**：
+- 左叶节点：$-1.0733$
+- 右叶节点：$1.6025$
+
+
+
+**更新模型**
+
+$f_m(x) = f_{m-1}(x) + \eta \cdot h_m(x)$  
+
+（通常 $\eta=1$）
+
+
+
+##### c. 终止条件
+
+- 达到最大迭代次数 $M$
+- 或损失变化 $<\epsilon$
+
+
+
+##### d. 预测未知样本
+
+$\hat{y} = f_0(x) + \sum_{m=1}^{M} h_m(x)$
+
+**预测示例**（$x=1$）：  $7.31 + (-1.0733) + (-1.5867) + (-0.0033) ≈ 4.65$
+
+
+
+### 4.4 泰坦尼克号案例实战
 
 ```python
-#1.数据导入
-#1.1导入数据
-import  pandas as pd
-#1.2.利用pandas的read.csv模块泰坦尼克号数据集
-titanic=pd.read_csv("../data/泰坦尼克号数据集.csv")
-titanic.info() #查看信息
-#2人工选择特征pclass,age,sex
-X=titanic[['Pclass','Age','Sex']]
-y=titanic['Survived']
-#3.特征工程
-#数据的填补
-X['Age'].fillna(X['Age'].mean(),inplace=True)
-#数据的切分
+### 4.4 泰坦尼克号案例实战
+# 该案例是在随机森林的基础上修改的，可以对比理解
+
+# 1. 数据导入
+# 1.1 导入必要库
+import pandas as pd
+
+# 1.2 利用pandas的read.csv读取泰坦尼克号数据集
+titanic = pd.read_csv("../data/泰坦尼克号数据集.csv")
+titanic.info()  # 查看数据集信息
+
+# 2. 人工选择特征 pclass, age, sex
+X = titanic[['Pclass', 'Age', 'Sex']]
+y = titanic['Survived']
+
+# 3. 特征工程
+# 3.1 数据的填补 - 用平均值填充Age缺失值
+X['Age'].fillna(X['Age'].mean(), inplace=True)
+
+# 3.2 数据的切分
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test =train_test_split(X,y,test_size=0.25,random_state=22)
-#将数据转化为特征向量
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=22)
+
+# 3.3 将数据转化为特征向量(sex含有字符串，不能训练，作用与pd.get_dummies类似)
 from sklearn.feature_extraction import DictVectorizer
-vec=DictVectorizer(sparse=False)
-X_train=vec.fit_transform(X_train.to_dict(orient='records'))
-X_test=vec.transform(X_test.to_dict(orient='records'))
-#4.使用单一的决策树进行模型的训练及预测分析
+vec = DictVectorizer(sparse=False)
+X_train = vec.fit_transform(X_train.to_dict(orient='records'))
+X_test = vec.transform(X_test.to_dict(orient='records'))
+
+# 4. 使用单一的决策树进行模型的训练及预测分析
 from sklearn.tree import DecisionTreeClassifier
-dtc=DecisionTreeClassifier()
-dtc.fit(X_train,y_train)
-dtc_y_pred=dtc.predict(X_test)
-print("score",dtc.score(X_test,y_test))
-#5.随机森林进行模型的训练和预测分析
+dtc = DecisionTreeClassifier()
+dtc.fit(X_train, y_train)
+dtc_y_pred = dtc.predict(X_test)
+print("Decision Tree Score:", dtc.score(X_test, y_test))
+
+# 5. 随机森林进行模型的训练和预测分析
 from sklearn.ensemble import RandomForestClassifier
-rfc=RandomForestClassifier(random_state=9)
-rfc.fit(X_train,y_train)
-rfc_y_pred=rfc.predict(X_test)
-print("score:forest",rfc.score(X_test,y_test))
-#6.GBDT进行模型的训练和预测分析
+rfc = RandomForestClassifier(random_state=9)
+rfc.fit(X_train, y_train)
+rfc_y_pred = rfc.predict(X_test)
+print("Random Forest Score:", rfc.score(X_test, y_test))
+
+# 6. GBDT进行模型的训练和预测分析
 from sklearn.ensemble import GradientBoostingClassifier
-gbc=GradientBoostingClassifier()
-gbc.fit(X_train,y_train)
-gbc_y_pred=gbc.predict(X_test)
-print("score:GradientBoosting",gbc.score(X_test,y_test))
-#7.性能评估
+gbc = GradientBoostingClassifier()
+gbc.fit(X_train, y_train)
+gbc_y_pred = gbc.predict(X_test)
+print("GBDT Score:", gbc.score(X_test, y_test))
+
+# 7. 性能评估
 from sklearn.metrics import classification_report
-print("dtc_report:",classification_report(dtc_y_pred,y_test))
-print("rfc_report:",classification_report(rfc_y_pred,y_test))
-print("gbc_report:",classification_report(gbc_y_pred,y_test))
+print("\nDecision Tree Classification Report:")
+print(classification_report(dtc_y_pred, y_test))
+
+print("\nRandom Forest Classification Report:")
+print(classification_report(rfc_y_pred, y_test))
+
+print("\nGBDT Classification Report:")
+print(classification_report(gbc_y_pred, y_test))
 ```
 
 
 
 ## 5、XGBoost
 
+XGBoost（极端梯度提升树）是集成学习方法的王牌算法，在Kaggle等数据挖掘比赛中，大部分获胜者都使用了XGBoost。该算法在绝大多数的回归和分类问题上表现十分顶尖。
+
+### 5.1 XGBoost算法思想
+
+XGBoost是对GBDT（梯度提升决策树）的改进，主要创新点包括：
+
+- **泰勒二阶展开**：求解损失函数数值时使用泰勒二阶展开，提高了精度
+- **正则化项**：在损失函数中加入了正则化项，防止过拟合
+- **自定义分裂指标**：自创树节点分裂指标，该指标从损失函数推导而来，同时考虑了树的复杂度
 
 
 
+**模型优化原理**
 
-XGBoost（Extreme Gradient Boosting）全名叫极端梯度提升树，XGBoost是集成学习方法的王牌，在Kaggle数据挖掘比赛中，大部分获胜者用了XGBoost。
+构建最优模型的方法是最小化训练数据的损失函数：
 
-XGBoost在绝大多数的回归和分类问题上表现的十分顶尖
+$$
+\min \frac{1}{N} \sum_{i=1}^{N} L(y_i, f(x_i))
+$$
 
-### XGBoost算法思想
-
-XGBoost 是对GBDT的改进：
-
-1. 求解损失函数极值时使用泰勒二阶展开
-2. 在损失函数中加入了正则化项
-3. XGB 自创一个树节点分裂指标。这个分裂指标就是从损失函数推导出来的。XGB 分裂树时考虑到了树的复杂度。
-
-构建最优模型的方法是**最小化训练数据的损失函数** 。
-
-<img src="assets/39.png" />
-
-预测值和真实值经过某个函数计算出损失，并求解所有样本的平均损失，并且使得损失最小。这种方法训练得到的模型复杂度较高，很容易出现过拟合。因此，为了降低模型的复杂度，在损失函数中添加了正则化项，如下所示：：
-
-<img src="assets/40.png" />
-
-提高模型对未知数据的泛化能力。
+其中：  
+- $L(y_i, f(x_i))$ 是预测值和真实值的损失函数  
+- $N$ 是样本数量  
 
 
 
-### XGboost的目标函数
+这种方法训练得到的模型复杂度较高，很容易出现过拟合。为了降低模型复杂度并防止过拟合，XGBoost在损失函数中添加了正则化项 $\Omega(f)$：
+$$
+\min \frac{1}{N} \sum_{i=1}^{N} L(y_i, f(x_i)) + \Omega(f)
+$$
 
-XGBoost（Extreme Gradient Boosting）是对梯度提升树的改进，并且在损失函数中加入了正则化项。
-
-<img src="assets/41.png" />
-
-目标函数的第一项表示整个强学习器的损失，第二部分表示强学习器中 K 个弱学习器的复杂度。
-
-xgboost 每一个弱学习器的复杂度主要从两个方面来考量：
-
-<img src="assets/42.png" />
+这种方法有效提高了模型对未知数据的泛化能力。
 
 
-1. γT 中的 T 表示一棵树的叶子结点数量，γ 是对该项的调节系数
-2. λ||w||<sup>2</sup> 中的 w 表示叶子结点输出值组成的向量，λ 是对该项的调节系数
 
-- 模型复杂度的介绍
+### 5.2 XGboost的目标函数
 
-假设我们要预测一家人对电子游戏的喜好程度，考虑到年轻和年老相比，年轻更可能喜欢电子游戏，以及男性和女性相比，男性更喜欢电子游戏，故先根据年龄大小区分小孩和大人，然后再通过性别区分开是男是女，逐一给各人在电子游戏喜好程度上打分，如下图所示：
+XGBoost (Extreme Gradient Boosting) 是对梯度提升树的改进，在损失函数中加入了正则化项：
+$$
+obj(\theta) = \sum_{i}^{n} L(y_i, \hat{y}_i) + \sum_{k=1}^{K} \Omega(f_k)
+$$
 
-<img src="assets/image-20230906170712026.png" alt="image-20230906170712026" style="zoom: 67%;" />
+> 目标函数的第一项表示整个强学习器的损失，第二部分表示强学习器中 $K$ 个弱学习器的复杂度。
+>
 
-就这样，训练出了2棵树tree1和tree2，类似之前gbdt的原理，两棵树的结论累加起来便是最终的结论，所以：
 
-- 小男孩的预测分数就是两棵树中小孩所落到的结点的分数相加：2 + 0.9 = 2.9。
-- 爷爷的预测分数同理：-1 + 0.9 = -0.1。
 
-具体如下图所示：
+XGBoost 每一个弱学习器的复杂度主要从两个方面来考量：
+$$
+\Omega(f) = \gamma T + \frac{1}{2} \lambda \|w\|^2
+$$
 
-<img src="assets/image-20230906170739818.png" alt="image-20230906170739818" style="zoom:67%;" />
+- $\gamma T$ 中的 $T$ 表示一棵树的叶子结点数量，$\gamma$ 是对该项的调节系数  
+- $\lambda \|w\|^2$ 中的 $w$ 表示叶子结点输出值组成的向量，$\lambda$ 是对该项的调节系数
+
+
+
+#### 5.2.1 模型复杂度的介绍
+
+假设我们要预测一家人对电子游戏的喜好程度，考虑到年轻和年长者相比，年轻更可能喜欢电子游戏，以及男性和女性相比，男性更喜欢电子游戏，故先根据年龄大小区分小孩和大人，然后再通过性别区分开是男是女，逐一给各人在电子游戏喜好程度上打分，如下图所示:
+
+<img src="assets/image-20230906170739818.png" alt="image-20230906170739818"  />
+
+**预测过程**:  
+
+- 训练出2棵树（tree1和tree2），类似GBDT的原理，两棵树的结论相加为最终结果。  
+  - 小男孩的预测分数：$2 + 0.9 = 2.9$  
+  - 爷爷的预测分数：$-1 + 0.9 = -0.1$  
+
+
 
 如下树tree1的复杂度表示为：
 
-<img src="assets/image-20230906170804514.png" alt="image-20230906170804514" style="zoom:67%;" />
+<img src="assets/image-20230906170804514.png" alt="image-20230906170804514"  />
 
--  泰勒公式展开
+
+
+#### 5.2.2 泰勒公式展开
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 我们直接对目标函数求解比较困难，通过泰勒展开将目标函数换一种近似的表示方式。接下来对 y<sub>i</sub><sup>(t-1)</sup> 进行泰勒二阶展开，得到如下近似表示的公式：
 
