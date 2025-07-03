@@ -208,6 +208,32 @@ print(calinski_harabasz_score(X, y_pred))
 
 SSE 越小，表示数据点越接近它们的中心，聚类效果越好。
 
+```python
+# 1.导入依赖包
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
+from sklearn.metrics import calinski_harabasz_score
+
+def dm01_SSE误差平方和求模型参数():
+  # 2.构建数据，产生数据 random_state=22固定好
+  x, y = make_blobs(n_samples=1000, n_features=2, centers=[[-1,-1], [0, 0], [1, 1], [2, 2]],cluster_std=[0.4, 0.2, 0.2, 0.2], 											random_state=22)
+  # 3.模型训练及 SSE
+  sse_list = []
+  for clu_num in range(1, 100):
+  my_kmeans = KMeans(n_clusters=clu_num, max_iter=100, random_state=0)
+  my_kmeans.fit(x)
+  sse_list.append(my_kmeans.inertia_ ) # 获取SSE的值
+
+  # 4.展示效果
+	plt.figure(figsize=(18, 8), dpi=100)
+  plt.xticks(range(0, 100, 3), labels=range(0, 100, 3))
+  plt.grid()
+  plt.title('sse')
+  plt.plot(range(1, 100), sse_list, 'or-')
+  plt.show()
+```
+
 
 
 ### 4.2 SC 系数
@@ -222,6 +248,8 @@ SSE 越小，表示数据点越接近它们的中心，聚类效果越好。
 2. 计算每一个样本 i 到最近簇 j 内的所有样本的平均距离 b<sub>ij</sub>，该值越大，说明该样本越不属于其他簇 j
 3. 计算所有样本的平均轮廓系数
 4. 轮廓系数的范围为：[-1, 1]，值越大聚类效果越好
+
+
 
 ###   4.3 肘部法
 
