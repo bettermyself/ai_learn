@@ -326,80 +326,102 @@ if __name__ == '__main__':
 
 
 
-## 案例
+## 5、案例
 
-### 案例介绍
+### 5.1 案例介绍
 
-已知：客户性别、年龄、年收入、消费指数
+**已知数据**：客户性别、年龄、年收入、消费指数  
 
-需求：对客户进行分析，找到业务突破口，寻找黄金客户
+**需求**：对客户进行分析，找到业务突破口，寻找黄金客户  
 
-<img src="assets/day08/image-20230907112055346.png" alt="image-20230907112055346" style="zoom:50%;" />
+<img src="assets/day08/image-20230907112055346.png" alt="image-20230907112055346" style="zoom: 80%;" />
 
-数据集共包含顾客的数据, 数据共有 4 个特征, 数据共有 200 条。接下来，使用聚类算法对具有相似特征的的顾客进行聚类，并可视化聚类结果。
 
-### 案例实现
+
+**数据集信息**：  
+
+- **特征数量**：4（Gender, Age, Annual Income, Spending Score）  
+- **数据条数**：200  
+- **后续步骤**：使用聚类算法对具有相似特征的顾客进行聚类，并可视化结果。  
+
+
+
+### 5.2 案例实现
 
 ```python
-import matplotlib.colors
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
+# 1.导入依赖包
 import pandas as pd
-from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
-
-
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.width', 1000)
-
-
-if __name__ == '__main__':
-
-    # 1. 读取顾客数据
-    data = pd.read_csv('data/customers.csv')
-    data.columns = ['CustomerID', 'Gender', 'Age', 'Annual Income', 'Spending Score']
-    # print(data.head())
-
-    # 2. 对 Gender 特征进行独热编码
-    data = pd.get_dummies(data, columns=['Gender'])
-    # print(data.head())
-
-    # 3. 数据标准化
-    scaler = StandardScaler()
-    data = scaler.fit_transform(data)
-    print(data)
-
-    # 4. 去除非 ID 列进行聚类分析
-    data = data[:, 1:]
-    # print(data[:5])
-
-    # 5. 肘部法寻找质心个数
-    sse = []
-    for k in range(1, 20):
-        estimator = KMeans(n_clusters=k, random_state=0)
-        estimator.fit(data)
-        sse.append(estimator.inertia_)
-
-    plt.plot(range(1, 20), sse)
-    plt.show()
-
-    # 6. 确定质心的个数
-    estimator = KMeans(n_clusters=10, n_init=10, random_state=0)
-    y_pred = estimator.fit_predict(data)
-
-    # 7. 聚类结果可视化
-    plt.scatter(X.values[y_kmeans == 0, 0], X.values[y_kmeans == 0, 1], s=100, c='red', label='Standard')    		
-    plt.scatter(X.values[y_kmeans == 1, 0], X.values[y_kmeans == 1, 1], s=100, c='blue', label='Traditional')  
-    plt.scatter(X.values[y_kmeans == 2, 0], X.values[y_kmeans == 2, 1], s=100, c='green', label='Normal')  
-    plt.scatter(X.values[y_kmeans == 3, 0], X.values[y_kmeans == 3, 1], s=100, c='cyan', label='Youth')
-    plt.scatter(X.values[y_kmeans == 4, 0], X.values[y_kmeans == 4, 1], s=100, c='magenta', label='TA')
-    plt.scatter(mykeans.cluster_centers_[:, 0], mykeans.cluster_centers_[:, 1], s=300, c='black', label='Centroids’)
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from sklearn.metrics import silhouette_score
+# 聚类分析用户分群
+def dm01_聚类分析用户群():
+    # 2.数据读取及预处理
+    # 2.1 数据读取
+    dataset = pd.read_csv(‘data/customers.csv’)
+    print(dataset.head)
     
-    plt.title('Clusters of customers')
-    plt.xlabel('Annual Income (k$)')
-    plt.ylabel('Spending Score (1-100)')   
-    plt.legend() 
-    plt.show()
+    # 2.2 特征选择
+    X = dataset.iloc[:, [3, 4]]
+    print(‘X-->\n’, X)
+    
+    # 3.模型训练，评估聚类个数K值选择
+    mysse = []
+    mysscore = []
+    for i in range(2, 11):
+        mykeans = KMeans(n_clusters=i)
+        mykeans.fit(X)
+        mysse.append(mykeans.inertia_) # inertia 簇内误差平方和
+        ret = mykeans.predict(X)
+        mysscore.append(silhouette_score(X, ret)) # SC系数 聚类需要1个以上的类别
+        
+# 效果展示
+plt.plot(range(2, 11), mysse)
+plt.title('the elbow method')
+plt.xlabel('number of clusters')
+plt.ylabel('mysse')
+plt.grid()
+plt.show()
+
+plt.title('sh')
+plt.plot(range(2, 11), mysscore)
+plt.grid(True)
+plt.show()
+
+
+def dm02_聚类分析用户群():
+    # 2.读取数据及数据预处理
+    dataset = pd.read_csv('data/customers.csv')
+    X = dataset.iloc[:, [3, 4]]
+    # 3.模型训练及预测
+    mykeans = KMeans(n_clusters=5)
+    mykeans.fit(X)
+    y_kmeans = mykeans.predict(X)
+    # 4.聚类效果展示
+    #布尔索引的限制：x[y_pred==0, 0] 是 NumPy 数组的索引方式，Pandas DataFrame 不支持这种混合索引（布尔索引 + 列索引）。Pandas 的布尔索引只能用于行选择，不能直接与列索引组合。正确的方式：使用 loc 或 iloc 明确指定行和列：x.loc[y_pred==0, 'Annual Income (k$)']或x.iloc[y_pred==0, 0]。为什么 iloc 可行：iloc 是基于位置的索引，支持布尔索引用于行选择，同时可以通过整数索引选择列。
+    
+    # 把类别是0的, 第0列数据,第1列数据, 作为x/y, 传给plt.scatter函数
+     plt.scatter(X.values[y_kmeans == 0, 0], X.values[y_kmeans == 0, 1], s=100, c=‘red’,
+                 label=‘Standard’)
+    # 把类别是1的, 第0列数据,第1列数据, 作为x/y, 传给plt.scatter函数
+     plt.scatter(X.values[y_kmeans == 1, 0], X.values[y_kmeans == 1, 1], s=100, c=‘blue’,
+                 label=‘Traditional’)
+    # 把类别是2的, 第0列数据,第1列数据, 作为x/y, 传给plt.scatter函数
+     plt.scatter(X.values[y_kmeans == 2, 0], X.values[y_kmeans == 2, 1], s=100,c='green', 
+                 label='Normal')
+    plt.scatter(X.values[y_kmeans == 3, 0], X.values[y_kmeans == 3, 1], s=100, c='cyan', 
+                label='Youth')
+    plt.scatter(X.values[y_kmeans == 4, 0], X.values[y_kmeans == 4, 1],s=100,c='magenta', 
+                label='TA')
+	plt.scatter(mykeans.cluster_centers_[:,0],mykeans.cluster_centers_[:,1],s=300,
+               c='black',label='Centroids’)
+ 
+plt.title('Clusters of customers')
+plt.xlabel('Annual Income (k$)')
+plt.ylabel('Spending Score (1-100)')
+plt.legend()
+plt.show()
+
+
 ```
 
