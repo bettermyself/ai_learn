@@ -370,62 +370,189 @@ $$
 
 
 
+SVM 我们要求解的目标是：在能够将所有样本能够正确分割开的基础上，求解最大间隔。
+
+1. 最大间隔距离表示：
+
+$$
+\gamma = \frac{2}{\|w\|}
+$$
+
+2. 训练样本能够正确分类：
+
+$$
+\begin{cases}
+w^T x_i + b \geq +1, & y_i = +1 \\
+w^T x_i + b \leq -1, & y_i = -1
+\end{cases}
+$$
+
+我们希望在将所有样本正确分类的情况，实现间隔最大化。所以，我们的目标函数可以写为：
+$$
+\max_{w,b} \frac{2}{\|w\|}
+$$
+
+$$
+s.t.\quad y_i \left( w^T x_i + b \right) \geq 1, i = 1, 2, \cdots, m
+$$
+
+**我们可以将其转换为最小化问题**：
+$$
+\min_{w,b} \frac{1}{2} \|w\|^2
+$$
+
+$$
+s.t. \quad y_i \left( w^T x_i + b \right) \geq 1, i = 1, 2, \cdots, m
+$$
+
+> - $\|w\|$ 范数为：$\sqrt{w_1^2 + w_2^2 + \ldots + w_n^2}$，加上平方之后将根号去掉，不影响优化目标。
+> - $\frac{1}{2}$ 是为了求导的时候，能够将系数去掉。
 
 
 
+- **约束条件优化问题转换**
+
+添加核函数，将目标函数转换为以下形式
+$$
+\min_{w,b} \frac{1}{2} \| w \|^2
+$$
+
+$$
+s.t.\quad \sum_{i=1}^n (1 - y_i(w^T \cdot \Phi(x_i) + b)) \leq 0
+$$
+
+目标函数是一个带有约束条件的优化问题，不太容易直接求解，所以先使用拉格朗日乘子法将其转换为多元极值问题，其转换过程如下:
+$$
+R(x) = f(x) + a g(x)
+$$
+$f(x)$ 是我们的原问题，$g(x)$ 为原问题的约束条件。构建拉格朗日函数：其中 $a_i$ 为拉格朗日乘子（相当于 $\lambda_i$）
+
+拉格朗日乘子法构建的拉格朗日函数将目标优化函数和优化约束条件放在了一起，从而将带约束的极值问题转换为不带约束极值问题。
+
+我们的问题可以转化为
+$$
+L(w, b, \alpha) = \frac{1}{2} \| w \|^2 - \sum_{i=1}^n \alpha_i \left( y_i \left( w^T \cdot \Phi(x_i) + b \right) - 1 \right)
+$$
+要想求得极小值，上式后半部分应该取的极大值，最后转换成对偶问题
+$$
+\min_{w,b} \max_{\alpha} L(w, b, \alpha) \iff \max_{\alpha} \min_{w,b} L(w, b, \alpha)
+$$
+
+
+-  **对偶问题转换**
+
+对 $w$ 求偏导，并令其等于 0：
+$$
+\frac{\partial L}{\partial w} = w - \sum_{i=1}^{n} \alpha_i y_i \varphi (x_i) = 0
+$$
+得出：
+$$
+w = \sum_{i=1}^{n} \alpha_i y_i \varphi (x_i)
+$$
+对 $b$ 求偏导：
+$$
+\frac{\partial L}{\partial b} = -\sum_{i=1}^{n} \alpha_i y_i = 0
+$$
+即：
+$$
+\sum_{i=1}^{n} \alpha_i y_i = 0
+$$
+将对 $w$、$b$ 求偏导的结果带入到原拉格朗日公式中：
+
+$$
+\begin{aligned}
+L(w, b, \alpha) &= \frac{1}{2} ||w||^2 - \sum_{i=1}^{n} a_i (y_i (w^T \varphi(x_i) + b) - 1) \\
+&= \frac{1}{2} w^T w - \sum_{i=1}^{n} a_i y_i w^T \varphi(x_i) - b \sum_{i=1}^{n} a_i y_i + \sum_{i=1}^{n} a_i \\
+&= \frac{1}{2} w^T w - \sum_{i=1}^{n} a_i y_i w^T \varphi(x_i) + \sum_{i=1}^{n} a_i \\
+&= \frac{1}{2} w^T \sum_{i=1}^{n} a_i y_i \varphi(x_i) - w^T \sum_{i=1}^{n} a_i y_i \varphi(x_i) + \sum_{i=1}^{n} a_i \\
+&= \sum_{i=1}^{n} a_i - \frac{1}{2} \left( \sum_{i=1}^{n} a_i y_i \varphi(x_i) \right)^T \cdot \sum_{i=1}^{n} a_i y_i \varphi(x_i) \\
+&= \sum_{i=1}^{n} a_i -\frac{1}{2}  \sum_{i=1}^{n} \sum_{j=1}^{n} a_i a_j y_i y_j \varphi^T(x_i) \varphi(x_j)
+\end{aligned}
+$$
+
+此时，求解当 $\alpha$ 是什么值时，该值会变得很大，当求出 $\alpha$ 值，再求解 $w, b$ 值。此时，就变成了极大极小值问题。
 
 
 
+- **确定超平面**
+
+求解当 $\alpha$ 什么值时公式值最大
+$$
+a^* = \arg \max_{\alpha} \left( \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i=1}^{n} \sum_{j=1}^{n} \alpha_i \alpha_j y_i y_j \Phi^T (x_i) \Phi (x_j) \right)
+$$
+将上面的问题转换为极小值问题：
+$$
+\min_{\alpha} \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n \alpha_i \alpha_j y_i y_j (\Phi (x_i) \cdot \Phi (x_j)) - \sum_{i=1}^n \alpha_i
+$$
+
+$$
+s.t.\quad \sum_{i=1}^n \alpha_i y_i = 0
+$$
+
+$$
+\alpha_i \geq 0, \quad i = 1, 2, \ldots, n
+$$
+
+将训练样本带入上面公式，求解出 $\alpha$ 值。然后，将 $\alpha$ 值代入下面公式计算 $w, b$ 的值：
+$$
+w^* = \sum_{i=1}^N \alpha_i^* y_i \Phi (x_i)
+$$
+
+$$
+b^* = y_j - \sum_{i=1}^N \alpha_i^* y_i (\Phi (x_i) \cdot \Phi (x_j))
+$$
+
+最后求得分离超平面：
+$$
+w^* \Phi (x) + b^* = 0
+$$
+
+
+> **支持向量机(SVM)中偏置项 $b^*$ 的计算公式推导**
+>
+> - **根据支持向量的定义**  
+>
+>    对于任意支持向量 $x_k$（满足 $\alpha_k > 0$），其函数间隔为 1：
+>    $$
+>    y_k \left( w^* \cdot \Phi(x_k) + b^* \right) = 1
+>    $$
+>    其中 $w^* = \sum_{i=1}^N \alpha_i^* y_i \Phi(x_i)$。
+>
+> - **代入 $w^*$ 的表达式**  
+>    $$
+>    y_k \left( \sum_{i=1}^N \alpha_i^* y_i \Phi(x_i) \cdot \Phi(x_k) + b^* \right) = 1
+>    $$
+>    两边乘以 $y_k$ 得：
+>    $$
+>    \sum_{i=1}^N \alpha_i^* y_i \Phi(x_i) \cdot \Phi(x_k) + b^* = y_k
+>    $$
+>
+> - **解出 $b^*$**  
+>    $$
+>    b^* = y_k - \sum_{i=1}^N \alpha_i^* y_i \Phi(x_i) \cdot \Phi(x_k)
+>    $$
+>    通常对所有支持向量取平均：
+>    $$
+>    b^* = \frac{1}{|S|} \sum_{k \in S} \left( y_k - \sum_{i=1}^N \alpha_i^* y_i \Phi(x_i) \cdot \Phi(x_k) \right)
+>    $$
+>    其中 $S$ 是支持向量的集合。
+>
+> 关键点
+>
+> - **核函数简化**：内积 $\Phi(x_i) \cdot \Phi(x_j)$ 可替换为核函数 $K(x_i, x_j)$
+> - **支持向量的作用**：仅依赖支持向量（$\alpha_k > 0$ 的样本）计算 $b^*$
+>
+> 最终公式
+> $$
+> b^* = y_k - \sum_{i=1}^N \alpha_i^* y_i K(x_i, x_k)
+> $$
+> （实际实现时对所有支持向量取平均）
 
 
 
+## 4、核函数
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-![image-20230907235445626](assets/day09/image-20230907235445626.png) 
-
-- 约束条件优化问题转换
-
-<img src="assets/day09/08.png" />
-
--  对偶问题转换
-
-<img src="assets/day09/09.png" />
-
-<img src="assets/day09/10.png" style="zoom:50%;" />
-
-此时，求解当 α 是什么值时，该值会变得很大，当求出 α 值，再求解 w, b 值。此时，就变成了极大极小值问题。
-
-- 确定超平面
-
-![image-20230907235419332](assets/day09/image-20230907235419332.png)
-
-
-
-## 核函数
-
-**学习目标：**
-
-1.理解核函数的作用
-
-2.知道核函数的分类
-
-3.知道高斯核函数
-
-4.实践高斯核函数的API
-
-### 核函数的作用
+### 4.1 核函数的作用
 
 核函数，是将原始输入空间映射到新的特征空间，从而，使得原本线性不可分的样本可能在核空间可分。
 
@@ -437,7 +564,7 @@ $$
 
 
 
-### 核函数的分类
+### 4.2 核函数的分类
 
 当存在线性不可分的场景时，我们需要使用核函数来提高训练样本的维度、或者将训练样本投向高维
 
@@ -449,11 +576,13 @@ $$
 2. 多项式核：一般是通过增加多项式特征，提升数据维度，并计算内积
 3. 高斯核（RBF、径向基函数）：一般是通过将样本投射到无限维空间，使得原来不可分的数据变得可分。
 
-### 高斯核函数
+
+
+### 4.3 高斯核函数
 
 高斯核函数(RBF)，其中γ 为超参数
 
-![image-20240807080859573](assets/image-20240807080859573.png)
+![image-20240807080859573](assets/day09/image-20240807080859573.png)
 
 gamma是超参数，作用与标准差相反，gamma越大，高斯分布越窄,gamma越小，高斯分布越宽
 
@@ -469,7 +598,9 @@ gamma是超参数，作用与标准差相反，gamma越大，高斯分布越窄,
 
 这个解决方案看起来很“巧妙”，我们可以借助径向基函数 (RBF) 来实现
 
-### 高斯核的API
+
+
+### 4.4 高斯核的API
 
 准备数据
 
@@ -607,20 +738,3 @@ plt.show()
 
 
 
- s
-
-
-
- ## 课堂笔记
-
-![image-20240807150657127](assets/day09/image-20240807150657127.png)
-
-![image-20240807150703282](assets/day09/image-20240807150703282.png)
-
-![image-20240807154528019](assets/day09/image-20240807154528019.png)
-
-![image-20240807172007585](assets/day09/image-20240807172007585.png)
-
-![image-20240807174408992](assets/day09/image-20240807174408992.png)
-
-![image-20240807174443577](assets/day09/image-20240807174443577.png)
