@@ -132,6 +132,7 @@ P(\text{设计师} \mid \text{喜欢}) = \frac{0 + 1}{4 + 1 \times 3} = \frac{1}
 $$
 
 
+
 ### 1.2 情感分析
 
 #### 1.2.1 api介绍
@@ -294,6 +295,18 @@ mb.score(x_text, y_text)
 
 假设特征：$X = (x_1 = \text{点击}, x_2 = \text{链接})$，类别 $y \in \{\text{垃圾邮件}, \text{正常邮件}\}$
 
+
+
+**问题设定**
+
+我们有一个二分类问题：
+- **类别($y$)**：垃圾邮件($y=1$)或正常邮件($y=0$)
+- **特征($X$)**：每个邮件有两个特征
+  - $x_1$：是否包含"点击"这个词
+  - $x_2$：是否包含"链接"这个词
+
+
+
 **训练数据统计**：
 
 | 概率项                       | 垃圾邮件 ($y=1$) | 正常邮件 ($y=0$) |
@@ -302,22 +315,33 @@ mb.score(x_text, y_text)
 | $P(x_1 = \text{点击}\mid y)$ | 0.9              | 0.1              |
 | $P(x_2 = \text{链接}\mid y)$ | 0.8              | 0.2              |
 
+> 根据训练数据数据得出以上概率。
+
+
+
+**分类过程**
+
+根据贝叶斯定理：$$P(y \mid X) = P(y) \times P(X \mid y)$$
+
+由于朴素贝叶斯的"朴素"假设(特征条件独立)：$$P(y \mid X) = P(y) \times P(x_1 \mid y) \times P(x_2 \mid y)$$
+
+
+
 **计算后验概率**：
 
 1. **对垃圾邮件 ($y=1$)**：  
    $$
-   P(y=1|X) \propto P(y=1) \cdot P(x_1|y=1) \cdot P(x_2|y=1) = 0.6 \times 0.9 \times 0.8 = 0.432
+   P(y=1|X) = P(y=1) \cdot P(x_1|y=1) \cdot P(x_2|y=1) = 0.6 \times 0.9 \times 0.8 = 0.432
    $$
 
 2. **对正常邮件 ($y=0$)**：  
    $$
-   P(y=0|X) \propto P(y=0) \cdot P(x_1|y=0) \cdot P(x_2|y=0) = 0.4 \times 0.1 \times 0.2 = 0.008
+   P(y=0|X) = P(y=0) \cdot P(x_1|y=0) \cdot P(x_2|y=0) = 0.4 \times 0.1 \times 0.2 = 0.008
    $$
 
 **预测结果**：  
+
 $0.432 > 0.008 \quad \Rightarrow \quad \hat{y} = \text{垃圾邮件}$
-
-
 
 
 
@@ -389,9 +413,9 @@ print("降维后数据维度:", data_filtered.shape)  # 输出: (971, 1044)
 
 ### 2.3 主成分分析（PCA）
 
-<img src="C:\Users\Administrator\Desktop\ai_learn\阶段4机器学习\assets/day07\16.png" style="zoom: 33%;" />
+<img src="assets/day07\16.png" style="zoom: 33%;" />
 
-P通过线性变换将高维数据投影到低维空间，保留最大方差的方向（主成分）。数学表示为：
+通过线性变换将高维数据投影到低维空间，保留最大方差的方向（主成分）。数学表示为：
 $$
 X_{\text{PCA}} = X \cdot W
 $$
@@ -438,7 +462,7 @@ print(x_pca[:5])
 
 
 
-###  2.4相关系数法
+###  2.4 相关系数法
 
 - 通过计算特征间的相关系数衡量其关系强度：
   - **皮尔逊相关系数**：衡量线性相关（$r \in [-1,1]$）
