@@ -335,6 +335,21 @@ y'' = \frac{d}{dx}(2x - 4) = 2
 $$
 由于 $ y'' = 2 > 0 $，函数在 $x = 2$ 处取得极小值。
 
+> **1. 一阶导数的局限性**
+>
+> - **临界点的定义**：当 $f'(x_0) = 0$ 时，$x_0$ 称为函数的临界点。但一阶导数为零仅说明该点可能是极值（极小值、极大值）或鞍点（如 $f(x) = x^3$ 在 $x=0$ 处）。
+> - **无法确定极值类型**：仅通过一阶导数无法区分极小值、极大值或非极值点。
+>
+> 
+>
+> **2. 二阶导数的判别作用**
+>
+> **二阶导数的几何意义**：$f''(x)$ 表示函数的曲率（凹凸性）：
+>
+> - **$f''(x_0) > 0$**：函数在 $x_0$ 处局部上凸（开口向上），临界点为**极小值**。
+> - **$f''(x_0) < 0$**：函数在 $x_0$ 处局部下凸（开口向下），临界点为**极大值**。
+> - **$f''(x_0) = 0$**：无法直接判断，需更高阶导数或其他方法（如泰勒展开或观察函数行为）。
+
 **步骤 4：计算极小值**
 将 $x = 2$ 代入原函数：
 $$
@@ -465,7 +480,7 @@ $x^T = (1,2,-3) \quad \|x\|_1 = |1| + |2| + |-3| = 6$
 
 $x^T = (1,2,-3) \quad \|x\|_2 = \sqrt{1^2 + 2^2 + (-3)^2} = \sqrt{14}$
 
-$x^T = (1,2,-3) \quad \text{注意：向量的转置@向量}\quad x^T x = 1^2 + 2^2 + (-3)^2 = 14$
+$x^T = (1,2,-3) \quad \text{注意：向量的转置@向量得到一个标量}\quad x^T x = 1^2 + 2^2 + (-3)^2 = 14$
 
 $X$为向量时：$x^T x$ 与 $\|x\|_2^2$ 等价
 
@@ -602,17 +617,14 @@ $
 
 
 
-
-
-
-
 ### 2.4 一元线性回归的解析解
 
 ![image-20250617214103750](assets\image-20250617214103750.png)
 
 **最小二乘法：误差平方和**
-
-$$ j(w, b) = \sum_{i=0}^m (h(x^{(i)}) - y^{(i)})^2 $$
+$$
+j(w, b) = \sum_{i=0}^m (h(x^{(i)}) - y^{(i)})^2
+$$
 
 - $\sum_{i=0}^m \cdots$ 代表求和，$m$ 代表样本个数
 - $h(x^{(i)})$ 代表第 $i$ 个样本的预测值
@@ -863,8 +875,6 @@ $ y = w_1 x_1 + w_2 x_2 + w_3 x_3 + \cdots + b = w^T x + b $
 
 #### 2.6.1 梯度下降算法思想
 
-
-
 ##### **a、什么是梯度下降法？**
 
 梯度下降（Gradient Descent）是一种**迭代优化算法**，用于寻找函数的极值。其核心思想是：
@@ -881,7 +891,7 @@ $ y = w_1 x_1 + w_2 x_2 + w_3 x_3 + \cdots + b = w^T x + b $
   - **梯度方向**：函数值增长最快的方向（上坡）。
   - **负梯度方向**：函数值下降最快的方向（下坡）。
 - **算法目标**
-  - 通过迭代更新权重参数，使目标函数（如损失函数）的值逐步减小，最终收敛到最小值。
+  - 通过迭代更新权重参数，使目标函数（如损失函数）的值逐步减小，最终**收敛**到最小值。
 
 
 
@@ -919,7 +929,7 @@ $ y = w_1 x_1 + w_2 x_2 + w_3 x_3 + \cdots + b = w^T x + b $
 
 ![image-20250619220142511](assets\image-20250619220142511.png)
 
-![image-20250619220621209](C:\Users\yangqiang\Desktop\ai_learn\阶段4机器学习\assets\image-20250619220621209.png)
+![image-20250619220621209](assets\image-20250619220621209.png)
 
 
 
@@ -945,7 +955,7 @@ $ y = w_1 x_1 + w_2 x_2 + w_3 x_3 + \cdots + b = w^T x + b $
 
 <img src="assets/mae.png" alt="img" style="zoom:33%;" />
 
-- 上面的公式中：n 为样本数量, y 为实际值, $\hat{y}$ 为预测值
+- 上面的公式中：$n$ 为样本数量, $y$ 为实际值, $\hat{y}$ 为预测值
 
 - MAE 越小模型预测约准确
 
@@ -962,7 +972,7 @@ mean_absolute_error(y_test,y_predict)
 
 <img src="assets/mse.png" alt="img" style="zoom:33%;" />
 
-- 上面的公式中：n 为样本数量, y 为实际值, $\hat{y}$ 为预测值
+- 上面的公式中：$n$ 为样本数量, $y$ 为实际值, $\hat{y}$ 为预测值
 - MSE 越小模型预测约准确
 
 Sklearn 中MSE的API
@@ -978,10 +988,10 @@ mean_squared_error(y_test,y_predict)
 
 <img src="assets/rmse.png" alt="img" style="zoom: 33%;" />
 
-- 上面的公式中：n 为样本数量, y 为实际值, $\hat{y}$ 为预测值
+- 上面的公式中：$n$ 为样本数量, $y$ 为实际值, $\hat{y}$ 为预测值
 - RMSE 越小模型预测约准确
 
-
+> `sklearn`没有实现**RMSE**，可以通过`np.sqrt(mean_squared_error(y_test,y_predict))`来实现。
 
 ###  3.4 三种指标的比较
 
@@ -1021,8 +1031,6 @@ mean_squared_error(y_test,y_predict)
 ## 4、波士顿房价预测案例
 
 ### 4.1 线性回归API
-
-
 
 ```python
 sklearn.linear_model.LinearRegression(fit_intercept=True)
@@ -1220,7 +1228,7 @@ x = np.random.uniform(-3,3,size = 100)
 # 线性回归模型需要二维数组
 X = x.reshape(-1,1)  # -1代表行不管多少行
 
-y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = (100,1))  # 广播机制
+y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = 100,1)  
 
 estimator = LinearRegression()
 estimator.fit(X,y)
@@ -1279,7 +1287,7 @@ y_predict2 = estimator2.predict(X2)
 plt.scatter(x,y)
 
 sorted_indices = np.argsort(x.flatten())  # 一维索引 (100,)
-y_sorted = y2_predict[sorted_indices].flatten()  # 形状 (100,)
+y_sorted = y_predict2[sorted_indices]  # 形状 (100,)
 
 plt.plot(np.sort(x.flatten()), y_sorted, color='r')  # 确保 x 和 y 均为一维
 plt.show()
@@ -1380,7 +1388,8 @@ mean_squared_error(y_test,y_predict)
 
 **在学习的时候，数据提供的特征有些影响模型复杂度或者这个特征的数据点异常较多，所以算法在学习的时候尽量减少这个特征的影响（甚至删除某个特征的影响），这就是正则化**
 
-注：调整时候，算法并不知道某个特征影响，而是去调整参数得出优化的结果
+> 注：调整时候，算法并不知道某个特征影响，而是去调整参数得出优化的结果
+>
 
 #### **5.4.1 L1正则化**
 
