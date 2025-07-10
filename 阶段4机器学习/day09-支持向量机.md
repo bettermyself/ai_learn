@@ -619,7 +619,7 @@ plt.show()
 
 ![](assets/day09/image-20220417162654878.png)
 
-创建Pipeline：数据标准化，创建高斯核SVC对象 gamma默认为1
+创建Pipeline：数据标准化，创建高斯核SVC对象，gamma默认为1
 
 ```python
 from sklearn.preprocessing import StandardScaler
@@ -640,7 +640,7 @@ svc = RBFKernelSVC(gamma=1.0)
 svc.fit(X,y)
 ```
 
->Pipeline(steps=[('std_scaler', StandardScaler()), ('svc', SVC(gamma=1.0))])
+>`Pipeline(steps=[('std_scaler', StandardScaler()), ('svc', SVC(gamma=1.0))])`
 
 绘制决策边界
 
@@ -669,7 +669,7 @@ plt.show()
 
 ![](assets/day09/image-20220506214214988.png)
 
-上图结果与多项式核有些类似，我们尝试调整gamma观察效果,首先将gamma调大
+上图结果与多项式核有些类似，我们尝试调整gamma观察效果，首先将gamma调大
 
 ```python
 svc_100 = RBFKernelSVC(gamma=100)
