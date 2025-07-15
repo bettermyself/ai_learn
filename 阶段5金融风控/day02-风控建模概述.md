@@ -1,435 +1,523 @@
-# 风控建模概述
+## 1、风控建模概述
 
-## 【了解】今日内容介绍
+### 1.1 互联网金融风控体系
 
-- 知道信贷审批业务的基本流程
-- 知道ABC评分卡是什么，有什么区别
-- 知道风控建模的流程
-- 掌握评分卡模型正负样本定义方法
-- 知道如何构建特征，如何评估特征
+#### 1.1.1 信贷审批业务基本流程
 
+- **四要素认证**：银行卡持有人姓名、身份证号、银行卡号、手机号
 
+- **流程**：申请 → 审批 → 放款 → 还款 → 再次申请 → 复贷审批
+  - 审批环节：规则与模型
+  - 还款环节：逾期→催收
 
-## 【理解】互联网金融风控体系介绍
-
-- 信贷审批业务基本流程
-
-  - 四要素认证：银行卡持有人的姓名、身份证号、银行卡号、手机号
-
-  <img src="assets/day02/流程1.jpg" style="zoom:50%;" />
-
-- 互联网金融风控体系主要由三大部分组成
-
-  - 用户数据：用户基本信息、用户行为信息、用户授权信息、外部接入信息。
-    - 数据采集会涉及到埋点和爬虫技术，基本上业内的数据都大同小异。
-      - 免费的运营商数据
-      - 安卓可爬的手机内部信息（app名称，手机设备信息，部分app内容信息）
-      - 收费的征信数据、各种信息校验、外部黑名单之类的
-      - 特定场景的现金贷和消费金融会有自有的数据可供使用
-        - 比如阿里京东自己的电商数据
-        - 滴滴的司机数据、顺丰中通的快递数据
-    - 用户基本信息（联系人，通讯录，学历...)
-    - 用户行为信息（操作APP时的行为，注册，点击位置...)
-    - 用户授权信息（运营商，学信网，设备IMEI....)
-    - 外部接入信息（P2P信贷，其它金融机构如芝麻信用分...)
-  - 策略体系：反欺诈规则、准入规则、运营商规则、风险名单、网贷规则
-    - 收集来用户的信息之后，把用户信息输入到策略引擎
-    - 欺诈规则
-    - 准入规则（年龄，地域，通讯录，行为规则）
-    - 运营商规则（通话规则)
-    - 风险名单（黑名单，失信名单，法院名单）
-    - 网贷（多头，白户...)
-  - 机器学习模型：欺诈检测模型、准入模型、授信模型、风险定价、额度管理、流失预警、失联修复。
-
-  |        | 贷前准入     | 贷中管理                         | 贷后催收   |
-  | ------ | ------------ | -------------------------------- | ---------- |
-  | 信用   | 申请评分卡   | 行为评分卡                       | 催收评分卡 |
-  | 反欺诈 | 申请反欺诈   | 交易反欺诈                       |            |
-  | 运营   | 用户响应模型 | 用户流失模型、用户分群、用户画像 | 失联修复   |
-  | 其他   |              | 套现识别、洗钱识别               |            |
-
-小结：
-
-~~~shell
-#互联网金融组成
-用户数据
-策略体系
-模型
-~~~
+<img src="assets/day02/流程1.jpg" style="zoom: 80%;" />
 
 
 
-## 【掌握】风控建模流程
+#### 1.1.2 风控体系三大组成部分
+
+- **用户数据**
+  - 数据类型：
+    - 用户基本信息（联系人、通讯录、学历等）
+    - 用户行为信息（APP操作行为，注册，点击位置...）
+    - 用户授权信息（运营商、学信网等）
+    - 外部接入信息（芝麻信用分等）
+  - 数据来源：
+    - 免费运营商数据
+    - 安卓可爬取的手机信息
+    - 收费征信数据
+    - 特定场景自有数据（电商、物流等）
+- **策略体系**
+  - 反欺诈规则
+  - 准入规则（年龄、地域、讯录，行为规则等）
+  - 运营商规则（通话记录）
+  - 风险名单（黑名单、失信名单，法院名单等）
+  - 网贷规则（多头借贷，白户等）
+- **机器学习模型**：
+
+|        | 贷前准入     | 贷中管理                         | 贷后催收   |
+| ------ | ------------ | -------------------------------- | ---------- |
+| 信用   | 申请评分卡   | 行为评分卡                       | 催收评分卡 |
+| 反欺诈 | 申请反欺诈   | 交易反欺诈                       |            |
+| 运营   | 用户响应模型 | 用户流失模型、用户分群、用户画像 | 失联修复   |
+| 其他   |              | 套现识别、洗钱识别               |            |
+
+
+
+## 2、风控建模流程
 
 ![1723358888509](assets/day02/1723358888509.png)
 
-### 评分卡简介
+### 2.1 评分卡简介
 
-- 风控模型其中包含了A/B/C卡。模型可以采用相同算法，一般以逾期天数来区分正负样本，也就是目标值Y的取值（0或1）
-  - 贷前  申请评分卡 Application score card（最重要的）
-  - 贷中  行为评分卡 Behavior score card
-  - 贷后  催收评分卡  Collection score card（最不重要）
-- C卡因为用途不同Y的取值可能有区别
-  - 公司有内催，有外催。外催回款率低，单价贵
-  - 可以根据是否被内催催回来定义C卡的Y。
+| 评分卡类型                        | 应用阶段 | 重要性   | Y值定义特点          |
+| :-------------------------------- | :------- | :------- | :------------------- |
+| A卡（**Application score card**） | 贷前     | 最重要   | 逾期天数截断         |
+| B卡（**Behavior score card**）    | 贷中     | 中等     | 逾期天数截断         |
+| C卡（**Collection score card**）  | 贷后     | 最不重要 | 可能根据催收效果定义 |
+
+> 风控模型其中包含了A/B/C卡。模型可以采用相同算法，一般以逾期天数来区分正负样本，也就是目标值Y的取值（0或1）。C卡因为用途不同Y的取值可能有区别：
+>
+> - 公司有内催，有外催。外催回款率低，单价贵
+> - 可以根据是否被内催催回来定义C卡的Y。
 
 
 
-### 机器学习模型的完整工程流程
+### 2.2 机器学习模型的完整工程流程
 
-项目准备期 → 特征工程 → 模型构建 → 上线运营
+项目主要流程：**项目准备期** → **特征工程** → **模型构建** → **上线运营**
 
-- 准备
-  - 明确需求
-  - 模型设计
-    - 业务抽象成分类/回归问题
-    - 定义标签（目标值）
-  - 样本设计
-- 特征工程
-  - 数据处理，选取合适的样本，并匹配出全部的信息作为基础特征
-  - 特征构建
-  - 特征评估
-
-- 模型
-  - 模型训练
-  - 模型评价
-  - 模型调优
-- 上线运营
-  - 模型交付
-  - 模型部署
-  - 模型监控
-
-### 项目准备期
+#### **项目准备期**
 
 - **明确需求**
-
-  - 目标人群：新客，优质老客，逾期老客
-  - 给与产品：额度，利率
-  - 市场策略：冷启动，开拓市场，改善营收
-  - 使用时限：紧急使用，长期部署
-  - 举例
-    - 业务需要针对全新客户开放一个小额现金贷产品，抢占新市场
-    - 针对高风险薄数据新客的申请评分卡
-
 - **模型设计**
+   - 业务抽象：将业务问题转化为分类/回归问题
+   - 标签定义：确定目标值
+- **样本设计**：明确样本采集和标注方式
 
-  - 业务抽象成分类/回归问题
 
-    - 风控场景下问题通常都可以转化为二分类问题：
 
-      - 信用评分模型期望用于预测一个用户是否会逾期，逾期用户1
+#### **特征工程**
 
-      - 营销模型期望用于预测一个用户被营销后是否会来贷款，没贷用户1
+- **数据处理**  
+   - 挑选合适样本，保证代表性
+   - 匹配、构建全部基础信息作为特征
+- **特征构建**：设计和构造有效的特征
+- **特征评估**：评估特征的有效性与重要性
 
-      - 失联模型期望用于预测一个用户是否会失联，失联用户1
 
-        **风控业务中，只有欺诈检测不是二分类问题。因为样本数量不足，可能是一个无监督学习模型**
 
-  - 模型算法
+#### **模型构建**
 
-    - 规则模型
-    - 逻辑回归
-    - 集成学习
-    - SVM
-    - KNN
-    - 决策树
+- **模型训练**：使用训练集进行模型训练
+- **模型评估**：通过验证集或测试集评估模型性能
+- **模型调优**：根据评估结果调整模型参数与结构
 
-  - 模型输入
 
-    - 数据源
-    - 时间跨度
 
-  - Y标签定义
+#### **上线运营**
 
-    - 在构建信贷评分模型时，原始数据中只有每个人的当前逾期情况，没有负样本，负样本需要人为构建
-    - 通常选一个截断点（阈值），当逾期超过某个阈值时，就认定该样本是一个负样本，未来不会还钱
-    - 比如逾期15天为正负样本的标记阈值，Y = 1的客户均是逾期超过15天的客户
-    - 逾期>15天时 Y = 1，那么Y=0如何定义
-      - 只会将按时还款和逾期较少的那一部分人标记为0。如：将逾期<5天和没有逾期的人作为正样本
-      - 逾期5～15天的数据（灰样本）会从样本中去掉，去掉“灰样本”，会使样本分布更趋于二项分布，对模型学习更加有利。
-      - “灰样本”通常放入测试集中，用于确保模型在训练结束后，对该部分样本也有区分能力。
-      - 结论：Y>15，违约，负样本，Y<5，正常，正样本。5-15天之内的称为灰样本，用来测试。
+- **模型交付**：将最终模型交付给业务系统
+- **模型部署**：将模型部署到生产环境
+- **模型监控**：实时监控模型运行状态与效果
 
-  - 样本选取
 
-    - 代表性：样本必须能够充分代表总体。如消费贷客群数据不能直接用到小额现金贷场景
-    - 充分性：样本集的数量必须满足一定要求。评分卡建模通常要求正负样本的数量都不少于1500个。随着样本量的增加，模型的效果会显著提升
-    - 时效性：在满足样本量充足的情况下，通常要求样本的观测期与实际应用时间节点越接近越好。如银行等客群稳定的场景，观察期可长达一年半至两年。
-    - 排除性（Exclusion）：虽然建模样本需要具有代表整体的能力，但某些法律规定不满足特定场景贷款需求的用户不应作为样本，如对行为评分卡用户、无还款表现或欺诈用户均不应放入当前样本集。
-    - 评分卡建模通常要求正负样本的数量>=1500，但当总样本量超过50000个时，许多模型的效果不再随着样本量的增加而有显著提升，而且数据处理与模型训练过程通常较为耗时。
-    - 如果样本量过大，会为训练过程增加不必要的负担，需要对样本做欠采样（Subsampling）处理。由于负样本通常较少，因此通常只针对正样本进行欠采样。常见的欠采样方法分为：
-      - 随机欠采样：直接将正样本欠采样至预期比例。
-      - 分层抽样：保证抽样后，开发样本、验证样本与时间外样本中的正负样本比例相同。
-      - 等比例抽样：将正样本欠采样至正负样本比例相等，即正样本量与负样本量之比为1:1。
-        需要注意的是，采样后需要为正样本添加权重。如正样本采样为原来的1/4，则为采样后的正样本增加权重为4，负样本权重保持为1。因为在后续计算模型检验指标及预期坏账时，需要将权重带入计算逻辑，才可以还原真实情况下的指标估计值，否则预期结果与实际部署后的结果会有明显偏差。
-      - 而当负样本较少的时候，需要进行代价敏感加权或过采样（Oversampling）处理
-      - 结论：样本的数量：【1500,50000】
-    - 观察期和表现期
-      - 观察期是指用户申请信贷产品前的时间段
 
-      - 表现期是定义好坏标签的时间窗口，如果在该时间窗口内触发坏定义就是坏样本，反之就是好样本。
+### 2.3 项目准备期
 
-      - 举例: 要建立A卡模型, 观察期12个月,表现期3个月
-        - 用户贷款前12个月的历史行为表现作为变量，用于后续建模
-        - 如设定用户在到期3个月内未还款，即认为用户为负样本，则称表现期为3个月
+#### **1. 明确需求**
 
-        ![1716281302345](assets/day02/1716281302345.png)
+- 目标人群：新客户、优质老客户、逾期老客户
+- 给与产品：额度，利率
+- 市场策略：冷启动，开拓市场，改善营收
+- 使用时限：紧急使用，长期部署
+- 举例
+  - 业务需要针对全新客户开放一个小额现金贷产品，抢占新市场
+  - 针对高风险薄数据新客的申请评分卡
 
-        ~~~shell
-        观察期：确定x
-        表现期：确定y
-        x和y一起，经过算法训练后，才能得到最终模型。
-        ~~~
 
-        **无论是观察期还是表现期，都是用于训练模型的。**
-    - 训练数据测试数据划分
-      - 数据集在建模前需要划分为3个子集：
-        - 开发样本（Develop）:开发样本与验证样本使用分层抽样划分，保证两个数据集中负样本占比相同
-        - 验证样本（Valuation）: 开发样本与验证样本的比例为6:4
-        - 时间外样本（Out of Time，OOT）: 通常使用整个建模样本中时间最近的数据, 用来验证模型对未来样本的预测能力，以及模型的跨时间稳定性。
 
-  - 举例：
+#### 2. 模型设计
 
-|        | 申请评分卡     | 行为评分卡       | 催收评分卡       |
-| ------ | -------------- | ---------------- | ---------------- |
-| 客群   | 新客           | 未逾期老客       | 逾期老客         |
-| 观察期 | 申请时点前一年 | 当期某一日前一年 | 当期还款日前一年 |
-| 表现期 | FPD30          | DPD60            | DPD1->DPD30      |
+##### **业务抽象成分类/回归问题**
 
-- **样本设计**
-  - 选取客群：新客，未逾期老客，逾期老客
-  - 客群描述：首单用户、内部数据丰富、剔除高危职业、收入范围在XXXX
-  - 客群标签：好: FPD<=5 坏: FPD>15， （5，15）灰样本，不参与训练，参与测试评估
+- 问题转化为分类问题或回归问题
+- 风控场景下问题通常都可以转化为二分类问题
+- 举例说明：
+  - 信用评分模型期望用于预测一个用户是否会逾期，逾期用户1
+  - 营销模型期望用于预测一个用户被营销后是否会来贷款，没贷用户1
 
-| 训练集 |      |      |      |      |      | 测试集 |      |      |
-| ------ | ---- | ---- | ---- | ---- | ---- | ------ | ---- | ---- |
-|        | 1月  | 2月  | 3月  | 4月  | 5月  | 6月    | 7月  | 8月  |
-| 总#    | 100  | 200  | 300  | 400  | 500  | 600    | 700  | 800  |
-| 坏#    | 3    | 6    | 6    | 8    | 15   | 12     | 14   | 24   |
-| 坏%    | 3%   | 3%   | 2%   | 2%   | 3%   | 2%     | 2%   | 3%   |
+  - 失联模型期望用于预测一个用户是否会失联，失联用户1
 
+> 风控业务中，只有欺诈检测不是二分类问题。因为样本数量不足，可能是一个无监督学习模型
 
 
-### 特征工程
 
-- 数据调研
+##### **模型算法**
 
-  - 明确对目标人群有哪些可用数据, 明确数据获取逻辑
+- 规则模型
+- 逻辑回归、集成学习、SVM、KNN、决策树
 
-    ![image-20200831040930236](assets/day02/数据1.png)
+- 模型输入
 
-    ![image-20200831041116225](assets/day02/数据2.png)
+  - 数据源
+  - 时间跨度
 
-  - 明确数据的质量，覆盖度，稳定性
 
-    ![image-20200831041946725](assets/day02/数据3.png)
 
-- 特征构建
 
-  - 误区:拿到数据之后,立即做特征
+#### **3. Y标签定义**
 
-  - 构建特征之前需要明确
+**正负样本的构建原则**
 
-    - 数据源对应的具体数据表,画出ER图
-    - 评估特征的样本集
-      - B卡样本集不能包含逾期数据
-      - C卡样本集不能包含按时还款的数据
-    - 特征框架,确保对数据使用维度进行了全面思考
-      - 确定思维框架, 与组内其它人讨论
+- 原始数据通常只包含当前逾期情况，需要人为构建负样本
+- 通过设定逾期阈值来区分正负样本：
+  - **Y=1（负样本/违约客户）**：逾期超过15天的客户
+  - **Y=0（正样本/正常客户）**：逾期<5天和没有逾期的客户
 
-  - 明确数据源对应的具体数据表
 
-    - 明确数据是从哪里来的:     (DE  Data Engineer 数仓工程师)
 
-    ![image-20200831042703020](assets/day02/数据4.png)
+**灰样本的处理方法**
 
-    - 数据分析师拿到的数据可能是
+- **定义**：逾期5～15天之间的样本称为"灰样本"
+- **处理方式**：
+  - 从训练样本中移除灰样本，使样本分布更接近二项分布，有利于模型学习
+  - 将灰样本放入测试集中，用于验证模型对这些"边界案例"的区分能力
 
-      数仓原始表
 
-      数仓重构表
 
-    - 数仓原始表和数仓重构表可能数据量有差异，因为更新时间不同！
+**样本分类总结**
 
-      尽量使用数仓工程师加工好的重构表，确保逻辑统一
+| 逾期天数范围 | 样本类别 | 处理方式     | 标签 |
+| :----------- | :------- | :----------- | :--- |
+| 0-5天        | 正样本   | 用于模型训练 | Y=0  |
+| 5-15天       | 灰样本   | 用于模型测试 | 无   |
+| >15天        | 负样本   | 用于模型训练 | Y=1  |
 
-      实时预测要确保生产数据库和数据仓库数据一致 (很难)
 
-  - 画出类ER图  数据关系 一对一，一对多，多对多
 
-    ![image-20200831043440159](assets/day02/数据5.png)
+#### 4. 样本选取标准
 
-    - 写SQL查询时要从 用户列表出发, Join其它表
-      - 不能出现**SELECT** **DISTINCT** user_id **FROM** order_table
+**核心原则**
 
-  - 明确评估特征的样本集
+- **代表性**：样本需充分代表总体，如消费贷客群数据不能直接用到小额现金贷场景
+- **充分性**：正负样本均不少于1500个，随着样本量的增加，模型的效果会显著提升（理想范围1500-50000）
+- **时效性**：样本观测时间应尽量接近实际应用时间节点
+- **排除性**：剔除不符合规定的用户（欺诈用户、无还款表现用户等）
 
-    - 新申请客户没有内部信贷数据
-    - 未逾期老客户当期没有逾期信息
-    - 逾期老客户和未逾期老客的还款数据一定差别很大
+> 评分卡建模通常要求正负样本的数量>=1500，但当总样本量超过50000个时，许多模型的效果不再随着样本量的增加而有显著提升，而且数据处理与模型训练过程通常较为耗时。
 
-  - 如何从原始数据中构建特征：指定特征框架，确保对数据使用维度进行了全面思考
 
-    - 每个属性都可以从R（Recency） F（Frequency） M（Monetary）三个维度思考，来构建特征
 
-    | GPS    |      |                                                              |
-    | ------ | ---- | ------------------------------------------------------------ |
-    | 经纬度 | R    | 最近GPS所在省市区, 申请时间GPS所在省市区                     |
-    |        | F    | GPS出现过的省市区，出现最多的省市区                          |
-    |        | M    | GPS出现最多的省市区的GDP，人口，坏账率, 该地区的其他统计信息 |
-    | 时间   | R    | 最近一天/周/月的GPS数                                        |
-    |        | F    | 过去N天/周/月的GPS的平均数, 早上/中午/晚上/上班日/周末GPS数  |
-    |        | M    | None                                                         |
-    | 地址   | R    | 最近GPS距离家庭/工作地址距离                                 |
-    |        | F    | 出现最多GPS距离家庭/工作地址距离                             |
-    |        | M    | GPS序列围绕家庭/工作地址的信息熵                             |
-    | 补充   |      | 是否授权GPS，最近连续无GPS的天数                             |
+**样本量处理**
 
-  - 特征构建方法
+| 样本情况      | 处理方法             | 注意事项                               |
+| :------------ | :------------------- | :------------------------------------- |
+| 样本量>50,000 | 欠采样处理           | 由于负样本通常较少，通常仅对正样本进行 |
+| 负样本不足    | 过采样或代价敏感加权 | 保持数据分布平衡                       |
 
-    - 用户静态信息特征：用户的姓名，性别，年龄
-    - 用户时间截面特征（某一个时刻点的数据）
-      - 截面时点电商购物GMV（Gross Merchandise Volume，商品交易总额）
-      - 截面时点银行存款额
-      - 截面时点逾期最大天数
-    - 用户时间序列特征（某一段时间的数据）
-       - 用户过去一个月的GPS数据
-       - 用户过去六个月的银行流水
-       - 用户过去一年的逾期记录
+**欠采样方法对比**
 
-- 特征评估
+- **随机欠采样**：直接减少正样本数量
 
-  - 什么是好的特征
-    - 好的特征需要满足的条件（评估指标）
-       - 覆盖度高，很多用户都能使用
-       - 稳定，在后续较长时间可以持续使用         PSI (Population Stability Index)
-       - 区分度好，好坏用户的特征值差别大         IV (Information Value)
-    - 也可以用模型的评估指标来评估特征：单特征AUC, 单特征KS
-    - 可以拿效果最好的单特征的AUC，KS来估计模型的效果
-  - 特征评估报表
+- **分层抽样**：保持开发/验证样本/时间外样本中正负比例一致
 
-    |          | 全量样本 | 带标签样本 |        |      |      |            |
-    | -------- | -------- | ---------- | ------ | ---- | ---- | ---------- |
-    | 特征名称 | 覆盖度   | 缺失率     | 零值率 | AUC  | KS   | IV         |
-    |          | 高       | 低         | 低     | 高   | 大   | 合适范围内 |
-    |          |          |            |        |      |      |            |
-    |          |          |            |        |      |      |            |
+- **等比伪抽样**：调整正负样本比例为1:1
 
-  - 全量样本—覆盖度：全量样本上，有多少用户有这个特征
+  - *需为采样样本添加权重*（如采样1/4则权重设为4）
 
-    - 全量样本：包含不带标签的样本
+    > 需要注意的是，采样后需要为正样本添加权重。如正样本采样为原来的1/4，则为采样后的正样本增加权重为4，负样本权重保持为1。因为在后续计算模型检验指标及预期坏账时，需要将权重带入计算逻辑，才可以还原真实情况下的指标估计值，否则预期结果与实际部署后的结果会有明显偏差。
 
-  - 缺失率：带标签样本缺失率，与全量样本覆盖度作对比，看差距是不是很大，选择差距不大的特征
 
-  - 零值率：好多特征是计数特征，比如电商消费单数，通信录记录数，GPS数据，如零值太多，特征不好
 
-  - 剔除风险趋势不合逻辑的特征，用常识和业务逻辑去评估
+#### 5. 观察期与表现期设计
 
-    ![img](data:image/png;base64,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)
+**定义与关系**
 
-### 模型构建
+| 概念   | 定义                     | 示例               |
+| :----- | :----------------------- | :----------------- |
+| 观察期 | 用户申请前的历史数据窗口 | 12个月历史行为数据 |
+| 表现期 | 定义好坏标签的时间窗口   | 3个月还款表现      |
 
-- 设计实验
-  - 训练模型时有很多可能的因素会影响模型效果
-  - 我们需要通过设计实验去验证哪些因素是会提升模型效果的
+**关键关系**：观察期(X) + 表现期(Y) → 通过算法训练得到最终模型
 
-- 模型评估
 
-  - 好的模型需要满足的条件：
-     - 稳定，在后续较长时间可以持续使用     PSI (Population Stability Index)
-     - 区分度好，好坏用户的信用分差别大    **AUC, KS**
-  - 报表一：区分度，抓坏人能力在不同分段的表现
 
-  | 分数段     | 总人数 | 坏人数 | 坏人率 | KS   |
-  | ---------- | ------ | ------ | ------ | ---- |
-  | [300, 550] |        |        |        |      |
-  | [500, 600] |        |        |        |      |
-  | [600, 700] |        |        |        |      |
-  | [700, 750] |        |        |        |      |
-  | [750, 800] |        |        |        |      |
-  | [800, 850] |        |        |        |      |
-  | [850, 950] |        |        |        |      |
+![1716281302345](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1716281302345.png)
 
-  - 报表二：跨时间稳定性
-  | 分数段       | 测试集1 | 测试集2 | 线上1期 | 线上2期 | ...  |
-  | ------------ | ------- | ------- | ------- | ------- | ---- |
-  | [300, 550]   | 10%     | 10%     |         |         |      |
-  | [500, 600]   | 20%     | 20%     |         |         |      |
-  | [600, 700]   | 20%     | 20%     |         |         |      |
-  | [700, 750]   | 25%     | 25%     |         |         |      |
-  | [750, 800]   | 20%     | 20%     |         |         |      |
-  | [800, 850]   | 4%      | 4%      |         |         |      |
-  | [850, 950]   | 1%      | 1%      |         |         |      |
-  | 决策点上比例 | 50%     | 50%     |         |         |      |
-  | 总用户数     | 3000    | 2000    |         |         |      |
-  | 平均分       | 730     | 725     |         |         |      |
-  | PSI          | -       | 0.01    |         |         |      |
+**不同评分卡应用**
 
+| 评分卡类型 | 观察期客群   | 观察期           | 表现期      |
+| :--------- | :----------- | :--------------- | ----------- |
+| 申请评分卡 | 新客户       | 申请时点前一年   | FPD30       |
+| 行为评分卡 | 未逾期老客户 | 当期某一日前一年 | DPD60       |
+| 催收评分卡 | 逾期老客户   | 当期还款日前一年 | DPD1->DPD30 |
 
 
-### 上线运营
 
-模型交付→模型部署→模型监控
+#### 6. 训练数据测试数据划分
 
-- 模型交付
+数据集在建模前需要划分为3个子集：
+- 开发样本（Develop）:开发样本与验证样本使用分层抽样划分，保证两个数据集中负样本占比相同
+- 验证样本（Valuation）: 开发样本与验证样本的比例为6:4
+- 时间外样本（Out of Time，OOT）: 通常使用整个建模样本中时间最近的数据, 用来验证模型对未来样本的预测能力，以及模型的跨时间稳定性。
 
-  - 交付流程
 
-    1 提交特征和模型报表
-    2 离线结果质量复核  (无缺失，无重复，存储位置正确，文件名规范)
-    3 保存模型文件，确定版本号，提交时间
-    4 老大审批，通知业务方
-    5 线上部署，案例调研， 持续监控
 
-  - 特征报告                                
+### 2.4 特征工程
 
-    1 特征项目需求
-    2 特征项目任务列表
-    3 特征项目时间表
-    4 类ER图
-    5 样本设计
-    6 特征框架
-    7 每周开发进度和结果
-    8 每周讨论反馈和改进意见笔记
-    9 特征项目交付说明
-    10 特征项目总结
+#### **1. 数据调研**
 
-  - 模型报告
+##### 1.1 数据分类与内容
 
-    1 模型项目需求
+明确对目标人群有哪些可用数据, 明确数据获取逻辑
 
-    2 模型项目任务列表
+| **数据类别**       | **具体数据项**                                               |
+| :----------------- | :----------------------------------------------------------- |
+| **用户KYC数据**    | 姓名、年龄、性别、所在地、婚姻状况、工作状况、收入状况、资产状况 |
+| **App行为数据**    | 填表时长、页面逗留时长、填写速度、填写准确度                 |
+| **外部第三方数据** | 违法记录、诉讼记录、人行征信、芝麻信用分、外部黑名单、多头数据 |
+| **用户授权数据**   | 运营商、公积金、社保、学历、飞机/火车/宾馆记录、婚恋社交、电商及支付行为 |
+| **设备采集数据**   | App列表、GPS、联系人、短信、通讯记录                         |
+| **内部自有数据**   | 银行（存/理财/借贷/支付）、电商（支付/购物/社交）、关系图（设备/手机号码/地理/相似度） |
 
-    3 模型项目时间表
 
-    4 模型设计
 
-    5 样本设计
+##### 1.2 数据质量评估表
 
-    6 模型训练流程和实验设计
+明确数据的质量，覆盖度，稳定性
 
-    7 每周开发进度和结果
+| **指标**   | 1月  | 2月  | 3月  | 4月  | 5月  | **合计** |
+| :--------- | :--- | :--- | :--- | :--- | :--- | :------- |
+| 总样本     | 100  | 200  | 300  | 400  | 500  | 1500     |
+| 覆盖样本   | 50   | 100  | 250  | 300  | 400  | 1100     |
+| **覆盖度** | 50%  | 50%  | 83%  | 75%  | 80%  | 73%      |
 
-    8 每周讨论反馈和改进意见笔记
+**关键结论**：
 
-    9 模型项目交付说明
+- 覆盖度需持续监控，建议目标≥80%（3月后达标）。
+- 低覆盖月份（1-2月）需排查数据采集问题。
 
-    10 模型项目总结
 
-- 模型部署
 
-  - 确保开发环境和生产环境一致性（开发环境，测试环境，生产环境）
-  - 使用PMML文件或Flask API进行部署
-  - 一定要做：对一批客户进行离线打分和线上打分，确保离线结果和线上结果一致
+#### 2. 特征构建
 
-- 模型监控
+##### **2.1 常见误区**
 
-  - 特征监控：特征稳定性
-  - 模型监控：模型稳定性
+- 看到数据后立即构建特征，缺乏前期规划。
 
 
 
-## 【实现】业务规则挖掘
+##### 2.2 构建特征前的准备工作
+
+| **步骤**               | **说明**                                                     |
+| :--------------------- | :----------------------------------------------------------- |
+| **明确数据源与数据表** | 画出E-R视图，确认数据来源（生产数据库、数仓原始表、数仓重构表）。 |
+| **评估特征的样本集**   | -A卡样本集没有内部信贷数据 - B卡样本集不能包含逾期数据 - C卡样本集不能包含按时还款的数据 |
+| **制定特征框架**       | 与团队讨论，确保全面覆盖数据使用维度。                       |
+| **数据来源优先级**     | 优先使用数仓工程师加工的重构表，确保逻辑统一；实时数据需与生产数据库一致。 |
+
+
+
+![image-20200831042703020](assets/day02/数据4.png)
+
+##### 2.3 数据表关系示例
+
+> 画出类ER图  数据关系 一对一，一对多，多对多
+
+- **核心表**：用户列表（需作为SQL查询的起点，避免直接去重其他表字段）。
+
+  > 不能出现**SELECT** **DISTINCT** user_id **FROM** order_table
+
+- **关联表**：
+
+  - 用户KYC信息（1:1）
+  - 用户订单信息（1:N）
+  - 用户还款信息（1:N）
+  - 用户设备信息（1:N）
+
+![image-20200831043440159](assets/day02/数据5.png)
+
+
+
+##### 2.4 特征框架设计（RFM维度）
+
+如何从原始数据中构建特征：指定特征框架，确保对数据使用维度进行了全面思考。每个属性都可以从R（Recency） F（Frequency） M（Monetary）三个维度思考，来构建特征
+
+| **数据属性** | **R (Recency)**                | **F (Frequency)**                  | **M (Monetary)**            | **补充**                    |
+| :----------- | :----------------------------- | :--------------------------------- | :-------------------------- | :-------------------------- |
+| **GPS**      | 最近GPS所在省市区              | 出现最多的省市区                   | 省市区的GDP、人口等统计信息 | 是否授权GPS、连续无GPS天数  |
+| **时间**     | 最近一天/周/月的GPS数          | 过去六天/周/月的GPS平均数          | None                        | 分时段统计（早/晚、工作日） |
+| **地址**     | 最近GPS距离家庭/工作地点的距离 | 出现最多GPS距离家庭/工作地点的距离 | GPS序列离家庭/工作地点      |                             |
+
+
+
+##### 2.5 特征构建方法分类
+
+| **类型**             | **描述**                               | **示例**                                |
+| :------------------- | :------------------------------------- | :-------------------------------------- |
+| **用户静态信息特征** | 用户的基础属性，如姓名、性别、年龄等。 | 用户年龄分段（18-25, 26-35等）          |
+| **时间戳范围特征**   | 某一时刻点的数据快照。                 | 当前存款额、最大逾期天数                |
+| **时间序列特征**     | 某段时间内的行为数据。                 | 过去1个月GPS轨迹、过去6个月银行流水记录 |
+
+
+
+#### 3. 特征评估
+
+**什么是好的特征？**
+
+好的特征需要满足以下评估指标：
+
+- **覆盖率高**：更多用户都能使用到该特征。
+- 稳定性好：在后续较长时间内可以持续使用。
+  - *PSI (Population Stability Index)* 用于衡量特征的稳定性。
+- 区分度好：好坏用户的特征值差别大。
+  - *IV (Information Value)* 用于衡量特征的区分能力。
+
+此外，可以用模型的评估指标来评估单个特征，如单特征 AUC、单特征 KS。可以拿效果最好的单特征的AUC，KS来估计模型的效果
+
+
+
+**特征评估报告表**
+
+| 特征名称 | 全量样本覆盖度 | 带标签样本缺失率 | 零值率 | AUC  | KS   | IV         |
+| -------- | -------------- | ---------------- | ------ | ---- | ---- | ---------- |
+| 示例特征 | 高             | 低               | 低     | 高   | 大   | 合适范围内 |
+
+> **关键概念解释**
+>
+> - 覆盖度（Coverage）
+>
+>   - **定义**：在全量样本上，有多少用户有这个特征。
+>
+>   - **说明**：全量样本指包含不带标签的所有样本。
+>
+> - 缺失率（Missing Rate）
+>
+>   - **定义**：带标签样本的缺失率，和全量样本的覆盖度作对比。
+>
+>   - **建议**：如果差别不是很大，说明选择的是合适的特征。
+>
+> - 零值率（Zero Rate）
+>   - **说明**：很多特征是计数特征，比如电商消费单数、通信记录数、GPS 数据等。如果零值太多，说明该特征效果不好。
+>
+> 特征筛选建议：删除风险趋势不合理或逻辑错误的特征，用常识和业务逻辑进行筛查与评估。
+
+
+
+### 2.5 模型构建
+
+#### **1. 实验设计**
+
+- **目标**：训练模型时有很多可能的因素会影响模型效果，我们需要通过设计实验去验证哪些因素会提升模型效果
+
+- **方法**
+
+```mermaid
+graph TD
+  A[假设可能影响因素] --> B[设计对照组实验]
+  B --> C[分析结果显著性]
+  C --> D[选择最优配置]
+```
+
+#### **2. 模型评估标准**
+
+好的模型需要满足的条件：
+- 稳定，在后续较长时间可以持续使用     **PSI**
+- 区分度好，好坏用户的信用分差别大    **AUC, KS**
+
+| **评估维度** | **指标**                | **要求**                     | **工具/方法**        |
+| :----------- | :---------------------- | :--------------------------- | :------------------- |
+| 稳定性       | PSI (群体稳定性指数)    | PSI < 0.1（低漂移）          | 跨时间分数分布对比   |
+| 区分度       | AUC (ROC曲线下面积)     | AUC > 0.7（较好区分）        | ROC曲线分析          |
+| 区分度       | KS (Kolmogorov-Smirnov) | KS > 0.3（显著区分好坏用户） | 好坏用户分数分布对比 |
+
+
+
+#### **3. 关键报表分析**
+
+##### **3.1 区分度分析表**
+
+（评估模型在不同分段捕捉“坏人”的能力）
+
+| 分数段  | 总人数 | 坏人数 | 坏人率 | KS值 |
+| :------ | :----- | :----- | :----- | :--- |
+| 300-550 | –      | –      | –      | –    |
+| 550-600 | –      | –      | –      | –    |
+| 600-700 | –      | –      | –      | –    |
+| 700-750 | –      | –      | –      | –    |
+| 750-800 | –      | –      | –      | –    |
+| 800-850 | –      | –      | –      | –    |
+| 850-950 | –      | –      | –      | –    |
+
+**解读要点**：
+
+- 高分段坏人率应显著低于低分段。
+- KS值需随分数段递增而增大。
+
+
+
+##### **3.2 跨时间稳定性表**
+
+（验证模型在不同时间段的可靠性）
+
+| 分数段         | 测试集1 | 测试集2 | 线上1期 | 线上2期 | ...  |
+| :------------- | :------ | :------ | :------ | :------ | :--- |
+| 300-550        | 10%     | 10%     | –       | –       | –    |
+| 550-600        | 20%     | 20%     | –       | –       | –    |
+| 600-700        | 20%     | 20%     | –       | –       | –    |
+| 700-750        | 25%     | 25%     | –       | –       | –    |
+| 750-800        | 20%     | 20%     | –       | –       | –    |
+| 800-850        | 4%      | 4%      | –       | –       | –    |
+| 850-950        | 1%      | 1%      | –       | –       | –    |
+| **决策点比例** | 50%     | 50%     | –       | –       | –    |
+| **总用户数**   | 3000    | 2000    | –       | –       | –    |
+| **平均分**     | 730     | 725     | –       | –       | –    |
+| **PSI**        | –       | 0.01    | –       | –       | –    |
+
+**关键结论**：
+
+- 若PSI < 0.1，说明模型稳定性良好。
+- 各分数段比例跨期差异应小于5%。
+
+
+
+### 2.6 上线运营
+
+```mermaid
+flowchart LR
+    A[模型交付] --> B[模型部署] --> C[模型监控]
+```
+
+#### **1. 模型交付**
+
+##### 1.1 交付流程
+
+| 步骤 | 关键内容                                                 |
+| :--- | :------------------------------------------------------- |
+| 1    | 提交特征和模型报表                                       |
+| 2    | 离线结果质量复核（检查缺失、重复、存储位置、文件名规范） |
+| 3    | 保存模型文件，确定版本号与提交时间                       |
+| 4    | 负责人审批并通知业务方                                   |
+| 5    | 线上部署、案例调研、持续监控                             |
+
+##### 1.2 报告内容对比
+
+| **特征报告**                  | **模型报告**                  |
+| :---------------------------- | :---------------------------- |
+| 1. 特征项目需求               | 1. 模型项目需求               |
+| 2. 特征任务列表               | 2. 模型任务列表               |
+| 3. 特征项目时间表             | 3. 模型项目时间表             |
+| 4. 类ER图                     | 4. 模型设计                   |
+| 5. 样本设计                   | 5. 样本设计                   |
+| 6. 特征框架                   | 6. 训练流程与实验设计         |
+| 7. 每周开发进度               | 7. 每周开发进度               |
+| 8. 每周讨论反馈和改进意见笔记 | 8. 每周讨论反馈和改进意见笔记 |
+| 9. 特征项目交付说明           | 9. 交付说明                   |
+| 10. 特征项目总结              | 10. 模型项目总结              |
+
+
+
+#### 2. 模型部署
+
+- **环境一致性**：确保开发、测试、生产环境配置一致。
+
+- **部署方式**：使用PMML文件或Flask API进行部署。
+
+- **验证要求**：✅ 必须对一批客户对比离线与线上打分结果，确保一致性。
+
+
+
+#### **3. 模型监控**
+
+| **类型** | **监控指标**                    | **工具/方法**        |
+| :------- | :------------------------------ | :------------------- |
+| 特征监控 | 特征稳定性（PSI、缺失率）       | 统计对比、自动化告警 |
+| 模型监控 | 模型稳定性（分数分布、AUC衰减） | 时序分析、AB测试     |
+
+
+
+## 3、业务规则挖掘
 
 ### 规则挖掘简介
 
