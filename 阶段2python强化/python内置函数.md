@@ -809,15 +809,15 @@
 
 ### 8、容器构造函数
 
-| 函数                                                         | 描述       | 示例                | 版本变化    |
-| :----------------------------------------------------------- | :--------- | :------------------ | :---------- |
-| `dict(**kwarg)` `dict(mapping, **kwarg)` `dict(iterable, **kwarg)` | 字典构造   | `dict(a=1, b=2)`    | -           |
-| `frozenset([iterable])`                                      | 不可变集合 | `frozenset([1, 2])` | -           |
-| `list([iterable])`                                           | 列表构造   | `list('abc')`       | -           |
-| `object()`                                                   | 基类实例   | `object()`          | -           |
-| `set([iterable])`                                            | 可变集合   | `set([1, 2])`       | -           |
-| `slice(stop)` `slice(start, stop[, step])`                   | 切片对象   | `slice(1, 10, 2)`   | 3.12+可哈希 |
-| `tuple([iterable])`                                          | 元组构造   | `tuple('abc')`      | -           |
+| 函数                                                         | 描述       | 示例                          | 版本变化    |
+| :----------------------------------------------------------- | :--------- | :---------------------------- | :---------- |
+| `dict(**kwarg)` `dict(mapping, **kwarg)` `dict(iterable, **kwarg)` | 字典构造   | `dict(a=1, b=2)`              | -           |
+| `frozenset([iterable])`                                      | 不可变集合 | `frozenset([1, 2])`           | -           |
+| `list([iterable])`                                           | 列表构造   | `list('abc') → ['a','b','c']` | -           |
+| `object()`                                                   | 基类实例   | `object()`                    | -           |
+| `set([iterable])`                                            | 可变集合   | `set([1, 2])`                 | -           |
+| `slice(stop)` `slice(start, stop[, step])`                   | 切片对象   | `slice(1, 10, 2)`             | 3.12+可哈希 |
+| `tuple([iterable])`                                          | 元组构造   | `tuple('abc')`                | -           |
 
 > 下面是对 `dict(**kwarg)`、`dict(mapping, **kwarg)`、`dict(iterable, **kwarg)` 的解释：
 >
@@ -867,6 +867,219 @@
 >
 > **扩展：**
 > `dict()` 是 Python 创建字典的标准方式，支持多种初始化方式，灵活构建字典对象。
+>
+> ---
+>
+> `frozenset([iterable])` 是 Python 内置的数据类型，用于创建一个**不可变的集合**（即 frozenset）。它和普通的 set 非常类似，但 frozenset 一旦创建，其内容不能再修改（不能添加或删除元素），因此可以作为字典的 key 或放入其他 set 中。
+>
+> **语法**
+>
+> ```python
+> frozenset([iterable])
+> ```
+>
+> - **iterable**：可迭代对象，如列表、元组、字符串、set 等。可以省略，省略时返回一个空的 frozenset。
+>
+> **主要特点**
+>
+> - **不可变**：创建后不能修改内容（不能 add/remove）。
+> - **去重**：同 set，会自动去除重复元素。
+> - **可哈希**：可以作为 dict 的 key 或其它 set 的元素。
+>
+> **示例代码**
+>
+> ```python
+> # 从列表创建
+> fs = frozenset([1, 2, 3, 2])
+> print(fs)  # 输出: frozenset({1, 2, 3})
+> 
+> # 空 frozenset
+> empty_fs = frozenset()
+> print(empty_fs)  # 输出: frozenset()
+> 
+> # 可以作为字典的 key
+> d = {frozenset([1, 2]): "value"}
+> print(d)  # 输出: {frozenset({1, 2}): 'value'}
+> ```
+>
+> **常见用途**
+>
+> - 用于需要不可变集合的场景
+> - 作为字典的键或 set 的元素
+>
+> ---
+>
+> `object()` 是 Python 内置的一个类，几乎所有类都是从 `object` 继承的。它是所有新式类的基类，也是 Python 中最基础的对象类型。
+>
+> **语法**
+>
+> ```python
+> obj = object()
+> ```
+>
+> **主要作用**
+>
+> - 创建一个空对象实例（没有属性和方法）。
+> - 常作为占位符或用于实现不可变对象。
+> - 是所有类默认的基类（如果没有显式继承其它类，自动继承自 object）。
+>
+> **特点**
+>
+> - 创建的对象没有任何属性和方法（除了默认的）。
+> - 不能向该对象添加属性（因为没有 `__dict__`）。
+> - 主要用于继承体系和类型判断。
+>
+> **示例**
+>
+> ```python
+> a = object()
+> b = object()
+> print(a == b)     # False，不同实例
+> print(isinstance(a, object))  # True
+> 
+> # 不能添加属性
+> a.x = 1   # AttributeError: 'object' object has no attribute 'x'
+> ```
+>
+> **常见用法**
+>
+> - 作为单例哨兵对象（比如默认值占位符）：
+>
+>   ```python
+>   _sentinel = object()
+>   def func(x=_sentinel):
+>       if x is _sentinel:
+>           print("未传入参数")
+>   ```
+>
+> - 继承体系：
+>
+>   ```python
+>   class MyClass(object):
+>       pass
+>   ```
+>
+> **总结**
+>
+> `object()` 是 Python 中所有类的基类，用于创建最简单的对象实例，常用于继承和哨兵标记。
+>
+> ---
+>
+> `set([iterable])` 是 Python 的一个内置数据类型，用于创建一个**可变集合**对象。集合（set）是一种无序、元素唯一的数据结构，适用于去重、集合运算等场景。
+>
+> **语法**
+>
+> ```python
+> set([iterable])
+> ```
+>
+> - **iterable**：可迭代对象（如列表、元组、字符串、字典、集合等）。省略时返回一个空集合。
+>
+> **功能说明**
+>
+> - 自动去重：集合中的元素不会重复。
+> - 可变：可以添加、移除元素。
+> - 无序：元素没有固定顺序。
+>
+> **示例**
+>
+> ```python
+> # 由列表创建集合
+> s = set([1, 2, 3, 2])
+> print(s)  # 输出: {1, 2, 3}
+> 
+> # 空集合
+> empty_s = set()
+> print(empty_s)  # 输出: set()
+> 
+> # 集合运算
+> a = set([1, 2, 3])
+> b = set([2, 3, 4])
+> print(a & b)  # 交集: {2, 3}
+> print(a | b)  # 并集: {1, 2, 3, 4}
+> print(a - b)  # 差集: {1}
+> ```
+>
+> **常用方法**
+>
+> - `add(x)`：添加元素
+> - `remove(x)`：删除元素（若不存在则报错）
+> - `discard(x)`：删除元素（若不存在则不报错）
+> - `update(iterable)`：批量添加元素
+> - `pop()`：随机删除并返回一个元素
+> - `clear()`：清空集合
+> - `union()`, `intersection()`, `difference()` 等集合运算方法
+>
+> **总结**
+>
+> - `set([iterable])` 用于创建一个可变、无序、去重的集合对象。
+> - 适合用于数据去重、集合运算等场景。
+> - 与 `frozenset` 的区别是：`set` 可变，`frozenset` 不可变。
+>
+> ---
+>
+> `slice()` 是 Python 内置的一个切片对象，用于指定序列（如列表、字符串、元组等）**截取的起止位置和步长**，常用于高级切片操作。
+>
+> **语法**
+>
+> - `slice(stop)`
+> - `slice(start, stop[, step])`
+>
+> **参数说明**：
+>
+> - `start`：起始索引（默认为 0）
+> - `stop`：结束索引（不包含该索引）
+> - `step`：步长（默认为 1）
+>
+> **用法举例**
+>
+> **`slice(stop)`**
+>
+> 等价于 `slice(0, stop, 1)`，从头到 `stop-1` 步长为 1。
+>
+> ```python
+> s = slice(5)
+> lst = [0, 1, 2, 3, 4, 5, 6]
+> print(lst[s])  # 输出: [0, 1, 2, 3, 4]
+> ```
+>
+> **`slice(start, stop[, step])`**
+>
+> ```Python
+> s = slice(1, 6, 2)
+> lst = [0, 1, 2, 3, 4, 5, 6]
+> print(lst[s])  # 输出: [1, 3, 5]
+> ```
+>
+> **直接在序列中使用切片（通常用`[start:stop:step]`语法）**
+>
+> ```python
+> lst = [0, 1, 2, 3, 4, 5, 6]
+> print(lst[1:6:2])  # 输出: [1, 3, 5]
+> ```
+>
+> 但如果需要动态地指定切片，可以用 `slice()` 对象：
+>
+> ```python
+> s = slice(2, 5)
+> print(lst[s])  # 输出: [2, 3, 4]
+> ```
+>
+> **典型应用场景**
+>
+> - 用于需要动态指定切片区间的场合（如函数参数传递）。
+> - 对多维数组（如 numpy 数组）做切片操作时，常见于科学计算。
+>
+> **总结**
+>
+> - `slice()` 用于创建一个切片对象，方便传递或组合切片区间。
+> - 等价于序列的 `[start:stop:step]` 用法，但更适合动态和高级用法。
+>
+> ---
+>
+> 
+>
+> 
 
 
 
