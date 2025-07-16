@@ -696,6 +696,51 @@ df = df2[df2['dtn']<180]
 df.head()
 ```
 
+> **为什么需要 `str(x)` 而不是直接用 `x`？**
+>
+> ### 原因分析
+>
+> - 在 Pandas 中，缺失的时间戳通常表现为 `NaT`（Not a Time），而不是 `NaN`。
+> - 直接用 `x == 'NaT'` 比较是**不可靠的**，因为 `x` 可能是 `pd.NaT`（一个特殊的对象）而不是字符串 `'NaT'`。
+> - 当你用 `str(x)`，Pandas 的 `pd.NaT` 对象会被转换成字符串 `'NaT'`，这样就可以通过字符串比较来判断是否为缺失时间。
+>
+> #### 举例说明
+>
+> Python
+>
+> ```
+> import pandas as pd
+> 
+> x = pd.NaT
+> print(x == 'NaT')       # False
+> print(str(x) == 'NaT')  # True
+> ```
+>
+> - 直接比较 `x == 'NaT'` 返回 False，因为类型不同（`x` 是 `pd.NaT` 对象）。
+> - 比较 `str(x) == 'NaT'` 返回 True，因为 `str(pd.NaT)` 会变成 `'NaT'`。
+>
+> ### 更推荐的做法
+>
+> 不过，Pandas 推荐用 `pd.isna(x)` 或 `pd.isnull(x)` 来判断缺失值，这样代码更健壮：
+>
+> Python
+>
+> ```
+> def time_isna(x, y):
+>     if pd.isna(x):
+>         x = y
+>     return x
+> ```
+>
+> 这样可以同时处理 `NaT`、`NaN` 等所有缺失情况。
+>
+> ------
+>
+> **总结：**
+>
+> - 用 `str(x) == 'NaT'` 是为了能判断 `x` 是不是缺失时间（因为直接 `x == 'NaT'` 不行）。
+> - 更推荐用 `pd.isna(x)` 来判断缺失值，代码更规范、更安全。
+
 ><font color ='red'>显示结果：</font>
 >
 >|       |                uid |  create_dt | oil_actv_dt | class_new | bad_ind | oil_amount | discount_amount | sale_amount | amount | pay_amount | coupon_amount | payment_coupon_amount | channel_code | oil_code | scene | source_app | call_source |  dtn |
