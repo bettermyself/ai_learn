@@ -1,856 +1,937 @@
-# 特征构造
+## 1、数据准备
 
-## 数据准备
+### 1.1 风控建模特征数据
 
-### 风控建模特征数据
+#### 1.1.1 核心特征类别
 
-![1716371992200](assets/day03/1716371992200.png)
+| **分类**            | **具体信息项**               |
+| :------------------ | :--------------------------- |
+| **1. 客户基本信息** | 姓名、身份证号、手机号       |
+|                     | 学历、籍贯、民族、职业       |
+| **2. 活体认证信息** | 拍照认证、身份证照对比       |
+|                     | 视频认证信息、表情捕捉       |
+| **3. 运营商信息**   | 设备信息、设备品牌           |
+|                     | 手机号码归属地、SIM序列号    |
+|                     | 设备唯一编码、借贷设备数量   |
+| **4. 多头共债信息** | 信用卡与借贷使用情况         |
+|                     | 在途贷款/授信账户余额        |
+| **5. 收入资产信息** | 月均收入、社保公积金、个税   |
+|                     | 不动产、车辆、基金、黄金     |
+| **6. 还款信息**     | 过去12个月按时还款/逾期次数  |
+|                     | 过去12个月贷款卡最大逾期期数 |
+| **7. 位置信息**     | 手机归属地                   |
+|                     | 手机定位基站位置信息         |
 
-* 数据来源
-
-![1716372004292](assets/day03/1716372004292.png)
-
-* 人行征信数据
-
-![1716372057898](assets/day03/1716372057898.png)
-![1716372076857](assets/day03/1716372076857.png)
-
-![1716372132894](assets/day03/1716372132894.png)
-
-![1716372206544](assets/day03/1716372206544.png)
-查询原因包括：贷款审批、贷后管理、信用卡审批、担保资格审查、司法调查、公积金提、取复核查询、融资审批、额度审批、个人查询等。
 
 
+#### 1.1.2 数据来源与行为特征
 
-### 梳理数据的内在逻辑
+| **类别**                | **具体内容**                   |
+| :---------------------- | :----------------------------- |
+| **1. 客户行为**         | 账户注册、换绑、注销           |
+|                         | 申请次数、申请间隔时长         |
+| **2. 金融机构内部数据** | 存量贷款、代发工资             |
+|                         | 大数据画像、投资理财           |
+| **3. 人行征信**         | 贷款、信用卡还款               |
+|                         | 基本信息、公共信息             |
+| **4. 三方数据接入**     | 多头共债、司法诉讼             |
+|                         | 黑名单、三要素核验             |
+| **5. 人工总结**         | 精于特定建模领域               |
+| **6. 主动爬取**         | 催收数据、舆情信息             |
+|                         | IP地址、设备指纹、公开舆情信息 |
+
+
+
+#### 1.1.3 人行征信报告内容结构
+
+**1. 基本信息**
+
+- 查询者信息、被查询者信息
+- 查询时间、证件类型与号码
+
+**2. 个人信息**
+
+- 姓名、身份证号、住址、单位信息、联系方式
+
+**3. 账户信息**
+
+**(1) 贷款账户**
+
+- 贷款机构、账户标识、开户日期
+- 借款金额、账户币种、业务种类
+- 账户状态、余额、最近还款日期
+- 还款方式、共同借款标志、担保方式
+
+**(2) 非循环贷款账户**
+
+- 贷款机构、账户标识、开户/到期日期
+- 借款金额、账户币种、业务种类
+- 账户状态、余额、最近还款日期
+- 还款方式、共同借款标志、担保方式
+
+**(3) 贷记卡账户**
+
+- 发卡机构、账户标识、开户日期
+- 账户授信额度、共同授信额度、币种
+- 业务种类、担保方式
+- 账户状态、余额、最近还款日期
+
+**(4) 还款记录**
+
+- 各年份、各月的还款状态与金额
+
+**4. 查询记录**
+
+- 查询机构、查询日期、查询原因
+
+> ![1716372206544](assets/day03/1716372206544.png)
+> 查询原因包括：贷款审批、贷后管理、信用卡审批、担保资格审查、司法调查、公积金提取复核查询、融资审批、额度审批、个人查询等。
+
+
+
+### 1.2 梳理数据的内在逻辑
 
 **关系种类**
 
-一对一：一个用户有一个注册手机号
-
-一对多：一个用户多笔借款
-
-多对多：一个用户可以登录多个设备，一个设备可以有多个用户登录
-
-- 举例
-
-  下图中，蓝色框为二月当期账单，红色框为订单
-
-![image-20200906210337697](assets/day03/feature7.png)
-
-- 任务：分析厚数据常登陆首单用户的逾期情况
-
-  ![image-20200906211653314](assets/day03/feature9.png)
-
-  - 可以将表结构展示到特征文档当中，说明取数逻辑
-
-  ![image-20200906211918255](assets/day03/feature10.png)
-
-### 样本设计和特征框架
-
-- **定义观察期样本**
-
-  - 确定观察期（定X时间切面）和表现期（定Y的标签）
-
-  - 确认样本数目是否合理
-
-- **数据EDA（探索性数据分析）**
-
-  - 看数据总体分布
-    - data.shape
-    - data.isnull()
-    - data.info()
-    - data.describe()
-  - 看好坏样本分布差异
-    - data[data[label]==0].describe()  好用户
-    - data[data[label]==1].describe()  坏用户
-  - 看单个数据
-    - data.sample(n=10,random_state=1)
-
-- 梳理特征框架
-
-  - RFM生成新特征
-
-  **举例 行为评分卡中的用户账单还款特征**
-
-  - 用户账单关键信息：时间，金额，还款，额度
-
-  ![image-20200906213112534](assets/day03/feature11.png)
-
-- 小结：在构建特征前，要完成
-
-  - 类ER图（后端就有，不用单独准备）
-  - 样本设计表
-  - 特征框架表
-    - 数据EDA和咋们关联比较大
-    - 其他的关联没有那么大
+- **一对一关系**
+  示例：一个用户有一个注册手机号
+- **一对多关系**
+  示例：一个用户多笔借款
+- **多对多关系**
+  - 一个用户可以登录多个设备
+  - 一个设备可以有多个用户登录
 
 
 
-## 特征构造
+### 1.3 样本设计和特征框架
 
-### 静态信息特征和时间截面特征
+**定义观察期样本**
 
-- 用户静态信息特征
-
-  - 用户的基本信息（半年内不会变化）
-
-- 用户时间截面特征
-
-  - **未来信息**当前时间截面之后的数据
-
-  - 时间截面数据在取数的时候要小心，**避免使用未来信息**
-
-  - 产生**未来信息**最直接的原因：缺少快照表
-
-    - 快照表，每天照个相片 23:00点  把当天的数据 备份一份 
-
-      - 快照表只会保存当天最终的状态
-
-      日志表，每一次操作都记一次, 不会update，只有insert  操作一次记录一次
-
-      - 每一次操作都会记录下来
-
-  - 金融相关数据原则上都需要快照表记录所有痕迹（额度变化情况，多次申请的通过和拒绝情况...）
-
-  - 缺少快照表的可能原因
-
-    - 快照表消耗资源比较大，为了性能不做
-    - 原有数据表设计人员疏忽，没做
-    - 借用其他业务数据（如电商）做信贷
-
-  - 举例
-
-    首次借贷        二次借贷      爬虫授权     三次借贷
-
-    ——————————————————————→
-
-    | 用户 | 借款 | 授权爬虫 | 逾期 |
-    | ---- | ---- | -------- | ---- |
-    | u1   | l11  | N        | 0    |
-    | u1   | l12  | N        | 0    |
-    | u1   | l13  | Y        | 0    |
-    | u2   | l21  | N        | 0    |
-    | u2   | l22  | N        | 0    |
-    | u2   | l23  | Y        | 1    |
-    | u3   | l11  | N        | 0    |
-    | u3   | l12  | N        | 0    |
-    | u3   | l13  | Y        | 0    |
-
-    实际存储
-
-    | 用户 | 授权 |
-    | ---- | ---- |
-    | u1   | Y    |
-    | u2   | Y    |
-    | u3   | Y    |
-
-    | 用户 | 借款 | 逾期 |
-    | ---- | ---- | ---- |
-    | u1   | l11  | 0    |
-    | u1   | l12  | 0    |
-    | u1   | l13  | 0    |
-    | u2   | l21  | 0    |
-    | u2   | l22  | 0    |
-    | u2   | l23  | 1    |
-    | u3   | l11  | 0    |
-    | u3   | l12  | 0    |
-    | u3   | l13  | 0    |
-
-    **join 结果**
-
-    | 用户 | 借款 | 授权爬虫 | 逾期 |
-    | ---- | ---- | -------- | ---- |
-    | u1   | l11  | Y        | 0    |
-    | u1   | l12  | Y        | 0    |
-    | u1   | l13  | Y        | 0    |
-    | u2   | l21  | Y        | 0    |
-    | u2   | l22  | Y        | 0    |
-    | u2   | l23  | Y        | 1    |
-    | u3   | l11  | Y        | 0    |
-    | u3   | l12  | Y        | 0    |
-    | u3   | l13  | Y        | 0    |
-
-    解决方案：加入快照的存储
-
-    | 用户 | 授权 | 时间 |
-    | ---- | ---- | ---- |
-    | u1   | Y    | t3   |
-    | u2   | Y    | t3   |
-    | u3   | Y    | t3   |
-
-小结：时间截面数据需要避免使用未来信息的数据。
-
-未来信息：也就是在时间截面之后的数据。
+- **确定观察期**（定X时间切面）和 **表现期**（定Y的标签）。
+- 确认样本数目是否合理。
 
 
 
-### 时间序列特征
+**数据EDA（探索性数据分析）**
 
-#### 用户时间序列特征
+- **查看数据总体分布**
+  - `data.shape`
+  - `data.isnull().sum()`
+  - `data.info()`
+  - `data.describe()`
+- **分析好坏样本分布差异**
+  - 好用户：`data[data[label]==0].describe()`
+  - 坏用户：`data[data[label]==1].describe()`
+- **查看单个数据样本**
+  - `data.sample(n=10, random_state=1)`
+
+
+
+**梳理特征框架**
+
+- 基于 **RFM模型** 生成新特征。
+
+
+
+**示例：行为评分卡中的用户账单还款特征**
+
+> **用户账单关键信息：时间，金额，还款，额度**
+
+| **类别** | **维度**  | **特征示例**                                                 |
+| :------- | :-------- | :----------------------------------------------------------- |
+| **时间** | R（最近） | 最近一次有借款的账单日                                       |
+|          | F（频率） | 过去3/6/12个月的有借款的账单数                               |
+|          | M（金额） | -                                                            |
+| **金额** | R         | 最近一次的借款额                                             |
+|          | F         | 过去3/6/12个月的借款总额、均值、方差、最大值、最小值         |
+|          | M         | -                                                            |
+| **还款** | R         | 最近一次的还款时间、最近一次逾期时长                         |
+|          | F         | 过去3/6/12个月的准时还款数及比例、逾期最大天数、平均天数     |
+|          | M         | -                                                            |
+| **额度** | R         | 最近一次借款账单时的额度、额度使用率                         |
+|          | F         | 过去3/6/12个月的额度最大值、平均值、额度使用率的最大值及平均值 |
+|          | M         | -                                                            |
+
+**小结：构建特征前的准备工作**
+
+- **类ER图**（可从后端直接获取，无需单独准备）。
+- **样本设计表**。
+- **特征框架表**。
+  - 数据EDA与我们关联较大，其他部分关联较小。
+
+---
+
+## 2、特征构造
+
+### 2.1 静态信息特征和时间截面特征
+
+**1. 用户特征分类**
+
+- **静态信息特征**
+  - 用户的基本信息（半年内不会变化）。
+  
+- **时间截面特征**
+  - 基于当前时间点的数据，需避免使用 **未来信息**（即表现期之后的数据）。
+  
+    > **为什么不能用未来信息？**
+    >
+    > - **预测模型失真**：如果模型训练时用了未来信息，测试时模型的预测能力会被高估，实际部署时无法获得如此准确结果。
+
+
+
+**2. 未来信息的风险与规避**
+
+- **产生未来信息的直接原因**：缺少 **快照表**。
+- **快照表的作用**：
+  - 每天固定时间（如23:00）备份当天数据的最终状态。
+  - 快照表仅保存当天结果，不记录过程。
+- **日志表的特点**：
+  - 记录所有操作（仅`INSERT`，无`UPDATE`），保留完整痕迹。
+
+
+
+**3. 金融数据管理的特殊要求**
+
+- **金融相关数据原则上都必须使用快照表**：
+  - 记录额度变化、多次申请的结果（通过/拒绝）等关键痕迹。
+- **缺少快照表的可能原因**：
+  - 资源消耗大，为性能优化而舍弃。
+  - 设计疏忽未创建。
+  - 跨业务数据借用（如电商数据用于信贷）。
+
+> 金融场景中，**完整的数据痕迹**（如快照表）是风控合规的基础。
+
+
+
+
+
+**举例**
+
+| 用户 | 借款 | 授权爬虫 | 逾期 |
+| ---- | ---- | -------- | ---- |
+| u1   | l11  | N        | 0    |
+| u1   | l12  | N        | 0    |
+| u1   | l13  | Y        | 0    |
+| u2   | l21  | N        | 0    |
+| u2   | l22  | N        | 0    |
+| u2   | l23  | Y        | 1    |
+| u3   | l11  | N        | 0    |
+| u3   | l12  | N        | 0    |
+| u3   | l13  | Y        | 0    |
+
+**实际存储**
+
+| 用户 | 授权 |
+| ---- | ---- |
+| u1   | Y    |
+| u2   | Y    |
+| u3   | Y    |
+
+| 用户 | 借款 | 逾期 |
+| ---- | ---- | ---- |
+| u1   | l11  | 0    |
+| u1   | l12  | 0    |
+| u1   | l13  | 0    |
+| u2   | l21  | 0    |
+| u2   | l22  | 0    |
+| u2   | l23  | 1    |
+| u3   | l11  | 0    |
+| u3   | l12  | 0    |
+| u3   | l13  | 0    |
+
+**join 结果**
+
+| 用户 | 借款 | 授权爬虫 | 逾期 |
+| ---- | ---- | -------- | ---- |
+| u1   | l11  | Y        | 0    |
+| u1   | l12  | Y        | 0    |
+| u1   | l13  | Y        | 0    |
+| u2   | l21  | Y        | 0    |
+| u2   | l22  | Y        | 0    |
+| u2   | l23  | Y        | 1    |
+| u3   | l11  | Y        | 0    |
+| u3   | l12  | Y        | 0    |
+| u3   | l13  | Y        | 0    |
+
+**解决方案：加入快照的存储**
+
+| 用户 | 授权 | 时间 |
+| ---- | ---- | ---- |
+| u1   | Y    | t3   |
+| u2   | Y    | t3   |
+| u3   | Y    | t3   |
+
+> 小结：时间截面数据需要避免使用未来信息的数据。
+>
+
+
+
+### 2.2 时间序列特征
+
+#### 1. 用户时间序列特征
 
 - 从观察点往前回溯一段时间的数据
 
 ![image-20200906192919001](assets/day03/feature2.png)
 
-#### 时间序列特征衍生
+#### 2. 时间序列特征衍生
 
-- 特征聚合：将单个特征的多个时间节点取值进行聚合。特征聚合是传统评分卡建模的主要特征构造方法。
+**特征聚合方法**
 
-  - 举例，计算每个用户的额度使用率，记为特征ft，按照时间轴以月份为切片展开
-    - 申请前30天内的额度使用率ft1
-    - 申请前30天至60天内的额度使用率ft2
-    - 申请前60天至90天内的额度使用率ft3
-    - 申请前330天至360天内的额度使用率ft12
-    - 得到一个用户的12个特征
+- **核心概念**：将单个特征在不同时间节点的取值进行聚合，形成多维度特征。这是传统评分卡建模中最主要的特征构造方法。
 
-  ```python
-  import pandas as pd
-  import numpy as np
-  data = pd.read_excel('../data/textdata.xlsx')
-  data.head()
-  ```
 
-  ><font color='red'>显示结果</font>
-  >
-  >|      | customer_id |  ft1 |   ft2 |  ft3 |  ft4 |  ft5 |  ft6 |  ft7 |  ft8 |  ft9 |  ... |  gt3 |  gt4 |  gt5 |  gt6 |  gt7 |  gt8 |  gt9 | gt10 | gt11 | gt12 |
-  >| ---: | ----------: | ---: | ----: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-  >|    0 |         111 |    9 |  11.0 |   12 |   13 |   18 |   10 |   12 |  NaN |  NaN |  ... |   10 |    0 |   18 |   10 |   12 |  NaN |  NaN |  NaN |  NaN |  NaN |
-  >|    1 |         112 |   11 | -11.0 |   10 |   10 |   13 |   13 |   10 |  NaN |  NaN |  ... |   10 |   10 |   13 |   13 |   10 |  NaN |  NaN |  NaN |  NaN |  NaN |
-  >|    2 |         113 |    0 |  11.0 |   10 |   12 |    6 |   10 |    0 | 25.0 | 10.0 |  ... |   10 |   12 |    6 |   10 |    0 | 25.0 | 10.0 |  NaN |  NaN |  NaN |
-  >|    3 |         114 |   -7 |  -1.0 |    9 |    8 |    7 |    0 |  -19 | 10.0 | 11.0 |  ... |   10 |   10 |   12 |    0 |  -19 | 10.0 | 11.0 |  NaN |  NaN |  NaN |
-  >|    4 |         115 |   11 |   NaN |    6 |   10 |    0 |   17 |   19 | 10.0 | 30.0 |  ... |    6 |   10 |    0 |   17 |   19 | 10.0 | 30.0 | 15.0 |  NaN |  NaN |
-  >
-  >5 rows × 26 columns
 
-  - 可以根据这个时间序列进行基于经验的人工特征衍生，例如计算最近P个月特征大于0的月份数
+**具体实现示例：额度使用率的时间切片**
 
-  ```python
-  #最近p个月，ft>0的月份数
-  def Num(ft,p):  #ft 特征名字 p特征大于0的月份数
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.where(df>0,1,0).sum(axis=1)
-      return ft+'_num'+str(p),auto_value
-  ```
+- **定义基础特征**
+  - 计算每个用户的额度使用率，记为特征 `ft`。
+- **按时间轴展开**（以月份为切片单位）
+  - `ft1`：申请前 **30天内** 的额度使用率
+  - `ft2`：申请前 **30天至60天** 的额度使用率
+  - `ft3`：申请前 **60天至90天** 的额度使用率
+  - ...
+  - `ft12`：申请前 **330天至360天** 的额度使用率
+- **输出结果**
+  - 每个用户生成 **12个时间切片特征**。
 
-  - 计算最近P个月特征ft等于0的月份数
 
-  ```python
-  #最近p个月，ft=0的月份数
-  def zero_cnt(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.where(df==0,1,0).sum(axis=1)
-      return ft+'_zero_cnt'+str(p),auto_value
-  ```
 
-  - 计算近p个月特征ft大于0的月份数是否大于等于1
+```python
+import pandas as pd
+import numpy as np
+data = pd.read_excel('../data/textdata.xlsx')
+data.head()
+```
 
-  ```python
-  #最近p个月，ft>0的月份数是否>=1     
-  def Evr(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      arr=np.where(df>0,1,0).sum(axis=1)
-      auto_value = np.where(arr,1,0)
-      return ft+'_evr'+str(p),auto_value
-  ```
+><font color='red'>显示结果</font>
+>
+>|      | customer_id |  ft1 |   ft2 |  ft3 |  ft4 |  ft5 |  ft6 |  ft7 |  ft8 |  ft9 |  ... |  gt3 |  gt4 |  gt5 |  gt6 |  gt7 |  gt8 |  gt9 | gt10 | gt11 | gt12 |
+>| ---: | ----------: | ---: | ----: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+>|    0 |         111 |    9 |  11.0 |   12 |   13 |   18 |   10 |   12 |  NaN |  NaN |  ... |   10 |    0 |   18 |   10 |   12 |  NaN |  NaN |  NaN |  NaN |  NaN |
+>|    1 |         112 |   11 | -11.0 |   10 |   10 |   13 |   13 |   10 |  NaN |  NaN |  ... |   10 |   10 |   13 |   13 |   10 |  NaN |  NaN |  NaN |  NaN |  NaN |
+>|    2 |         113 |    0 |  11.0 |   10 |   12 |    6 |   10 |    0 | 25.0 | 10.0 |  ... |   10 |   12 |    6 |   10 |    0 | 25.0 | 10.0 |  NaN |  NaN |  NaN |
+>|    3 |         114 |   -7 |  -1.0 |    9 |    8 |    7 |    0 |  -19 | 10.0 | 11.0 |  ... |   10 |   10 |   12 |    0 |  -19 | 10.0 | 11.0 |  NaN |  NaN |  NaN |
+>|    4 |         115 |   11 |   NaN |    6 |   10 |    0 |   17 |   19 | 10.0 | 30.0 |  ... |    6 |   10 |    0 |   17 |   19 | 10.0 | 30.0 | 15.0 |  NaN |  NaN |
+>
+>5 rows × 26 columns
 
-  - 计算最近p个月特征ft的均值
+- 可以根据这个时间序列进行基于经验的人工特征衍生，例如计算最近P个月特征大于0的月份数
 
-  ```python
-  #最近p个月，ft均值
-  def Avg(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nanmean(df,axis = 1 )
-      return ft+'_avg'+str(p),auto_value
-  ```
+```python
+#最近p个月，ft>0的月份数
+def Num(ft,p):  #ft 特征名字 p特征大于0的月份数
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.where(df>0,1,0).sum(axis=1)
+    return ft+'_num'+str(p),auto_value
+```
 
-  -  计算最近p个月特征ft的和，最大值，最小值
+- 计算最近P个月特征ft等于0的月份数
 
-  ```python
-  #最近p个月，ft和
-  def Tot(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nansum(df,axis = 1)
-      return ft+'_tot'+str(p),auto_value
-  
-  #最近(2,p+1)个月，ft和
-  def Tot2T(ft,p):
-      df=data.loc[:,ft+'2':ft+str(p+1)]
-      auto_value=df.sum(1)
-      return ft+'_tot2t'+str(p),auto_value
-  
-  #最近p个月，ft最大值
-  def Max(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nanmax(df,axis = 1)
-      return ft+'_max'+str(p),auto_value
-  
-  #最近p个月，ft最小值
-  def Min(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nanmin(df,axis = 1)
-      return ft+'_min'+str(p),auto_value
-  ```
+```python
+#最近p个月，ft=0的月份数
+def zero_cnt(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.where(df==0,1,0).sum(axis=1)
+    return ft+'_zero_cnt'+str(p),auto_value
+```
 
-  - 其余衍生方法
+- 计算近p个月特征ft大于0的月份数是否大于等于1
 
-  ```python
-  #最近p个月，最近一次ft>0到现在的月份数
-  def Msg(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      df_value=np.where(df>0,1,0)
-      auto_value=[]
-      for i in range(len(df_value)):
-          row_value=df_value[i,:]
-          if row_value.max()<=0:
-              indexs='0'
-              auto_value.append(indexs)
-          else:
-              indexs=1
-              for j in row_value:
-                  if j>0:
-                      break
-                  indexs+=1
-              auto_value.append(indexs)
-      return ft+'_msg'+str(p),auto_value
-   
-  
-  #最近p个月，最近一次ft=0到现在的月份数
-  def Msz(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      df_value=np.where(df==0,1,0)
-      auto_value=[]
-      for i in range(len(df_value)):
-          row_value=df_value[i,:]
-          if row_value.max()<=0:
-              indexs='0'
-              auto_value.append(indexs)
-          else:
-              indexs=1
-              for j in row_value:
-                  if j>0:
-                      break
-                  indexs+=1
-              auto_value.append(indexs)
-      return ft+'_msz'+str(p),auto_value   
-      
-  #当月ft/(最近p个月ft的均值)
-  def Cav(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = df[ft+'1']/np.nanmean(df,axis = 1 ) 
-      return ft+'_cav'+str(p),auto_value 
-  
-  #当月ft/(最近p个月ft的最小值)
-  def Cmn(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = df[ft+'1']/np.nanmin(df,axis = 1 ) 
-      return ft+'_cmn'+str(p),auto_value 
-  
-  #最近p个月，每两个月间的ft的增长量的最大值
-  def Mai(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          for k in range(len(df_value)-1):
-              minus = df_value[k] - df_value[k+1]
-              value_lst.append(minus)
-          auto_value.append(np.nanmax(value_lst))     
-      return ft+'_mai'+str(p),auto_value 
-  
-  #最近p个月，每两个月间的ft的减少量的最大值
-  def Mad(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])      
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          for k in range(len(df_value)-1):
-              minus = df_value[k+1] - df_value[k]
-              value_lst.append(minus)
-          auto_value.append(np.nanmax(value_lst))     
-      return ft+'_mad'+str(p),auto_value 
-  
-  #最近p个月，ft的标准差
-  def Std(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nanvar(df,axis = 1)
-      return ft+'_std'+str(p),auto_value 
-      
-  #最近p个月，ft的变异系数
-  def Cva(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value=np.nanvar(df,axis = 1)/(np.nanmean(df,axis = 1 )+1e-10)
-      return ft+'_cva'+str(p),auto_value 
-  
-  #(当月ft) - (最近p个月ft的均值)
-  def Cmm(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = df[ft+'1'] - np.nanmean(df,axis = 1 ) 
-      return ft+'_cmm'+str(p),auto_value 
-  
-  #(当月ft) - (最近p个月ft的最小值)
-  def Cnm(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = df[ft+'1'] - np.nanmin(df,axis = 1 ) 
-      return ft+'_cnm'+str(p),auto_value 
-  
-  #(当月ft) - (最近p个月ft的最大值)
-  def Cxm(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = df[ft+'1'] - np.nanmax(df,axis = 1 ) 
-      return ft+'_cxm'+str(p),auto_value 
-  
-  
-  #（ (当月ft) - (最近p个月ft的最大值) ） / (最近p个月ft的最大值) ）
-  def Cxp(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      temp = np.nanmax(df,axis = 1 )
-      auto_value = (df[ft+'1'] - temp )/ temp
-      return ft+'_cxp'+str(p),auto_value 
-  
-  #最近p个月，ft的极差
-  def Ran(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = np.nanmax(df,axis = 1 )  -  np.nanmin(df,axis = 1 ) 
-      return ft+'_ran'+str(p),auto_value 
-  
-  #最近p个月中，特征ft的值，后一个月相比于前一个月增长了的月份数
-  def Nci(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          for k in range(len(df_value)-1):
-              minus = df_value[k] - df_value[k+1]
-              value_lst.append(minus)           
-          value_ng = np.where(np.array(value_lst)>0,1,0).sum()
-          auto_value.append(np.nanmax(value_ng))     
-      return ft+'_nci'+str(p),auto_value 
-  
-  #最近p个月中，特征ft的值，后一个月相比于前一个月减少了的月份数
-  def Ncd(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          for k in range(len(df_value)-1):
-              minus = df_value[k] - df_value[k+1]
-              value_lst.append(minus)           
-          value_ng = np.where(np.array(value_lst)<0,1,0).sum()
-          auto_value.append(np.nanmax(value_ng))     
-      return ft+'_ncd'+str(p),auto_value    
-  
-  #最近p个月中，相邻月份ft 相等的月份数
-  def Ncn(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          for k in range(len(df_value)-1):
-              minus = df_value[k] - df_value[k+1]
-              value_lst.append(minus)           
-          value_ng = np.where(np.array(value_lst)==0,1,0).sum()
-          auto_value.append(np.nanmax(value_ng))     
-      return ft+'_ncn'+str(p),auto_value    
-   
-  #最近P个月中，特征ft的值是否按月份严格递增，是返回1，否返回0
-  def Bup(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          index = 0
-          for k in range(len(df_value)-1):
-              if df_value[k] > df_value[k+1]:
-                  break
-              index =+ 1
-          if index == p:            
-              value= 1    
-          else:
-              value = 0
-          auto_value.append(value)     
-      return ft+'_bup'+str(p),auto_value   
-  
-  #最近P个月中，特征ft的值是否按月份严格递减，是返回1，否返回0
-  def Pdn(ft,p):
-      arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
-      auto_value = []
-      for i in range(len(arr)):
-          df_value = arr[i,:]
-          value_lst = []
-          index = 0
-          for k in range(len(df_value)-1):
-              if df_value[k+1] > df_value[k]:
-                  break
-              index =+ 1
-          if index == p:            
-              value= 1    
-          else:
-              value = 0
-          auto_value.append(value)     
-      return ft+'_pdn'+str(p),auto_value            
-  
-  #最近P个月中，ft的切尾均值，这里去掉了数据中的最大值和最小值
-  def Trm(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = []
-      for i in range(len(df)):
-          trm_mean = list(df.loc[i,:])
-          trm_mean.remove(np.nanmax(trm_mean))
-          trm_mean.remove(np.nanmin(trm_mean))
-          temp=np.nanmean(trm_mean) 
-          auto_value.append(temp)
-      return ft+'_trm'+str(p),auto_value 
-  
-  #当月ft / 最近p个月的ft中的最大值
-  def Cmx(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = (df[ft+'1'] - np.nanmax(df,axis = 1 )) /np.nanmax(df,axis = 1 ) 
-      return ft+'_cmx'+str(p),auto_value 
-  
-  #( 当月ft - 最近p个月的ft均值 ) / ft均值
-  def Cmp(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = (df[ft+'1'] - np.nanmean(df,axis = 1 )) /np.nanmean(df,axis = 1 ) 
-      return ft+'_cmp'+str(p),auto_value 
-  
-  #( 当月ft - 最近p个月的ft最小值 ) /ft最小值 
-  def Cnp(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      auto_value = (df[ft+'1'] - np.nanmin(df,axis = 1 )) /np.nanmin(df,axis = 1 ) 
-      return ft+'_cnp'+str(p),auto_value 
-  
-  #最近p个月取最大值的月份距现在的月份数
-  def Msx(ft,p):
-      df=data.loc[:,ft+'1':ft+str(p)]
-      df['_max'] = np.nanmax(df,axis = 1)
-      for i in range(1,p+1):
-          df[ft+str(i)] = list(df[ft+str(i)] == df['_max'])
-      del df['_max']
-      df_value = np.where(df==True,1,0)
-      auto_value=[]
-      for i in range(len(df_value)):
-          row_value=df_value[i,:]
-          indexs=1
-          for j in row_value:
-              if j == 1:
-                  break
-              indexs+=1
-          auto_value.append(indexs)
-      return ft+'_msx'+str(p),auto_value
-  
-  #最近p个月的均值/((p,2p)个月的ft均值)
-  def Rpp(ft,p):
-      df1=data.loc[:,ft+'1':ft+str(p)]
-      value1=np.nanmean(df1,axis = 1 )
-      df2=data.loc[:,ft+str(p):ft+str(2*p)]
-      value2=np.nanmean(df2,axis = 1 )   
-      auto_value = value1/value2
-      return ft+'_rpp'+str(p),auto_value    
-  
-  #最近p个月的均值 - ((p,2p)个月的ft均值)
-  def Dpp(ft,p):
-      df1=data.loc[:,ft+'1':ft+str(p)]
-      value1=np.nanmean(df1,axis = 1 )
-      df2=data.loc[:,ft+str(p):ft+str(2*p)]
-      value2=np.nanmean(df2,axis = 1 )   
-      auto_value = value1 - value2
-      return ft+'_dpp'+str(p),auto_value   
-  
-  #(最近p个月的ft最大值)/ (最近(p,2p)个月的ft最大值)
-  def Mpp(ft,p):
-      df1=data.loc[:,ft+'1':ft+str(p)]
-      value1=np.nanmax(df1,axis = 1 )
-      df2=data.loc[:,ft+str(p):ft+str(2*p)]
-      value2=np.nanmax(df2,axis = 1 )   
-      auto_value = value1/value2
-      return ft+'_mpp'+str(p),auto_value  
+```python
+#最近p个月，ft>0的月份数是否>=1     
+def Evr(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    arr=np.where(df>0,1,0).sum(axis=1)
+    auto_value = np.where(arr,1,0)
+    return ft+'_evr'+str(p),auto_value
+```
+
+- 计算最近p个月特征ft的均值
+
+```python
+#最近p个月，ft均值
+def Avg(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nanmean(df,axis = 1 )
+    return ft+'_avg'+str(p),auto_value
+```
+
+-  计算最近p个月特征ft的和，最大值，最小值
+
+```python
+#最近p个月，ft和
+def Tot(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nansum(df,axis = 1)
+    return ft+'_tot'+str(p),auto_value
+
+#最近(2,p+1)个月，ft和
+def Tot2T(ft,p):
+    df=data.loc[:,ft+'2':ft+str(p+1)]
+    auto_value=df.sum(1)
+    return ft+'_tot2t'+str(p),auto_value
+
+#最近p个月，ft最大值
+def Max(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nanmax(df,axis = 1)
+    return ft+'_max'+str(p),auto_value
+
+#最近p个月，ft最小值
+def Min(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nanmin(df,axis = 1)
+    return ft+'_min'+str(p),auto_value
+```
+
+- 其余衍生方法
+
+```python
+#最近p个月，最近一次ft>0到现在的月份数
+def Msg(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    df_value=np.where(df>0,1,0)
+    auto_value=[]
+    for i in range(len(df_value)):
+        row_value=df_value[i,:]
+        if row_value.max()<=0:
+            indexs='0'
+            auto_value.append(indexs)
+        else:
+            indexs=1
+            for j in row_value:
+                if j>0:
+                    break
+                indexs+=1
+            auto_value.append(indexs)
+    return ft+'_msg'+str(p),auto_value
+ 
+
+#最近p个月，最近一次ft=0到现在的月份数
+def Msz(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    df_value=np.where(df==0,1,0)
+    auto_value=[]
+    for i in range(len(df_value)):
+        row_value=df_value[i,:]
+        if row_value.max()<=0:
+            indexs='0'
+            auto_value.append(indexs)
+        else:
+            indexs=1
+            for j in row_value:
+                if j>0:
+                    break
+                indexs+=1
+            auto_value.append(indexs)
+    return ft+'_msz'+str(p),auto_value   
     
-  #(最近p个月的ft最小值)/ (最近(p,2p)个月的ft最小值)
-  def Npp(ft,p):
-      df1=data.loc[:,ft+'1':ft+str(p)]
-      value1=np.nanmin(df1,axis = 1 )
-      df2=data.loc[:,ft+str(p):ft+str(2*p)]
-      value2=np.nanmin(df2,axis = 1 )   
-      auto_value = value1/value2
-      return ft+'_npp'+str(p),auto_value  
-  ```
+#当月ft/(最近p个月ft的均值)
+def Cav(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = df[ft+'1']/np.nanmean(df,axis = 1 ) 
+    return ft+'_cav'+str(p),auto_value 
 
-  - 将上面衍生的方法封装成函数
+#当月ft/(最近p个月ft的最小值)
+def Cmn(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = df[ft+'1']/np.nanmin(df,axis = 1 ) 
+    return ft+'_cmn'+str(p),auto_value 
 
-  ```python
-  #定义批量调用双参数的函数        
-  def auto_var2(feature,p):
-      #global data_new
-      try:
-          columns_name,values=Num(feature,p)
-          data_new[columns_name]=values
-      except:
-             print("Num PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Evr(feature,p)
-          data_new[columns_name]=values
-      except:
-             print("Evr PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Avg(feature,p)
-          data_new[columns_name]=values
-      except:
-             print("Avg PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Tot(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Tot PARSE ERROR",feature,p) 
-      try:
-          columns_name,values=Tot2T(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Tot2T PARSE ERROR",feature,p)        
-      try:
-          columns_name,values=Max(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Tot PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Max(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Max PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Min(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Min PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Msg(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Msg PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Msz(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Msz PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Cav(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cav PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Cmn(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cmn PARSE ERROR",feature,p)        
-      try:
-          columns_name,values=Std(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Std PARSE ERROR",feature,p)   
-      try:
-          columns_name,values=Cva(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cva PARSE ERROR",feature,p)   
-      try:
-          columns_name,values=Cmm(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cmm PARSE ERROR",feature,p)  
-      try:
-          columns_name,values=Cnm(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cnm PARSE ERROR",feature,p)         
-      try:
-          columns_name,values=Cxm(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cxm PARSE ERROR",feature,p)          
-      try:
-          columns_name,values=Cxp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cxp PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Ran(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Ran PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Nci(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Nci PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Ncd(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Ncd PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Ncn(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Ncn PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Pdn(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Pdn PARSE ERROR",feature,p) 
-      try:
-          columns_name,values=Cmx(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cmx PARSE ERROR",feature,p)         
-      try:
-          columns_name,values=Cmp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cmp PARSE ERROR",feature,p)   
-      try:
-          columns_name,values=Cnp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Cnp PARSE ERROR",feature,p) 
-      try:
-          columns_name,values=Msx(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Msx PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Nci(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Nci PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Trm(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Trm PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Bup(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Bup PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Mai(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Mai PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Mad(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Mad PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Rpp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Rpp PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Dpp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Dpp PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Mpp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Mpp PARSE ERROR",feature,p)
-      try:
-          columns_name,values=Npp(feature,p)
-          data_new[columns_name]=values
-      except:
-          print("Npp PARSE ERROR",feature,p)
-      return data_new.columns.size
-  ```
+#最近p个月，每两个月间的ft的增长量的最大值
+def Mai(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        for k in range(len(df_value)-1):
+            minus = df_value[k] - df_value[k+1]
+            value_lst.append(minus)
+        auto_value.append(np.nanmax(value_lst))     
+    return ft+'_mai'+str(p),auto_value 
 
-  - 对之前数据应用封装的函数
+#最近p个月，每两个月间的ft的减少量的最大值
+def Mad(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])      
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        for k in range(len(df_value)-1):
+            minus = df_value[k+1] - df_value[k]
+            value_lst.append(minus)
+        auto_value.append(np.nanmax(value_lst))     
+    return ft+'_mad'+str(p),auto_value 
 
-  ```python
-  data_new = pd.DataFrame()
-  for p in range(1, 12):  
-      for inv in ['ft', 'gt']:  
-          auto_var2(inv, p)  
-  ```
+#最近p个月，ft的标准差
+def Std(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nanvar(df,axis = 1)
+    return ft+'_std'+str(p),auto_value 
+    
+#最近p个月，ft的变异系数
+def Cva(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value=np.nanvar(df,axis = 1)/(np.nanmean(df,axis = 1 )+1e-10)
+    return ft+'_cva'+str(p),auto_value 
 
-  ```python
-  data_new.columns.tolist()
-  ```
+#(当月ft) - (最近p个月ft的均值)
+def Cmm(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = df[ft+'1'] - np.nanmean(df,axis = 1 ) 
+    return ft+'_cmm'+str(p),auto_value 
 
-  ><font color='red'>显示结果</font>
-  >
-  >```shell
-  >array(['ft_num1', 'ft_evr1', 'ft_avg1', 'ft_tot1', 'ft_tot2t1', 'ft_max1',
-  >       'ft_min1', 'ft_msg1', 'ft_msz1', 'ft_cav1', 'ft_cmn1', 'ft_std1',
-  >       'ft_cva1', 'ft_cmm1', 'ft_cnm1', 'ft_cxm1', 'ft_cxp1', 'ft_ran1',
-  >       'ft_nci1', 'ft_ncd1', 'ft_ncn1', 'ft_pdn1', 'ft_cmx1', 'ft_cmp1',
-  >       'ft_cnp1', 'ft_msx1', 'ft_bup1', 'ft_rpp1', 'ft_dpp1', 'ft_mpp1',
-  >       'ft_npp1', 'gt_num1', 'gt_evr1', 'gt_avg1', 'gt_tot1', 'gt_tot2t1',
-  >       'gt_max1', 'gt_min1', 'gt_msg1', 'gt_msz1', 'gt_cav1', 'gt_cmn1',
-  >       'gt_std1', 'gt_cva1', 'gt_cmm1', 'gt_cnm1', 'gt_cxm1', 'gt_cxp1',
-  >       ........])
-  >```
+#(当月ft) - (最近p个月ft的最小值)
+def Cnm(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = df[ft+'1'] - np.nanmin(df,axis = 1 ) 
+    return ft+'_cnm'+str(p),auto_value 
 
-  - 上面这种无差别聚合方法进行聚合得到的结果，通常具有较高的共线性，但信息量并无明显增加，影响模型的鲁棒性和稳定性。
-  - 评分卡模型对模型的稳定性要求远高于其性能
-    - 在时间窗口为1年的场景下，p值会通过先验知识，人为选择3、6、12等，而不是遍历全部取值1～12
-    - 在后续特征筛选时，会根据变量的显著性、共线性等指标进行进一步筛选
+#(当月ft) - (最近p个月ft的最大值)
+def Cxm(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = df[ft+'1'] - np.nanmax(df,axis = 1 ) 
+    return ft+'_cxm'+str(p),auto_value 
+
+
+#（ (当月ft) - (最近p个月ft的最大值) ） / (最近p个月ft的最大值) ）
+def Cxp(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    temp = np.nanmax(df,axis = 1 )
+    auto_value = (df[ft+'1'] - temp )/ temp
+    return ft+'_cxp'+str(p),auto_value 
+
+#最近p个月，ft的极差
+def Ran(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = np.nanmax(df,axis = 1 )  -  np.nanmin(df,axis = 1 ) 
+    return ft+'_ran'+str(p),auto_value 
+
+#最近p个月中，特征ft的值，后一个月相比于前一个月增长了的月份数
+def Nci(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        for k in range(len(df_value)-1):
+            minus = df_value[k] - df_value[k+1]
+            value_lst.append(minus)           
+        value_ng = np.where(np.array(value_lst)>0,1,0).sum()
+        auto_value.append(np.nanmax(value_ng))     
+    return ft+'_nci'+str(p),auto_value 
+
+#最近p个月中，特征ft的值，后一个月相比于前一个月减少了的月份数
+def Ncd(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        for k in range(len(df_value)-1):
+            minus = df_value[k] - df_value[k+1]
+            value_lst.append(minus)           
+        value_ng = np.where(np.array(value_lst)<0,1,0).sum()
+        auto_value.append(np.nanmax(value_ng))     
+    return ft+'_ncd'+str(p),auto_value    
+
+#最近p个月中，相邻月份ft 相等的月份数
+def Ncn(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        for k in range(len(df_value)-1):
+            minus = df_value[k] - df_value[k+1]
+            value_lst.append(minus)           
+        value_ng = np.where(np.array(value_lst)==0,1,0).sum()
+        auto_value.append(np.nanmax(value_ng))     
+    return ft+'_ncn'+str(p),auto_value    
+ 
+#最近P个月中，特征ft的值是否按月份严格递增，是返回1，否返回0
+def Bup(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        index = 0
+        for k in range(len(df_value)-1):
+            if df_value[k] > df_value[k+1]:
+                break
+            index =+ 1
+        if index == p:            
+            value= 1    
+        else:
+            value = 0
+        auto_value.append(value)     
+    return ft+'_bup'+str(p),auto_value   
+
+#最近P个月中，特征ft的值是否按月份严格递减，是返回1，否返回0
+def Pdn(ft,p):
+    arr=np.array(data.loc[:,ft+'1':ft+str(p)])     
+    auto_value = []
+    for i in range(len(arr)):
+        df_value = arr[i,:]
+        value_lst = []
+        index = 0
+        for k in range(len(df_value)-1):
+            if df_value[k+1] > df_value[k]:
+                break
+            index =+ 1
+        if index == p:            
+            value= 1    
+        else:
+            value = 0
+        auto_value.append(value)     
+    return ft+'_pdn'+str(p),auto_value            
+
+#最近P个月中，ft的切尾均值，这里去掉了数据中的最大值和最小值
+def Trm(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = []
+    for i in range(len(df)):
+        trm_mean = list(df.loc[i,:])
+        trm_mean.remove(np.nanmax(trm_mean))
+        trm_mean.remove(np.nanmin(trm_mean))
+        temp=np.nanmean(trm_mean) 
+        auto_value.append(temp)
+    return ft+'_trm'+str(p),auto_value 
+
+#当月ft / 最近p个月的ft中的最大值
+def Cmx(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = (df[ft+'1'] - np.nanmax(df,axis = 1 )) /np.nanmax(df,axis = 1 ) 
+    return ft+'_cmx'+str(p),auto_value 
+
+#( 当月ft - 最近p个月的ft均值 ) / ft均值
+def Cmp(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = (df[ft+'1'] - np.nanmean(df,axis = 1 )) /np.nanmean(df,axis = 1 ) 
+    return ft+'_cmp'+str(p),auto_value 
+
+#( 当月ft - 最近p个月的ft最小值 ) /ft最小值 
+def Cnp(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    auto_value = (df[ft+'1'] - np.nanmin(df,axis = 1 )) /np.nanmin(df,axis = 1 ) 
+    return ft+'_cnp'+str(p),auto_value 
+
+#最近p个月取最大值的月份距现在的月份数
+def Msx(ft,p):
+    df=data.loc[:,ft+'1':ft+str(p)]
+    df['_max'] = np.nanmax(df,axis = 1)
+    for i in range(1,p+1):
+        df[ft+str(i)] = list(df[ft+str(i)] == df['_max'])
+    del df['_max']
+    df_value = np.where(df==True,1,0)
+    auto_value=[]
+    for i in range(len(df_value)):
+        row_value=df_value[i,:]
+        indexs=1
+        for j in row_value:
+            if j == 1:
+                break
+            indexs+=1
+        auto_value.append(indexs)
+    return ft+'_msx'+str(p),auto_value
+
+#最近p个月的均值/((p,2p)个月的ft均值)
+def Rpp(ft,p):
+    df1=data.loc[:,ft+'1':ft+str(p)]
+    value1=np.nanmean(df1,axis = 1 )
+    df2=data.loc[:,ft+str(p):ft+str(2*p)]
+    value2=np.nanmean(df2,axis = 1 )   
+    auto_value = value1/value2
+    return ft+'_rpp'+str(p),auto_value    
+
+#最近p个月的均值 - ((p,2p)个月的ft均值)
+def Dpp(ft,p):
+    df1=data.loc[:,ft+'1':ft+str(p)]
+    value1=np.nanmean(df1,axis = 1 )
+    df2=data.loc[:,ft+str(p):ft+str(2*p)]
+    value2=np.nanmean(df2,axis = 1 )   
+    auto_value = value1 - value2
+    return ft+'_dpp'+str(p),auto_value   
+
+#(最近p个月的ft最大值)/ (最近(p,2p)个月的ft最大值)
+def Mpp(ft,p):
+    df1=data.loc[:,ft+'1':ft+str(p)]
+    value1=np.nanmax(df1,axis = 1 )
+    df2=data.loc[:,ft+str(p):ft+str(2*p)]
+    value2=np.nanmax(df2,axis = 1 )   
+    auto_value = value1/value2
+    return ft+'_mpp'+str(p),auto_value  
+  
+#(最近p个月的ft最小值)/ (最近(p,2p)个月的ft最小值)
+def Npp(ft,p):
+    df1=data.loc[:,ft+'1':ft+str(p)]
+    value1=np.nanmin(df1,axis = 1 )
+    df2=data.loc[:,ft+str(p):ft+str(2*p)]
+    value2=np.nanmin(df2,axis = 1 )   
+    auto_value = value1/value2
+    return ft+'_npp'+str(p),auto_value  
+```
+
+- 将上面衍生的方法封装成函数
+
+```python
+#定义批量调用双参数的函数        
+def auto_var2(feature,p):
+    #global data_new
+    try:
+        columns_name,values=Num(feature,p)
+        data_new[columns_name]=values
+    except:
+           print("Num PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Evr(feature,p)
+        data_new[columns_name]=values
+    except:
+           print("Evr PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Avg(feature,p)
+        data_new[columns_name]=values
+    except:
+           print("Avg PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Tot(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Tot PARSE ERROR",feature,p) 
+    try:
+        columns_name,values=Tot2T(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Tot2T PARSE ERROR",feature,p)        
+    try:
+        columns_name,values=Max(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Tot PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Max(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Max PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Min(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Min PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Msg(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Msg PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Msz(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Msz PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Cav(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cav PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Cmn(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cmn PARSE ERROR",feature,p)        
+    try:
+        columns_name,values=Std(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Std PARSE ERROR",feature,p)   
+    try:
+        columns_name,values=Cva(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cva PARSE ERROR",feature,p)   
+    try:
+        columns_name,values=Cmm(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cmm PARSE ERROR",feature,p)  
+    try:
+        columns_name,values=Cnm(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cnm PARSE ERROR",feature,p)         
+    try:
+        columns_name,values=Cxm(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cxm PARSE ERROR",feature,p)          
+    try:
+        columns_name,values=Cxp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cxp PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Ran(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Ran PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Nci(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Nci PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Ncd(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Ncd PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Ncn(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Ncn PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Pdn(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Pdn PARSE ERROR",feature,p) 
+    try:
+        columns_name,values=Cmx(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cmx PARSE ERROR",feature,p)         
+    try:
+        columns_name,values=Cmp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cmp PARSE ERROR",feature,p)   
+    try:
+        columns_name,values=Cnp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Cnp PARSE ERROR",feature,p) 
+    try:
+        columns_name,values=Msx(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Msx PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Nci(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Nci PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Trm(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Trm PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Bup(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Bup PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Mai(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Mai PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Mad(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Mad PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Rpp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Rpp PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Dpp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Dpp PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Mpp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Mpp PARSE ERROR",feature,p)
+    try:
+        columns_name,values=Npp(feature,p)
+        data_new[columns_name]=values
+    except:
+        print("Npp PARSE ERROR",feature,p)
+    return data_new.columns.size
+```
+
+- 对之前数据应用封装的函数
+
+```python
+data_new = pd.DataFrame()
+for p in range(1, 12):  
+    for inv in ['ft', 'gt']:  
+        auto_var2(inv, p)  
+```
+
+```python
+data_new.columns.tolist()
+```
+
+><font color='red'>显示结果</font>
+>
+>```shell
+>array(['ft_num1', 'ft_evr1', 'ft_avg1', 'ft_tot1', 'ft_tot2t1', 'ft_max1',
+>       'ft_min1', 'ft_msg1', 'ft_msz1', 'ft_cav1', 'ft_cmn1', 'ft_std1',
+>       'ft_cva1', 'ft_cmm1', 'ft_cnm1', 'ft_cxm1', 'ft_cxp1', 'ft_ran1',
+>       'ft_nci1', 'ft_ncd1', 'ft_ncn1', 'ft_pdn1', 'ft_cmx1', 'ft_cmp1',
+>       'ft_cnp1', 'ft_msx1', 'ft_bup1', 'ft_rpp1', 'ft_dpp1', 'ft_mpp1',
+>       'ft_npp1', 'gt_num1', 'gt_evr1', 'gt_avg1', 'gt_tot1', 'gt_tot2t1',
+>       'gt_max1', 'gt_min1', 'gt_msg1', 'gt_msz1', 'gt_cav1', 'gt_cmn1',
+>       'gt_std1', 'gt_cva1', 'gt_cmm1', 'gt_cnm1', 'gt_cxm1', 'gt_cxp1',
+>       ........])
+>```
+
+上面这种无差别聚合方法进行聚合得到的结果，通常具有较高的共线性，但信息量并无明显增加，影响模型的鲁棒性和稳定性。
+
+评分卡模型对模型的稳定性要求远高于其性能
+
+1. 在时间窗口为1年的场景下，p值会通过先验知识，人为选择3、6、12等，而不是遍历全部取值1～12
+2. 在后续特征筛选时，会根据变量的显著性、共线性等指标进行进一步筛选
+
+
 
 - 最近一次（current） 和历史 （history）做对比
-
   - current/history
   - current-history
 
 ![](assets/day03/feature3.png)
 
-小结：
+**特征衍生方式小结**
 
-~~~shell
-#特征衍生方式
-数值型：各种聚合
-类别型：统计
-最近数据和历史数据做对比
-~~~
+- 数值型：各种聚合
+- 类别型：统计
+- 最近数据和历史数据做对比
 
 
 
-#### 用户时间序列缺失值处理
+#### 3. 用户时间序列缺失值处理
 
-- 用户时间序列缺失值处理
+**核心处理原则**
 
-  - 优先考虑补零：大多数特征都是计数，缺失用0补充
-
-  - 用户没有历史购物记录:  max_gmv min_gmv 都可以用0补充
-
+- **优先补零**
+  - 适用于大多数计数类特征（如历史购物次数、访问频率等）。
+  - **示例**：`max_gmv`、`min_gmv` 无历史购物记录时填充 `0`。
   - 用0填充缺失值带来的问题
-
     - cur/history_avg: 0/0       cur/history_avg:1/0
-
-  - 根据风险趋势填补缺失值 （违约概率大小 无历史购物记录违约概率>有一单历史购物记录>有两单）
-
-    用户没有历史购物记录        cur/history_avg : 0/0?     可以填充-2                   
-
-    用户有一单历史购物记录    cur/history_avg : 1/0?     可以填充-1                      
-
-    用户有两单历史购物记录     cur/history_avg : 1/1      可以计算出>0的值 
-
-- 用户最后一次逾期距今天数，如果是白户如何填补缺失值？
-
-- 如果缺失值比较多的时候，考虑单独做成特征
-
-  - 举例：用户授权GPS序列特征  gps_count_last_3month
-  - 缺失意味着用户未授权GPS权限
-
-- 缺失有明显业务含义，可以填补业务默认值
-
-  - 授信额度（用初始额度）
+- **风险趋势填补**
+  - 根据用户行为与违约概率的关系动态填充：
+    - 无历史记录（违约概率最高）：填充 `-2`（如 `cur/history_avg = 0/0 → -2`）。
+    - 有一单记录（违约概率中等）：填充 `-1`（如 `cur/history_avg = 1/0 → -1`）。
+    - 两单及以上记录：直接计算实际值（如 `1/1 = 1`）。
+- **特殊场景处理**
+  - **白户（无逾期记录）**：填充业务默认值（如 `用户最后一次逾期后天数` 填充 `999`）。
+  - **如果缺失值比较多的时候，考虑单独做成特征：**
+  - **业务默认值**：缺失有明显业务含义，可以填补业务默认值。如授信额度缺失时用初始额度填充。
 
 - 缺失值处理小结
 
@@ -862,7 +943,8 @@
   | 有业务含义     | 填补业务默认值           |
 
 
-#### 时间序列数据的未来信息
+
+#### 4. 时间序列数据的未来信息
 
 ![image-20200906203714547](assets/day03/feature4.png)
 
@@ -876,6 +958,9 @@
     - NMV:Net Merchandise Value（商品净值）
   - 对未来信息窗口内订单只计算一般特征 order,GMV
     - GMV:Gross Merchandise Volume（商品交易总值）
+
+
+
 
 - 历史信贷特征也非常容易出现未来信息
 
@@ -899,83 +984,110 @@
 
 
 
-
-
-### 特征变换
+### 2.3 特征变换
 
 上面构建的新特征，一般不会直接使用，而是要做一些其他的操作。
 
-#### 分箱（离散化）
+#### 1. 分箱（离散化）
 
-- 概念
-
-  - 特征构造的过程中，对特征做分箱处理时必不可少的过程
-  - 分箱就是将连续变量离散化，合并成较少的状态
-
-- 分箱的作用
-
-  - 离散特征的增加和减少都很容易，易于模型的快速迭代
+- **概念**：将连续变量离散化，合并成较少的状态
+- **作用**：
+  - 易于模型的快速迭代（离散特征增减容易）
   - 稀疏向量内积乘法运算速度快，计算结果方便存储，容易扩展
-  - **分箱（离散化）后的特征对异常数据有很强的鲁棒性**
-  - **单变量分箱（离散化）为N个后，每个变量有单独的权重，相当于为模型引入了非线性，能够提升模型表达能力**
-  - 分箱（离散化）后可以进行特征交叉，由M+N个变量变为M*N个变量，进一步引入非线性，提升表达能
-  - **分箱（离散化）后，模型会更稳定，如对年龄离散化，20-30为一个区间，不会因为年龄+1就变成一个新的特征**
-  - 特征离散化以后，可以将缺失作为独立的一类带入模型
+  - 对异常数据有强鲁棒性
+  - 单变量分箱（离散化）为N个后，每个变量有单独的权重，相当于为模型引入了非线性，能够提升模型表达能力
+  - 特征交叉可进一步增加非线性（M+N → M×N）
+  - 增强模型稳定性（如年龄+1不会变成新特征）
+  - 可将缺失值作为独立类别处理
 
-- 怎么离散化（分箱）比较好
+#### 2. 分箱方法比较
 
-  - 等频？等距？还是其他
-  - 分成几箱？10箱？100箱...
-  - 分箱时缺失值怎么办
+常用分箱方法：卡方分箱、决策树分箱、等频分箱、等距分箱、聚类分箱
 
-- 常用分箱方法：卡方分箱、决策树分箱、等频分箱、聚类分箱
+![image-20200911165052210](assets/day03\bins.png)
 
-  ![image-20200911165052210](assets/day03\bins.png)
 
-  - 等频分箱：
 
-    ![image-20200911165737567](assets/day03\bins1.png)
+- **等频分箱：**
 
-    - 按数据的分布，均匀切分，每个箱体里的样本数基本一样
-    - 在样本少的时候泛化性较差
-    - 在样本不均衡时可能无法分箱
+  ![image-20200911165737567](assets/day03\bins1.png)
 
-  - 等距分箱：
 
-    ![image-20200911165913606](assets/day03\bins2.png)
+> **特点**：
+>
+> - 按数据分布均匀切分
+> - 每个箱体样本数量相同
+> - 缺点：样本不均衡时可能无法分箱
 
-    - 按数据的特征值的间距均匀切分，每个箱体的数值距离一样
-    - 一定可以分箱
-    - 无法保证箱体样本数均匀
+
+
+- **等距分箱：**
+
+  ![image-20200911165913606](assets/day03\bins2.png)
+
+
+> **特点**：
+>
+> - 按特征值间距均匀切分
+> - 每个箱体数值距离相同
+> - 保证可分箱但样本数可能不均
+
+
 
 - **卡方分箱**：使用卡方检验确定最优分箱阈值
 
-  - 将数据按等频或等距分箱后，计算卡方值，将卡方值较小的两个相邻箱体合并
+![image-20200911165052210](assets\day03\bins.png)
 
-    使得不同箱体的好坏样本比例区别放大，容易获得高IV
 
-  - 卡方分箱是利用独立性检验来挑选箱划分节点的阈值。卡方分箱的过程可以拆分为初始化和合并两步
 
-    - 初始化：根据连续变量值大小进行排序，构建最初的离散化
+**步骤**：
 
-    - 合并：**遍历相邻两项合并的卡方值，将卡方值最小的两组合并，不断重复直到满足分箱数目要求**
+1. **初始化**：排序后构建初始离散化
 
-  ![image-20200911165052210](assets/day03\bins.png)
+2. **合并**：合并卡方值最小的相邻箱体，直到满足数目要求，使得不同箱体的好坏样本比例区别放大，容易获得高IV
 
-  |             | [22-35]       | (35-45]     | (45-55]     | (55-65]       | 总计 |
-  | ----------- | ------------- | ----------- | ----------- | ------------- | ---- |
-  | good        | 3             | 2           | 2           | 1             | 8    |
-  | bad         | 1             | 2           | 2           | 3             | 8    |
-  | p           |               |             |             |               | 50%  |
-  | p(good+bad) | 2             | 2           | 2           | 2             | -    |
-  | chi2        | (1-2)^2/2=1/2 | (2-2)^2/2=0 | (2-2)^2/2=0 | (3-2)^2/2=1/2 | -    |
+   > 在卡方分箱（ChiMerge分箱）过程中，**找出所有相邻箱体对中卡方值最小的一对，并将其合并为一个新箱体**，原因如下：
+   >
+   > **1. 卡方值表示分布差异**
+   >
+   > - 卡方值衡量的是相邻箱体在目标变量（如好坏、正负类）分布上的差异。卡方值越小，说明这两个箱体在目标变量上的分布差异越小，几乎可以认为它们属于同一类。
+   >
+   > **2. 合并差异最小的有助于提升分箱的区分度**
+   >
+   > - 如果两个箱体的分布非常相似（卡方值很小），继续分开没有意义，合并后不会损失太多信息，还能减少箱体数量，提升后续分箱的区分能力。
+   >
+   > **3. 保证每一步合并都是“最合理”的**
+   >
+   > - 每次都合并分布最相似的箱体，使得分箱的过程从“区分度最低”到“区分度逐步提升”，保证最终每个箱体之间的分布差异都尽可能大，分箱结果更有利于模型识别变量与目标之间的关系。
+   >
+   > **4. 递归迭代，直到满足分箱要求**
+   >
+   > - 不断重复这一过程，直到所有箱体之间的分布差异都足够大（卡方值超过设定阈值），或箱体数量满足要求。这样每个箱体都具有较强的区分能力。
+   >
+   > **总结**：
+   > 卡方分箱通过每一步都合并分布最相似的箱体，确保分箱结果最大程度保留变量在目标上的区分度，有助于模型后续建模和变量筛选。
 
-  $$
-  \rm{\overline{p}_{bad} = \frac{\sum_{k}n^k_{bad}}{\sum_{k}(n^k_{good}+n^k_{bad})}} \\
-  \rm{\chi_{k}^{2}=\frac{(n^k_{bad}-\overline{p}_{bad}(n^k_{good}+n^k_{bad}))^2}{\overline{p}_{bad}(n^k_{good}+n^k_{bad})}}
-  $$
 
-  合并坏人比例接近平均水平的箱体，留下比例差异大的箱体
+
+**示例：**
+
+|             | [22-35]       | (35-45]     | (45-55]     | (55-65]       | 总计 |
+| ----------- | ------------- | ----------- | ----------- | ------------- | ---- |
+| good        | 3             | 2           | 2           | 1             | 8    |
+| bad         | 1             | 2           | 2           | 3             | 8    |
+| p           |               |             |             |               | 50%  |
+| p(good+bad) | 2             | 2           | 2           | 2             | -    |
+| chi2        | (1-2)^2/2=1/2 | (2-2)^2/2=0 | (2-2)^2/2=0 | (3-2)^2/2=1/2 | -    |
+
+**计算公式**：
+$$
+\rm{\overline{p}_{bad} = \frac{\sum_{k}n^k_{bad}}{\sum_{k}(n^k_{good}+n^k_{bad})}} \\
+\rm{\chi_{k}^{2}=\frac{(n^k_{bad}-\overline{p}_{bad}(n^k_{good}+n^k_{bad}))^2}{\overline{p}_{bad}(n^k_{good}+n^k_{bad})}}
+$$
+
+> 合并坏人比例接近平均水平的箱体，留下比例差异大的箱体
+
+
 
 #### 案例：使用toad库进行分箱处理
 
@@ -1360,43 +1472,6 @@ x['n2'] = x.apply(lambda x:1 if x.amount_tot>48077.5 \
 - 第一梯度：线性回归、逻辑回归
 - 第二梯度：集成学习（结果是多个树共同决定的）
 - 第三梯度：支持向量机（把数据往高维空间映射，数据会失真）
-
-
-
-## 小结
-
-- 特征工程准备工作
-  - ER图
-  - 样本设计表
-  - 特征框架表
-- 特征构建方法
-  - 用户静态信息特征
-  - 用户时间截面特征
-  - 用户时间序列特征
-  - 用户关联特征
-- 缺失值处理
-  - 补零
-  - 风险趋势
-  - 增加缺失特征
-  - 业务默认值
-- 未来信息处理
-  - 快照表
-  - 将数据区分成是否包含未来信息分别处理
-- 特征构造的标准
-  - 简单
-  - 归纳+演绎
-
-
-
-## 
-
-~~~shell
-#1.完成上午的案例
-
-#2.理解特征构造的理论
-
-#3.尝试联系toad库进行分箱（选做）
-~~~
 
 
 
