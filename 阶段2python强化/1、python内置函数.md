@@ -21,10 +21,46 @@
 >   - ✅ 两种都合法：
 >     `sum([1, 2, 3], 10)`（位置参数）
 >     `sum([1, 2, 3], start=10)`（关键字参数）
+>   - **start=0**：求和的初始值，默认为 0。如果指定了 `start`，则从该值开始累加 `iterable` 中的元素。返回 `start` 与 `iterable` 中所有元素相加的总和。
 >
 > **为什么用 `/`？**
 >
 > 这是 Python 3.8+ 的语法，明确限制参数的传递方式。对于 `sum()` 函数，设计者可能希望保持 `iterable` 参数的简洁性（避免显式命名），同时允许 `start` 参数更灵活。
+>
+> ---
+>
+> 在 Python 的函数定义中，`*` 是一个特殊符号，用于分隔 **位置参数（positional arguments）** 和 **仅关键字参数（keyword-only arguments）**。
+>
+> 在 `max(iterable, *[, key, default])` 这个函数签名中：
+>
+> - `iterable` 是一个 **位置参数**（必须传入）。
+> - `*` 后面的参数（`key` 和 `default`）是 **仅关键字参数**，必须显式使用参数名传递，不能以位置参数形式传递。
+>
+> **`\*` 的作用**
+>
+> - **强制 `key` 和 `default` 必须用关键字传递**
+>
+>   - ✅ 正确用法：
+>
+>     ```python
+>     max([1, 2, 3], key=lambda x: -x)  # 使用 key=...
+>     max([], default=0)                 # 使用 default=...
+>     ```
+>
+>   - ❌ 错误用法：
+>
+>     ```python
+>     max([1, 2, 3], lambda x: -x)  # TypeError: max() 不允许 key 作为位置参数
+>     ```
+>
+> - **`\*` 本身不接收任何参数**
+>
+>   - 它只是一个语法标记，表示后面的参数必须用关键字传递。
+>
+> **为什么这样设计？**
+>
+> - **提高可读性**：`key` 和 `default` 是可选参数，显式命名让代码更清晰。
+> - **避免歧义**：如果允许 `key` 作为位置参数，可能会与 `iterable` 的其他用法混淆。
 
 
 
@@ -45,6 +81,59 @@
 | `str(object='')`                        | 字符串         | `str(100) → '100'`                   | -                 |
 | `complex([real[, imag]])`               | 复数           | `complex('1+2j') → (1+2j)`           | 3.8+支持__index__ |
 
+> `int(x[, base])` 是 Python 内置函数 `int()` 的函数签名。它用于将一个数字或字符串转换为整数类型。下面详细解释每个参数：
+>
+> **参数说明**
+>
+> - **x**：要转换为整数的对象。可以是一个数字（如 float、int）、字符串（如 '123'）、或者实现了 `__int__` 方法的对象。如果是字符串，表示的是一个数字的文本形式。
+>
+> - **base**：进制，整数类型，可选，默认值为 10。当 `x` 是字符串时，`base` 指定了字符串所表示数字的进制，可以是 2~36 之间的整数。例如，`base=2` 表示二进制，`base=16` 表示十六进制。
+>
+>   > 注意：如果 `x` 不是字符串，则 `base` 参数不能使用，否则会报错。
+>
+> **返回值**
+>
+> - 返回将 `x` 转换后的整数类型（`int`）。
+>
+> **用法示例**
+>
+> ```python
+> # 基本用法，将字符串转换为整数
+> print(int('123'))               # 输出 123
+> 
+> # 指定进制，将二进制字符串转换为整数
+> print(int('1010', 2))           # 输出 10
+> 
+> # 指定进制，将十六进制字符串转换为整数
+> print(int('1a', 16))            # 输出 26
+> 
+> # 浮点数转整数
+> print(int(3.7))                 # 输出 3
+> 
+> # 直接输入整数
+> print(int(42))                  # 输出 42
+> ```
+>
+> **注意事项**
+>
+> - 当 `x` 是字符串时，允许指定 `base`。否则只能用一个参数。
+> - 如果字符串无法按指定进制解析，会报 `ValueError` 错误。
+> - 字符串前缀 `0b`, `0o`, `0x` 可分别代表二、八、十六进制。
+> - `base=0` 时，会自动根据字符串前缀推断进制。
+>
+> **例子**
+>
+> ```python
+> print(int('0b1011', 0))  # 输出 11
+> print(int('075', 8))     # 输出 61
+> ```
+>
+> **总结：**
+>
+> - `int(x[, base])` 把 `x` 转换为整数。`x` 可以是数字或字符串，`base` 只在 `x` 为字符串时有效，指定字符串的进制，默认是 10。
+>
+> ---
+>
 > **ASCII 和 Unicode 的区别与联系**
 >
 > **1. ASCII（American Standard Code for Information Interchange）**
@@ -59,8 +148,6 @@
 >   - 无法表示其他语言的文字（如中文、日文、阿拉伯文等）。
 >   - 仅适用于英语环境。
 >
-> 
->
 > **2. Unicode（统一码）**
 >
 > - **范围**：支持 **超过 14 万个字符**（目前版本 15.1），涵盖几乎所有语言的文字和符号。
@@ -73,8 +160,6 @@
 >   - **UTF-16**（2 或 4 字节）
 >   - **UTF-32**（固定 4 字节）
 >
-> 
->
 > **3. 关键区别**
 >
 > | 特性         | ASCII               | Unicode                     |
@@ -84,11 +169,9 @@
 > | **适用场景** | 仅英语              | 全球所有语言                |
 > | **兼容性**   | Unicode 包含 ASCII  | ASCII 是 Unicode 的子集     |
 >
-> 
->
 > **4. Python 中的 ASCII 和 Unicode**
 >
-> 1. **Python 3 默认使用 Unicode**：
+> - **Python 3 默认使用 Unicode**：
 >
 >    - 所有字符串（`str`）都是 Unicode。
 >
@@ -98,7 +181,7 @@
 >      s = "你好 Hello 😊"  # 合法（Unicode）
 >      ```
 >
-> 2. **`ascii()` 函数的作用**：
+> - **`ascii()` 函数的作用**：
 >
 >    - 将非 ASCII 字符转义为 `\x`、`\u` 或 `\U` 形式：
 >
@@ -106,7 +189,7 @@
 >      print(ascii("你好"))  # 输出: '\u4f60\u597d'
 >      ```
 >
-> 3. **编码与解码（Bytes vs Unicode）**：
+> - **编码与解码（Bytes vs Unicode）**：
 >
 >    - **`encode()`**：Unicode → Bytes（如 UTF-8）
 >
@@ -119,8 +202,6 @@
 >      ```python
 >      b'\xe4\xbd\xa0\xe5\xa5\xbd'.decode("utf-8")  # "你好"
 >      ```
->
-> 
 >
 > **5. 为什么需要 Unicode？**
 >
@@ -172,38 +253,159 @@
 >
 > ---
 >
-> 在 Python 的函数定义中，`*` 是一个特殊符号，用于分隔 **位置参数（positional arguments）** 和 **仅关键字参数（keyword-only arguments）**。
+> `enumerate(iterable, start=0)` 是 Python 内置函数 。它常用于在循环时同时获得元素的索引和值。下面详细解释其各部分含义：
 >
-> 在 `max(iterable, *[, key, default])` 这个函数签名中：
+> **参数说明**
 >
-> - `iterable` 是一个 **位置参数**（必须传入）。
-> - `*` 后面的参数（`key` 和 `default`）是 **仅关键字参数**，必须显式使用参数名传递，不能以位置参数形式传递。
+> - **iterable**：必需。一个可以迭代的对象，如列表、元组、字符串等。
+> - **start=0**：可选。指定索引计数从哪一个数字开始，默认是 0。
 >
-> **`\*` 的作用**
+> **返回值**
 >
-> - **强制 `key` 和 `default` 必须用关键字传递**
+> - 返回一个迭代器（enumerate 对象），每次迭代返回一个元组 `(index, value)`，其中 `index` 是当前元素的下标，`value` 是对应的元素。
 >
->   - ✅ 正确用法：
+> **用法示例**
 >
->     ```python
->     max([1, 2, 3], key=lambda x: -x)  # 使用 key=...
->     max([], default=0)                 # 使用 default=...
->     ```
+> ```python
+> lst = ['a', 'b', 'c']
+> for idx, val in enumerate(lst):
+>     print(idx, val)
+> # 输出：
+> # 0 a
+> # 1 b
+> # 2 c
+> 
+> # 指定起始索引
+> for idx, val in enumerate(lst, start=1):
+>     print(idx, val)
+> # 输出：
+> # 1 a
+> # 2 b
+> # 3 c
+> ```
 >
->   - ❌ 错误用法：
+> **适用场景**
 >
->     ```python
->     max([1, 2, 3], lambda x: -x)  # TypeError: max() 不允许 key 作为位置参数
->     ```
+> - 当你需要在遍历可迭代对象时，同时获取元素的序号和内容时，`enumerate()` 非常方便。
+> - 常用于 `for` 循环。
 >
-> - **`\*` 本身不接收任何参数**
+> **总结：**
 >
->   - 它只是一个语法标记，表示后面的参数必须用关键字传递。
+> - `enumerate(iterable, start=0)` 用于遍历可迭代对象时，既能得到元素内容，又能得到索引，索引默认从 0 开始，可以通过 `start` 参数设置起始值。
 >
-> **为什么这样设计？**
+> ---
 >
-> - **提高可读性**：`key` 和 `default` 是可选参数，显式命名让代码更清晰。
-> - **避免歧义**：如果允许 `key` 作为位置参数，可能会与 `iterable` 的其他用法混淆。
+> `filter(function, iterable)` 是 Python 内置函数 `filter` 的函数签名。它用于过滤可迭代对象中的元素，只保留使 function 返回 True 的那些元素。下面详细解释：
+>
+> **参数说明**
+>
+> - **function**：用于判断每个元素是否保留的函数。它接收 iterable 的每个元素作为参数，并返回布尔值（True 或 False）。如果传入 None，则默认过滤掉所有“假值”（如 0、None、False、空字符串等）。
+> - **iterable**：要过滤的可迭代对象，如列表、元组、字符串等。
+>
+> **返回值**
+>
+> - 返回一个迭代器（`filter` 对象），包含所有 function 返回 True 的元素。如果 function 是 None，则仅保留 iterable 中为真的元素。
+>
+> **用法示例**
+>
+> ```python
+> # 1. 用函数过滤
+> def is_even(x):
+>     return x % 2 == 0
+> 
+> numbers = [1, 2, 3, 4, 5, 6]
+> result = filter(is_even, numbers)
+> print(list(result))   # 输出: [2, 4, 6]
+> 
+> # 2. 使用 lambda 表达式
+> result = filter(lambda x: x > 3, numbers)
+> print(list(result))   # 输出: [4, 5, 6]
+> 
+> # 3. function 为 None，过滤掉假值
+> values = [0, 1, '', None, 'hello', False]
+> result = filter(None, values)
+> print(list(result))   # 输出: [1, 'hello']
+> ```
+>
+> **注意事项**
+>
+> - `filter` 返回的是一个迭代器，需要用 `list()` 或 `tuple()` 等函数转换为列表或元组才能看到所有结果。
+> - 如果所有元素都被过滤掉，结果是空的迭代器（如 `[]`）。
+> - 适合搭配 lambda 表达式或已定义的判断函数使用。
+>
+> **总结：**
+> `filter(function, iterable)` 依次把 iterable 的元素传给 function，保留 function 返回 True 的元素，返回一个迭代器。如 function 为 None，则过滤掉所有“假值”。
+>
+> ---
+>
+> `iter(object[, sentinel])` 是 Python 内置函数 `iter()` 的函数签名之一。它有两种主要用法。下面详细解释：
+>
+> **1. 单参数用法：`iter(object)`**
+>
+> - **object**：是一个可迭代对象（如列表、元组、字典、字符串等）。
+> - 返回值：返回一个该对象的迭代器。
+> - 示例：
+>
+> ```python
+> lst = [1, 2, 3]
+> it = iter(lst)
+> print(next(it))  # 输出 1
+> print(next(it))  # 输出 2
+> ```
+>
+> **2. 双参数用法：`iter(callable, sentinel)`**
+>
+> - **callable**：一个可调用对象（如函数），在每次迭代时会被调用，返回下一个值。
+>
+> - **sentinel**：“哨兵值”，当 callable 返回该值时，迭代终止（抛出 StopIteration）。
+>
+> - 返回值：返回一个迭代器，不断调用 callable，直到其返回值等于 sentinel。
+>
+> - 常用于从无迭代接口的函数中创建迭代器。
+>
+>   > 有些函数本身**不是**可迭代对象（比如，它们没有 `__iter__` 方法，也不能用在 `for ... in ...` 里），但是你又想“像遍历列表一样”反复调用它、直到某个条件满足为止。这时可以用 `iter(callable, sentinel)` 这种用法，把“不断调用”这个函数的过程变成一个迭代器。
+>   >
+>   > **举例说明**
+>   >
+>   > 比如，文件对象的 `readline()` 方法，每次调用会读一行，但它本身不是可迭代对象。你可以用 `iter` 让它变成“可以遍历的”：
+>   >
+>   > ```python
+>   > f = open('test.txt')
+>   > for line in iter(f.readline, ''):  # 每次调用 f.readline()，直到返回空字符串为止
+>   >     print(line, end='')
+>   > f.close()
+>   > ```
+>   >
+>   > **总结：**
+>   > “无迭代接口”就是“不是可迭代对象”。用 `iter(callable, sentinel)` 可以把这类“每次调用返回一个值”的函数，变成支持遍历的迭代器，从而可以用在 for 循环等场景中。
+>
+> **示例**
+>
+> ```python
+> def read_one():
+>     return input("输入内容（输入 quit 停止）：")
+> 
+> for line in iter(read_one, 'quit'):
+>     print("你输入了：", line)
+> ```
+>
+> 上例中，每次循环都会调用 `read_one()`，直到用户输入 `'quit'` 时循环结束。
+>
+> 再比如：
+>
+> ```python
+> f = open('test.txt')
+> for line in iter(f.readline, ''):
+>     print(line, end='')
+> f.close()
+> ```
+>
+> 这里不断调用 `f.readline()`，直到返回空字符串（文件结束）。
+>
+> **总结**
+>
+> - `iter(object)`：返回可迭代对象的迭代器。
+> - `iter(callable, sentinel)`：返回一个迭代器，不断调用 callable，直到返回 sentinel 为止。
 >
 > ---
 >
