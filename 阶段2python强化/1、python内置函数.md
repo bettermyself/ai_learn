@@ -213,21 +213,23 @@
 
 ### 3、迭代与序列处理
 
-| 函数                                           | 描述       | 示例                                              | 版本变化        |
-| :--------------------------------------------- | :--------- | :------------------------------------------------ | :-------------- |
-| `all(iterable)`                                | 全真检测   | `all([1, 2, 3]) → True`                           | -               |
-| `any(iterable)`                                | 任一真检测 | `any([0, 1, 0]) → True`                           | -               |
-| `enumerate(iterable, start=0)`                 | 枚举迭代   | `list(enumerate(['a', 'b'])) → [(0,'a'),(1,'b')]` | -               |
-| `filter(function, iterable)`                   | 过滤       | `list(filter(lambda x: x>0, [-1, 2]))`            | -               |
-| `iter(object[, sentinel])`                     | 创建迭代器 | `iter([1, 2, 3])`                                 | `next(i)`       |
-| `len(s)`                                       | 长度       | `len('abc') → 3`                                  | -               |
-| `map(function, iterable, ...)`                 | 映射       | `list(map(str.upper, ['a', 'b']))`                | -               |
-| `max(iterable, *[, key, default])`             | 最大值     | `max([1, 3, 2]) → 3`                              | 3.4+default参数 |
-| `min(iterable, *[, key, default])`             | 最小值     | `min([1, 3, 2]) → 1`                              | 3.4+default参数 |
-| `range(stop)` `range(start, stop[, step])`     | 范围序列   | `list(range(3)) → [0, 1, 2]`                      | -               |
-| `reversed(seq)`                                | 反向迭代   | `list(reversed([1, 2, 3]))`                       | -               |
-| `sorted(iterable, *, key=None, reverse=False)` | 排序       | `sorted([3, 1, 2]) → [1, 2, 3]`                   | -               |
-| `zip(*iterables, strict=False)`                | 并行迭代   | `list(zip([1, 2], ['a', 'b']))`                   |                 |
+| 函数                                           | 描述       | 示例                                              | 备注           |
+| :--------------------------------------------- | :--------- | :------------------------------------------------ | :------------- |
+| `all(iterable)`                                | 全真检测   | `all([1, 2, 3]) → True`                           | -              |
+| `any(iterable)`                                | 任一真检测 | `any([0, 1, 0]) → True`                           | -              |
+| `enumerate(iterable, start=0)`                 | 枚举迭代   | `list(enumerate(['a', 'b'])) → [(0,'a'),(1,'b')]` | -              |
+| `filter(function, iterable)`                   | 过滤       | `list(filter(lambda x: x>0, [-1, 2]))`            | 返回一个迭代器 |
+| `iter(object[, sentinel])`                     | 创建迭代器 | `iter([1, 2, 3])`                                 | `next(i)`      |
+| `len(s)`                                       | 长度       | `len('abc') → 3`                                  | -              |
+| `map(function, iterable, ...)`                 | 映射       | `list(map(str.upper, ['a', 'b']))`                | -              |
+| `max(iterable, *[, key, default])`             | 最大值     | `max([1, 3, 2]) → 3`                              | key为判定规则  |
+| `min(iterable, *[, key, default])`             | 最小值     | `min([1, 3, 2]) → 1`                              | key为判定规则  |
+| `range(stop)` `range(start, stop[, step])`     | 范围序列   | `list(range(3)) → [0, 1, 2]`                      | -              |
+| `reversed(seq)`                                | 反向迭代   | `list(reversed([1, 2, 3]))`                       | 返回反向迭代器 |
+| `sorted(iterable, *, key=None, reverse=False)` | 排序       | `sorted([3, 1, 2]) → [1, 2, 3]`                   | key为判定规则  |
+| `zip(*iterables, strict=False)`                | 并行迭代   | `list(zip([1, 2], ['a', 'b']))`                   | 返回一个迭代器 |
+
+> 返回为迭代器的时候，一般可以用 `for` 循环、`list()`、`tuple()` 等取出元素。
 
 > 在 Python 中，**可迭代对象（Iterable）** 是指任何可以被 `for` 循环遍历的对象，或者可以传递给 `iter()` 函数并返回一个 **迭代器（Iterator）** 的对象。可迭代对象的核心特征是实现了 `__iter__()` 方法（或 `__getitem__()` 方法，旧式兼容）。
 >
@@ -409,6 +411,56 @@
 >
 > ---
 >
+> `map(function, iterable, ...)` 是 Python 内置的高阶函数，用于**对可迭代对象中的每个元素应用指定函数**，并返回一个新的迭代器。
+>
+> **语法**
+>
+> ```python
+> map(function, iterable1, iterable2, ...)
+> ```
+>
+> - **function**：要应用到每个元素上的函数，可以是内置函数、lambda表达式或自定义函数。
+> - **iterable**：一个或多个可迭代对象，比如列表、元组等。
+>
+> **工作原理**
+>
+> - 如果只提供一个 iterable，`function` 作用于每个元素。
+> - 如果有多个 iterable，`function` 的参数数量要与提供的 iterable 数量一致，**每次会把各个 iterable 对应位置的元素作为参数传给 function**，结果为最短的那个 iterable 的长度。
+>
+> **返回值**
+>
+> 返回一个 map 对象（迭代器），需要用 `list()` 或 `for` 循环取出结果。
+>
+> **示例**
+>
+> **单个可迭代对象**
+>
+> ```python
+> nums = [1, 2, 3, 4]
+> result = map(lambda x: x * 2, nums)
+> print(list(result))  # [2, 4, 6, 8]
+> ```
+>
+> **多个可迭代对象**
+>
+> ```python
+> a = [1, 2, 3]
+> b = [4, 5, 6]
+> result = map(lambda x, y: x + y, a, b)
+> print(list(result))  # [5, 7, 9]
+> ```
+>
+> **注意事项**
+>
+> - `map` 返回的是**迭代器**，不是列表。
+> - 如果要得到列表或元组，可以用 `list()` 或 `tuple()` 强制转换。
+> - 当有多个 iterable 时，长度以**最短的那个为准**。
+>
+> **简言之：**
+> `map(function, iterable, ...)` 可以让你用一个函数批量处理可迭代对象中的元素，并返回处理结果的迭代器。
+>
+> ---
+>
 > `max()` 是 Python 的内置函数，用于返回一个 **可迭代对象（iterable）** 中的 **最大值**。它的完整语法如下：
 >
 > ```python
@@ -444,21 +496,21 @@
 
 ### 4、对象操作与反射
 
-| 函数                                     | 描述         | 示例                          | 版本变化       |
-| :--------------------------------------- | :----------- | :---------------------------- | :------------- |
-| `callable(object)`                       | 可调用检查   | `callable(str) → True`        | 3.2重新引入    |
-| `delattr(object, name)`                  | 删除属性     | `delattr(obj, 'attr')`        | -              |
-| `dir([object])`                          | 属性列表     | `dir([])`                     | -              |
-| `getattr(object, name[, default])`       | 获取属性     | `getattr(str, 'upper')`       | -              |
-| `hasattr(object, name)`                  | 属性检查     | `hasattr([], 'append')`       | -              |
-| `hash(object)`                           | 哈希值       | `hash('abc')`                 | -              |
-| `id(object)`                             | 对象标识     | `id([])`                      | -              |
-| `isinstance(object, classinfo)`          | 实例检查     | `isinstance(1, int)`          | 3.10+支持Union |
-| `issubclass(class, classinfo)`           | 子类检查     | `issubclass(bool, int)`       | 3.10+支持Union |
-| `memoryview(object)`                     | 内存视图     | `memoryview(b'abc')`          | -              |
-| `setattr(object, name, value)`           | 设置属性     | `setattr(obj, 'attr', value)` | -              |
-| `vars([object])`                         | __dict__属性 | `vars()`                      | 3.13行为变更   |
-| `type(object)` `type(name, bases, dict)` | 类型/创建类  | `type('X', (), {})`           | 3.6+单参数限制 |
+| 函数                                                         | 描述         | 示例                          | 版本变化       |
+| :----------------------------------------------------------- | :----------- | :---------------------------- | :------------- |
+| <font color = 'red' style="font-weight: bold;">`callable(object)`</font> | 可调用检查   | `callable(str) → True`        | 3.2重新引入    |
+| `delattr(object, name)`                                      | 删除属性     | `delattr(obj, 'attr')`        | -              |
+| `dir([object])`                                              | 属性列表     | `dir([])`                     | -              |
+| `getattr(object, name[, default])`                           | 获取属性     | `getattr(str, 'upper')`       | -              |
+| `hasattr(object, name)`                                      | 属性检查     | `hasattr([], 'append')`       | -              |
+| <font color = 'red' style="font-weight: bold;">`hash(object)`</font> | 哈希值       | `hash('abc')`                 | -              |
+| <font color = 'red' style="font-weight: bold;">`id(object)`</font> | 对象标识     | `id([])`                      | -              |
+| `isinstance(object, classinfo)`                              | 实例检查     | `isinstance(1, int)`          | 3.10+支持Union |
+| `issubclass(class, classinfo)`                               | 子类检查     | `issubclass(bool, int)`       | 3.10+支持Union |
+| <font color = 'red' style="font-weight: bold;">`memoryview(object)`</font> | 内存视图     | `memoryview(b'abc')`          | -              |
+| `setattr(object, name, value)`                               | 设置属性     | `setattr(obj, 'attr', value)` | -              |
+| <font color = 'red' style="font-weight: bold;">`vars([object])`</font> | __dict__属性 | `vars()`                      | 3.13行为变更   |
+| <font color = 'red' style="font-weight: bold;">`type(object)` `type(name, bases, dict)`</font> | 类型/创建类  | `type('X', (), {})`           | 3.6+单参数限制 |
 
 > `callable()` 函数用于检查一个对象是否可以被调用（即是否是可调用对象）。
 >
@@ -678,12 +730,12 @@
 
 ### 5、输入输出与系统交互
 
-| 函数                            | 描述     | 示例                   | 版本变化       |
-| :------------------------------ | :------- | :--------------------- | :------------- |
-| `breakpoint(*args, **kws)`      | 调试断点 | `breakpoint()`         | 3.7+新增       |
-| `input([prompt])`               | 用户输入 | `input('Name: ')`      | -              |
-| `open(file, mode='r', ...)`     | 文件操作 | `open('file.txt')`     | 3.3+opener参数 |
-| `print(*objects, sep=' ', ...)` | 打印输出 | `print(1, 2, sep=',')` | 3.3+flush参数  |
+| 函数                                                         | 描述     | 示例                   | 版本变化       |
+| :----------------------------------------------------------- | :------- | :--------------------- | :------------- |
+| <font color = 'red' style="font-weight: bold;">`breakpoint(*args, **kws)`</font> | 调试断点 | `breakpoint()`         | 3.7+新增       |
+| `input([prompt])`                                            | 用户输入 | `input('Name: ')`      | -              |
+| `open(file, mode='r', ...)`                                  | 文件操作 | `open('file.txt')`     | 3.3+opener参数 |
+| `print(*objects, sep=' ', ...)`                              | 打印输出 | `print(1, 2, sep=',')` | 3.3+flush参数  |
 
 > 在 Python 中，`breakpoint(*args, **kws)` 是用于**设置调试断点**的内置函数。它会启动调试器，让你可以在代码运行时进行交互式调试。
 >
@@ -1175,7 +1227,7 @@
 > set([iterable])
 > ```
 >
-> - **iterable**：可迭代对象（如列表、元组、字符串、字典、集合等）。省略时返回一个空集合。
+> - **iterable**：可迭代对象（如列表、元组、字符串、字典、集合等）。传入字典的话，用字典的键创建集合。省略时返回一个空集合。
 >
 > **功能说明**
 >
@@ -1502,13 +1554,9 @@
 > - 配合 `default` 参数，可以优雅地处理迭代完成的情况，避免异常。
 > - 类似于同步的 `next(iterator[, default])`，但用于异步场景。
 >
-> ------
->
 > **一句话总结：**
-> `anext` 用于在异步函数中异步获取迭代器的下一个元素，支持可选默认值，适合异步流式数据处理。
->
+>`anext` 用于在异步函数中异步获取迭代器的下一个元素，支持可选默认值，适合异步流式数据处理。
 > 
->
 > ---
 >
 > `format(value, format_spec='')` 是 Python 的一个内置函数，用于**格式化输出**，返回格式化后的字符串。
@@ -1518,104 +1566,104 @@
 > **语法**
 >
 > ```python
-> format(value, format_spec='')
+>format(value, format_spec='')
 > ```
 >
 > - **value**：要格式化的对象（如数字、字符串等）。
 > - **format_spec**：格式化说明字符串，决定输出的格式（如宽度、精度、类型等），默认为空字符串。
->
-> **作用和常见用法**
->
+> 
+>**作用和常见用法**
+> 
 > **1. 格式化数字**
 >
 > ```python
-> num = 3.1415926
+>num = 3.1415926
 > print(format(num, '.2f'))   # 保留两位小数，输出：3.14
-> print(format(num, '10.2f')) # 宽度为10，保留两位小数，输出：      3.14
+>print(format(num, '10.2f')) # 宽度为10，保留两位小数，输出：      3.14
 > print(format(42, '04d'))    # 宽度4，前面补0，输出：0042
 > ```
->
+> 
 > **2. 格式化字符串**
->
+> 
 > ```python
-> s = 'test'
+>s = 'test'
 > print(format(s, '>10'))   # 右对齐，宽度10，输出：      test
-> print(format(s, '<10'))   # 左对齐，宽度10，输出：test      
+>print(format(s, '<10'))   # 左对齐，宽度10，输出：test      
 > print(format(s, '^10'))   # 居中对齐，宽度10，输出：   test   
 > ```
->
+> 
 > **3. 格式化百分比**
->
+> 
 > ```python
-> print(format(0.45, '.0%')) # 输出：45%
+>print(format(0.45, '.0%')) # 输出：45%
 > ```
 >
 > **4. 格式化十六进制、二进制**
->
+> 
 > ```python
-> print(format(255, 'x')) # 输出：ff
+>print(format(255, 'x')) # 输出：ff
 > print(format(255, 'b')) # 输出：11111111
-> ```
->
+>```
+> 
 > **与 `str.format()` 的区别**
->
+> 
 > - `format()` 是一个**单独的函数**，只格式化一个值。
-> - `str.format()` 是字符串的方法，可以一次格式化多个值：
->
-> ```python
+>- `str.format()` 是字符串的方法，可以一次格式化多个值：
+> 
+>```python
 > print('{} {}'.format('hello', 123))
 > ```
 >
 > **总结**
->
+> 
 > - `format(value, format_spec)` 用于对一个值进行定制化格式输出。
-> - `format_spec` 控制输出的样式，比如小数位数、对齐方式、进制等。
->
-> ---
->
+>- `format_spec` 控制输出的样式，比如小数位数、对齐方式、进制等。
+> 
+>---
+> 
 > `globals()` 是 Python 的一个内置函数，主要用于**返回当前全局符号表的字典**。符号表就是变量名和对象之间的映射关系。
 >
 > **详细解释**
 >
 > - **调用方式**：`globals()` 不带任何参数。
-> - **返回值**：返回一个表示当前全局符号表的字典。
+>- **返回值**：返回一个表示当前全局符号表的字典。
 > - **作用域**：通常在模块级别（即文件最外层），它包含所有全局变量和函数名。
-> - 用途：
+>- 用途：
 >   - 动态访问或修改全局变量。
 >   - 调试时查看当前全局命名空间有哪些变量和对象。
->
-> **示例**
->
-> ```python
-> x = 10
 > 
-> def foo():
+> **示例**
+> 
+> ```python
+>x = 10
+> 
+>def foo():
 >     print(globals())  # 显示全局命名空间的内容
 > 
 > foo()
 > # 输出类似
 > # {'__name__': '__main__', '__doc__': None, ..., 'x': 10, 'foo': <function foo at ...>}
 > ```
->
+> 
 > **动态修改全局变量**
->
+> 
 > ```python
-> globals()['y'] = 20
+>globals()['y'] = 20
 > print(y)  # 输出 20
-> ```
->
+>```
+> 
 > **与 `locals()` 区别**
->
+> 
 > - `globals()` 返回的是**全局命名空间**（通常是模块级别）
-> - `locals()` 返回的是**当前局部命名空间**（如函数内部）
->
-> **总结**
->
+>- `locals()` 返回的是**当前局部命名空间**（如函数内部）
+> 
+>**总结**
+> 
 > - `globals()` 用于获取和操作当前全局变量的字典
-> - 适用于需要动态访问全局变量的场景
->
-> ---
->
+>- 适用于需要动态访问全局变量的场景
+> 
+>---
+> 
 > `help()` 是 Python 的一个内置函数，用于获取对象的帮助信息。它是 Python 交互式解释器中非常有用的工具。
 >
 > **基本用法**
@@ -1623,19 +1671,19 @@
 > - **不带参数调用**：
 >
 >   ```python
->   help()
+>  help()
 >   ```
 >
 >   这会进入交互式帮助系统，你可以输入模块、类、函数等的名称来获取帮助信息。
->
+> 
 > - **带参数调用**：
 >
 >   ```python
->   help(object)
+>  help(object)
 >   ```
 >
 >   这会显示关于该对象的帮助文档。
->
+> 
 > **参数说明**
 >
 > - `object`（可选）：可以是模块、函数、类、方法、关键字或文档主题。如果省略，则进入交互式帮助系统。
@@ -1643,9 +1691,9 @@
 > **示例**
 >
 > ```python
-> # 获取列表的帮助信息
+># 获取列表的帮助信息
 > help(list)
-> 
+>
 > # 获取特定方法的帮助
 > help(str.split)
 > 
@@ -1655,52 +1703,52 @@
 > # 获取关键字的帮助
 > help('for')
 > ```
->
+> 
 > **输出内容**
->
+> 
 > `help()` 通常会显示：
 >
 > - 对象的描述
-> - 使用方法
+>- 使用方法
 > - 参数说明
-> - 相关方法/函数
+>- 相关方法/函数
 > - 示例（如果有）
->
+> 
 > **工作原理**
->
+> 
 > `help()` 实际上是从对象的 `__doc__` 属性中获取文档字符串，并以更友好的格式显示出来。
 >
 > **注意事项**
 >
 > - 并非所有对象都有详细的帮助文档，这取决于该对象是否定义了文档字符串
-> - 在编写代码时，良好的文档字符串可以让 `help()` 输出更有用的信息
->
-> ---
->
+>- 在编写代码时，良好的文档字符串可以让 `help()` 输出更有用的信息
+> 
+>---
+> 
 > `locals()` 是 Python 的一个内置函数，用于返回当前局部符号表的字典。
 >
 > **基本用法**
 >
 > ```python
-> locals()
+>locals()
 > ```
 >
 > **返回值**
->
+> 
 > 返回一个字典，包含当前局部作用域中的所有变量名和对应的值。
 >
 > **功能说明**
 >
 > - **局部作用域**：在函数内部调用时，返回函数的局部变量（包括参数）
-> - **全局作用域**：在模块级别调用时，返回与 `globals()` 相同的内容
+>- **全局作用域**：在模块级别调用时，返回与 `globals()` 相同的内容
 > - **字典特性**：返回的是一个字典对象，可以像普通字典一样操作
 >
 > **示例**
->
+> 
 > ```python
-> # 在模块级别使用
+># 在模块级别使用
 > x = 10
-> y = 'hello'
+>y = 'hello'
 > print(locals())  # 显示包含x和y的字典
 > 
 > # 在函数内部使用
@@ -1711,21 +1759,21 @@
 > 
 > test(3, 4)  # 输出: {'a': 3, 'b': 4, 'c': 7}
 > ```
->
+> 
 > **注意事项**
->
+> 
 > - **字典是动态视图**：返回的字典会反映局部命名空间的实时变化
-> - **不应修改字典**：虽然技术上可以修改返回的字典来改变局部变量，但这是不被推荐的做法
+>- **不应修改字典**：虽然技术上可以修改返回的字典来改变局部变量，但这是不被推荐的做法
 > - **与 `globals()` 的区别**：`globals()` 总是返回模块全局命名空间，而 `locals()` 的行为取决于调用位置
 >
 > **典型用途**
->
+> 
 > - 调试时查看当前作用域的所有变量
-> - 动态访问局部变量
+>- 动态访问局部变量
 > - 在特殊场景下动态创建或检查变量
 >
 > **性能考虑**
->
+> 
 > 频繁调用 `locals()` 可能会影响性能，特别是在循环中应谨慎使用。
 >
 > ---
@@ -1735,23 +1783,23 @@
 > **基本语法**
 >
 > ```python
-> repr(object)
+>repr(object)
 > ```
 >
 > **功能说明**
->
+> 
 > - **返回字符串**：返回一个包含对象可打印表示的字符串
-> - **可重现性**：理想情况下，`eval(repr(obj)) == obj` 应该成立
+>- **可重现性**：理想情况下，`eval(repr(obj)) == obj` 应该成立
 > - **与 `str()` 的区别**：
->   - `repr()` 面向开发者，提供精确的、无歧义的对象表示
+>  - `repr()` 面向开发者，提供精确的、无歧义的对象表示
 >   - `str()` 面向用户，提供可读性更好的表示
->
+> 
 > **示例**
->
+> 
 > ```python
-> # 基本类型
+># 基本类型
 > repr(123)      # 返回 '123'
-> repr('hello')  # 返回 "'hello'"
+>repr('hello')  # 返回 "'hello'"
 > 
 > # 容器类型
 > repr([1, 2, 3])  # 返回 '[1, 2, 3]'
@@ -1761,85 +1809,85 @@
 >     def __init__(self, x, y):
 >         self.x = x
 >         self.y = y
->     
+> 
 >     def __repr__(self):
 >         return f"Point({self.x}, {self.y})"
 > 
-> p = Point(3, 4)
+>     p = Point(3, 4)
 > repr(p)  # 返回 'Point(3, 4)'
 > ```
->
+> 
 > **自定义 `__repr__`**
->
+> 
 > 可以通过在类中定义 `__repr__` 方法来自定义 `repr()` 的行为：
 >
 > ```python
-> class MyClass:
+>class MyClass:
 >     def __repr__(self):
->         return 'MyClass()'
+>        return 'MyClass()'
 > ```
->
-> **注意事项**
->
-> - **应包含必要信息**：好的 `__repr__` 应该包含重建对象所需的所有信息
-> - **不应有副作用**：`__repr__` 方法不应该修改对象状态
-> - **调试用途**：常用于调试和日志记录
-> - **安全性**：不要对不受信任的输入使用 `eval(repr(obj))`
->
-> **与 `str()` 对比**
->
-> ```python
-> import datetime
-> now = datetime.datetime.now()
 > 
+> **注意事项**
+> 
+> - **应包含必要信息**：好的 `__repr__` 应该包含重建对象所需的所有信息
+>- **不应有副作用**：`__repr__` 方法不应该修改对象状态
+> - **调试用途**：常用于调试和日志记录
+>- **安全性**：不要对不受信任的输入使用 `eval(repr(obj))`
+> 
+> **与 `str()` 对比**
+> 
+> ```python
+>import datetime
+> now = datetime.datetime.now()
+>
 > str(now)   # 返回可读性更好的时间字符串，如 '2023-05-15 14:30:00'
 > repr(now)  # 返回更精确的表示，如 'datetime.datetime(2023, 5, 15, 14, 30, 0)'
 > ```
->
+> 
 > ---
->
+> 
 > `super([type[, object]])` 是 Python 中的一个内置函数，用于调用父类（超类）的方法，常用于类的继承结构中。下面是详细解释：
 >
 > **基本语法**
 >
 > ```python
-> super([type[, object]])
+>super([type[, object]])
 > ```
 >
 > - `type`：通常是当前类的名字。
 > - `object`：通常是 `self`，即当前实例对象。
->
-> 在大多数情况下，你会这样用：
->
+> 
+>在大多数情况下，你会这样用：
+> 
 > ```python
-> class Parent:
+>class Parent:
 >     def hello(self):
->         print("Hello from Parent")
+>        print("Hello from Parent")
 > 
 > class Child(Parent):
 >     def hello(self):
 >         super().hello()  # 调用父类的 hello 方法
 >         print("Hello from Child")
 > ```
->
+> 
 > **用法详解**
->
+> 
 > - **无参数形式：`super()`**
->   - 只在 Python 3 及以后使用，等价于 `super(当前类, self)`。
+>  - 只在 Python 3 及以后使用，等价于 `super(当前类, self)`。
 >   - 通常在类的方法内部使用，用来调用父类的方法。
-> - **带参数形式：`super(type, object)`**
+>- **带参数形式：`super(type, object)`**
 >   - `type`：你想查找的父类顺序起点（一般是当前类）。
 >   - `object`：你想用来查找的方法的实例（一般是 `self`）。
 >   - 这样 `super(type, object)` 会返回一个代理对象，可以访问 `type` 的父类的方法。
->
+> 
 > **举例说明**
->
+> 
 > **1. 常见用法**
 >
 > ```python
-> class A:
+>class A:
 >     def foo(self):
->         print("A foo")
+>        print("A foo")
 > 
 > class B(A):
 >     def foo(self):
@@ -1852,13 +1900,13 @@
 > # A foo
 > # B foo
 > ```
->
+> 
 > **2. 多重继承下的查找**
->
+> 
 > ```python
-> class A:
+>class A:
 >     def foo(self):
->         print("A")
+>        print("A")
 > 
 > class B(A):
 >     def foo(self):
@@ -1883,26 +1931,26 @@
 > # C
 > # A
 > ```
->
+> 
 > 这里 `super()` 会按 MRO（方法解析顺序）查找父类。
->
+> 
 > **总结**
 >
 > - `super()` 用于调用父类的方法，常见于继承结构中。
-> - `super([type[, object]])` 可以指定查找起点和对象，但常用的是无参数版本。
+>- `super([type[, object]])` 可以指定查找起点和对象，但常用的是无参数版本。
 > - 多重继承时，`super()` 按 MRO 顺序查找。
 >
 > **MRO 查找顺序规则**
->
+> 
 > Python 使用一种叫做 **C3 线性化算法** 来确定 MRO 顺序。基本原则如下：
 >
 > 1. **自己优先**：先查找当前类自身的方法。
-> 2. **父类从左到右**：按照继承列表，从左到右依次查找父类。
+>2. **父类从左到右**：按照继承列表，从左到右依次查找父类。
 > 3. **避免重复**：同一个父类只会查找一次。
-> 4. **保证子类优先于父类**。
->
+>4. **保证子类优先于父类**。
+> 
 > ---
->
+> 
 > **拓展：什么是异步编程**
 >
 > **异步编程**是一种程序设计方式，指的是任务在发起后不需要等待其完成，可以继续执行后续代码，等任务完成后再处理其结果。这种方式让程序在遇到等待（例如网络请求、文件读写、数据库操作等）时不会阻塞主线程，从而提升效率和并发能力。
@@ -1910,32 +1958,32 @@
 > **异步编程的核心特点**
 >
 > - **非阻塞**
->   程序执行到耗时操作时不会卡住，而是可以继续执行其他任务。
+>  程序执行到耗时操作时不会卡住，而是可以继续执行其他任务。
 > - **任务调度**
->   有专门的“事件循环”或调度器来管理和分发任务，等异步操作完成时再恢复执行。
+>  有专门的“事件循环”或调度器来管理和分发任务，等异步操作完成时再恢复执行。
 > - **高效资源利用**
 >   非常适合需要并发处理大量I/O、网络或用户请求的场景。
->
+> 
 > **同步与异步对比**
->
+> 
 > - **同步编程**：每一步必须等前一步完成后才能继续，遇到慢操作会阻塞整个程序。
-> - **异步编程**：慢操作发起后，程序可以继续做其他事情，操作完成后再处理结果。
->
-> **示例（Python）**
->
+>- **异步编程**：慢操作发起后，程序可以继续做其他事情，操作完成后再处理结果。
+> 
+>**示例（Python）**
+> 
 > **同步代码**
 >
 > ```python
-> result = slow_io_operation()
+>result = slow_io_operation()
 > print(result)  # 只有等到 slow_io_operation 完成后才能继续
-> ```
->
-> **异步代码**
->
-> ```python
-> import asyncio
+>```
 > 
-> async def main():
+> **异步代码**
+> 
+> ```python
+>import asyncio
+> 
+>async def main():
 >     task = asyncio.create_task(slow_io_operation())
 >     print("任务已发起，可以做其他事")
 >     result = await task
@@ -1943,25 +1991,25 @@
 > 
 > asyncio.run(main())
 > ```
->
+> 
 > **关键技术**
->
+> 
 > - **回调函数**（callback）
-> - **Promise / Future**（JavaScript、Python等）
+>- **Promise / Future**（JavaScript、Python等）
 > - **async/await**（现代主流语言）
 >
 > **适用场景**
->
+> 
 > - 网络请求、API调用
-> - 高并发服务器
+>- 高并发服务器
 > - 实时数据流
-> - GUI程序响应用户操作
->
+>- GUI程序响应用户操作
+> 
 > **总结：**
 > 异步编程让程序能在等待慢操作时继续做其他事情，提升了效率与并发能力，是现代软件开发的重要技术。
->
 > 
 >
+> 
 > **拓展：python中的异步编程**
 >
 > `async` 关键字是 Python用于**异步编程**的一个重要语法标记。
@@ -1971,42 +2019,42 @@
 > **1. 作用**
 >
 > - 用于定义**异步函数**或**异步生成器**。
-> - 标记一个函数为异步，允许在函数体内使用 `await`，以挂起当前协程并等待异步操作完成。
->
-> **2. 语法**
->
+>- 标记一个函数为异步，允许在函数体内使用 `await`，以挂起当前协程并等待异步操作完成。
+> 
+>**2. 语法**
+> 
 > ```python
-> async def func():
+>async def func():
 >     await some_async_operation()
-> ```
->
+>```
+> 
 > - `async def` 声明一个**异步函数**（返回值是一个协程对象）。
 > - 在异步函数内部可以用 `await` 等待异步任务。
->
-> **3. 示例**
->
-> ```python
-> import asyncio
 > 
-> async def hello():
+>**3. 示例**
+> 
+> ```python
+>import asyncio
+> 
+>async def hello():
 >     await asyncio.sleep(1)
 >     print('Hello, async!')
 > 
 > asyncio.run(hello())
 > ```
->
+> 
 > **4. 异步生成器**
->
+> 
 > 也可用于定义异步生成器：
 >
 > ```python
-> async def async_gen():
+>async def async_gen():
 >     for i in range(3):
->         yield i
+>        yield i
 > ```
->
+> 
 > **总结**
->
+> 
 > - `async` 用于声明异步函数和生成器，支持异步编程模型。
-> - 只有在 `async def` 定义的函数里才能用 `await`。
+>- 只有在 `async def` 定义的函数里才能用 `await`。
 > - 异步函数必须用事件循环（如 `asyncio.run`）调用。
