@@ -449,72 +449,65 @@ print(unselected)
 
 
 
-### 方差膨胀系数（VIF）
+### 2.3 方差膨胀系数（VIF）
 
-- 方差膨胀系数 Variance inflation factor (VIF)
+> **作用：量化多重共线性，剔除可被其余特征线性解释的特征**
 
-  - 如果一个特征是其他一组特征的线性组合，则不会在模型中提供额外的信息，可以去掉
 
-  - 评估共线性程度
-    $$
-    \rm{x_i=1+\sum_{k\ne{i}}\beta_{k}x_{k}}
-    $$
 
-  - VIF计算：$\rm{VIF=\frac{1}{1-R^2}}$
+1️⃣ 概念速记
 
-  - R^2^是线性回归中的决定系数，反映了回归方程解释因变量变化的百分比
-
-  - 上面的式子中, R²代表了预测值和真实值拟合的拟合程度，既考虑了预测值与真实值的差异，同时也兼顾了真实值的离散程度
-
+- **VIF = 1 / (1 − R²)**
+  - `R²`：用其余所有特征对该特征做线性回归的决定系数，反映了回归方程解释因变量变化的百分比
     - R²<0.5 → 弱拟合
     - 0.5 ≤ R² ≤ 0.8 → 中度拟合
     - R² > 0.8 强拟合
+  - **R² 越大 → VIF 越大 → 共线性越强 → 信息量越低**
 
-    > ![1716606383070](assets/day04/1716606383070.png)
-    >
-    > 上面的公式中y = 真实值, $\hat{y}$  = 模型预测值, $\bar{y}$  = 真实值的平均值
-    >
-    > 注意：理论上 R² < 0 是可能的，但是只出现在模型特别差的情况，因此不予讨论
 
-    **还没有训练模型，怎么计算$\hat{y}$？**
 
-    当R²越大，拟合的越好，说明$x_i$这个特征能被其它特征线性表示，当VIF超过某个阈值的时候，可以考虑把这个$x_i$删除
 
-  - VIF越大说明拟合越好，该特征和其他特征组合共线性越强，就越没有信息量，可以剔除
+> ![1716606383070](assets/day04/1716606383070.png)
+>
+> 上面的公式中y = 真实值, $\hat{y}$  = 模型预测值, $\bar{y}$  = 真实值的平均值
+>
+> 注意：理论上 R² < 0 是可能的，但是只出现在模型特别差的情况，因此不予讨论
 
-- 案例：
 
-  - 加载数据
 
-  ```python
-  import numpy as np
-  import pandas as pd 
-  import joblib
-  #statsmodels是统计学相关的库
-  from statsmodels.stats.outliers_influence import variance_inflation_factor
-  pd_data = joblib.load('../data/train_woe.pkl')
-  #去掉ID和目标值
-  pd_x = pd_data.drop(['SK_ID_CURR', 'TARGET'], axis=1)
-  ```
+当R²越大，拟合的越好，说明$x_i$这个特征能被其它特征线性表示，当VIF超过某个阈值的时候，可以考虑把这个$x_i$删除
 
-  - 计算方差膨胀系数
+VIF越大说明拟合越好，该特征和其他特征组合共线性越强，就越没有信息量，可以剔除
 
-  ```python
-  #定义计算函数
-  def checkVIF_new(df):
-      lst_col = df.columns
-      #x = np.matrix(df)
-      x = df.values
-      #这里i传入的是索引，从第0个特征开始，顺序计算所有特征的方差膨胀系数
-      VIF_list = [variance_inflation_factor(x,i) for i in range(x.shape[1])]
-      VIF = pd.DataFrame({'feature':lst_col,"VIF":VIF_list})
-      max_VIF = max(VIF_list)
-      return VIF
-  df_vif = checkVIF_new(pd_x)
-  df_vif
-  ```
+
+
+2️⃣ 代码实战（statsmodels）
+
+```python
+# ---------- 库 ----------
+import numpy as np
+import pandas as pd
+import joblib
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# ---------- 读数据 ----------
+pd_data = joblib.load('../data/train_woe.pkl')      # 含 WOE 后的特征
+pd_x    = pd_data.drop(['SK_ID_CURR', 'TARGET'], axis=1)  # 去掉 ID 与标签
+
+# ---------- 计算 VIF ----------
+def check_vif(df):
+    cols = df.columns
+    X    = df.values
+    vifs = [variance_inflation_factor(X, i) for i in range(X.shape[1])]
+    return pd.DataFrame({'feature': cols, 'VIF': vifs})
+
+df_vif = check_vif(pd_x)
+```
+
+VIF 的计算是：对每一列（即每个特征），用其他所有特征作为自变量，对该特征做线性回归，得到决定系数 ( $R^2$ )。然后用公式 ( $\text{VIF} = 1 / (1 - R^2) $) 计算该特征的 VIF。VIF 越大，说明该特征与其他特征的线性相关性越强，存在多重共线性风险。
 
 ><font color='red'>显示结果：</font>
+>
 >|      |                                          feature | VIF      |
 >| ---: | -----------------------------------------------: | -------- |
 >|    0 |                                  AMT_GOODS_PRICE | 1.164528 |
@@ -530,10 +523,11 @@ print(unselected)
 >
 >77 rows × 2 columns
 
-  - 选取方差膨胀系数 > 3的features
+3️⃣ 一键筛选高共线特征
 
 ```python
-df_vif[df_vif['VIF'] > 3]
+high_vif = df_vif[df_vif['VIF'] > 3]
+print(high_vif.sort_values('VIF', ascending=False))
 ```
 
 ><font color='red'>显示结果：</font>
@@ -555,42 +549,59 @@ df_vif[df_vif['VIF'] > 3]
 >|   68 |      p_NAME_YIELD_GROUP_XNA | 4.237860 |
 >
 
-总结：VIF越大，说明拟合越好，该特征和其他特征组合共线性越强，建议剔除。
+✅ 结论
+
+- **VIF ∞**：完全可由其他特征线性表示 → **立即剔除**
+- **VIF > 5**：强共线 → **优先剔除或合并**
+- **VIF 3–5**：结合业务、后续模型表现再决定是否保留
 
 
 
-###  RFE递归特征消除 (Recursive Feature Elimination)
+###  2.4 RFE递归特征消除 (Recursive Feature Elimination)
 
-- 使用排除法的方式训练模型，把模型性能下降最少的那个特征去掉，反复上述训练直到达到指定的特征个数、
+**原理**
 
-  - sklearn.feature_selection.RFE
+- **排除法**：反复训练模型 → 每次剔除对性能影响最小的特征 → 直至保留指定数量。
+- `sklearn.feature_selection.RFE` 一键完成上述循环。
 
-- 案例
 
-  - 使用RFE，选择features
 
-  ```python
-  #如下的案例可以快速出结果
-  from sklearn.svm import LinearSVC
-  from sklearn.datasets import load_iris
-  from sklearn.feature_selection import RFE
-  X,y = load_iris(return_X_y=True)
-  #分类模型，C是正则化参数，用于控制模型复杂度和泛化能力，默认是1.0
-  lscv = LinearSVC(C=0.01)
-  # n_features_to_select 要选几个特征,  step 一次删掉几个
-  selector = RFE(lscv,n_features_to_select=2,step=1)
-  selector.fit(X,y)
-  # support_ 返回False的可以被删除, 返回True的留下
-  selector.support_
-  # 获取顺序 序号越大的是优先被删除的
-  selector.ranking_
-  ```
+**代码示例**（Iris 数据集）
 
-  ><font color='red'>显示结果：</font>
-  >
-  >~~~
-  >array([False,  True,  True, False])
-  >~~~
+```python
+# ---------- 1. 导入库 ----------
+from sklearn.svm import LinearSVC
+from sklearn.datasets import load_iris
+from sklearn.feature_selection import RFE
+
+# ---------- 2. 加载数据 ----------
+X, y = load_iris(return_X_y=True)   # 150×4
+
+# ---------- 3. 初始化模型 ----------
+# C：正则化强度，越小正则越强
+svc = LinearSVC(C=0.01)
+
+# ---------- 4. 使用 RFE ----------
+# n_features_to_select：最终保留 2 个特征
+# step：每轮剔除 1 个特征
+selector = RFE(svc, n_features_to_select=2, step=1)
+selector.fit(X, y)
+
+# ---------- 5. 查看结果 ----------
+# 是否保留（True 保留，False 剔除）
+print("保留掩码:", selector.support_)
+# 特征重要性排序（1=最优先保留，数字越大越早被剔除）
+print("排序序号:", selector.ranking_)
+```
+
+><font color='red'>显示结果：</font>
+>
+>~~~
+>保留掩码: [False  True  True False]
+>排序序号: [3 1 1 2]
+>~~~
+
+- 保留第 2、3 列特征（petal length 和 petal width）。
 
 
 
