@@ -173,7 +173,7 @@ $$
 
 ### 2.2 逻辑回归评分卡
 
-**1. 导入依赖库**
+#### **1. 导入依赖库**
 
 ```python
 import pandas as pd
@@ -186,7 +186,7 @@ import random
 import math
 ```
 
-**2. 读取数据**
+#### **2. 读取数据**
 
 ```python
 data = pd.read_csv('../data/Bcard.txt')
@@ -204,7 +204,7 @@ data.head()
 >|    4 | 2018-07-31 |     0.0 |  A1000069 | 0.406310 |  0.405352 | 0.783015 | 0.563953 |  0.715454 |  0.512554 |   -0.261014 |     0.023810 |        0.00 | 0.423077 |
 >
 
-**3. 数据字段说明**
+#### **3. 数据字段说明**
 
 - **标签字段**：`bad_ind`
 - **外部评分数据**：
@@ -224,7 +224,7 @@ data.head()
 
 
 
-**4. 查看月份分布（用于划分时间外样本）**
+#### **4. 查看月份分布（用于划分时间外样本）**
 
 ```python
 data.obs_mth.unique()
@@ -240,162 +240,188 @@ array(['2018-10-31', '2018-07-31', '2018-09-30', '2018-06-30', '2018-11-30'], dt
 
 
 
-- ==**思考**==
+🎯 **建模思路：Baseline 优先，特征后置**
 
-~~~shell
-是做特征还是训练模型，如果现在做特征，那么，做多少特征合适，什么时候训练模型合适？
+📌 核心思路
 
-先不要做特征。先直捣黄龙，跑一个模型看看。
+> **先跑通 baseline，再谈特征工程。**
 
-我们把这种没有专门做特征来训练的模型，称之为：baseline（基线模型）
+- **Baseline 模型**：不做特征工程，直接用原始特征训练模型。
+- **目的**：获得一个可对比的基准（AUC/KS）。
+- **后续优化**：任何特征工程后的模型，必须优于 baseline，否则无意义。
 
-AI：思路，流程，套路。
-调参工程师
 
-查看，baseline模型的AUC/KS，这就是一个参照的模型。
 
-后续，如果在做了特征的基础之上，我们的模型的AUC/KS值应该比这个好。
-
-问：前面花了2天时间，费那么大劲，学那么多特征的处理方式，有什么用？
-你会了之后，和不会，是两码事。
-用不用，是另外一回事。
-~~~
-
-- 划分测试数据和验证数据(时间外样本)
+📥 数据划分：训练集 vs 时间外验证集
 
 ```python
+# 时间外样本：2018-11-30
 train = data[data.obs_mth != '2018-11-30']
-val = data[data.obs_mth == '2018-11-30']
+val   = data[data.obs_mth == '2018-11-30']
 ```
 
-- 取出建模用到的特征
+
+
+**5. 特征列表：取出建模用到的特征**
 
 ```python
 #info结尾的是自己做的无监督系统输出的个人表现，score结尾的是收费的外部征信数据
 feature_lst = ['td_score', 'jxl_score', 'mj_score','rh_score', 'zzc_score', 'zcx_score', 'person_info', 'finance_info','credit_info', 'act_info']
 ```
 
-- 训练模型
+
+
+#### 6. 训练 Baseline 模型（逻辑回归）
 
 ```python
 x = train[feature_lst]
 y = train['bad_ind']
 
-val_x =  val[feature_lst]
+val_x = val[feature_lst]
 val_y = val['bad_ind']
-#C：正则化系数
-lr_model = LogisticRegression(C=0.1)
-lr_model.fit(x,y)
+
+# 训练模型
+lr_model = LogisticRegression(C=0.1)  # C为正则化系数
+lr_model.fit(x, y)
 ```
 
-><font color = red>输出结果</font>
->
->```shell
->LogisticRegression(C=0.1, class_weight=None, dual=False, fit_intercept=True,
->          intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
->          penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
->          verbose=0, warm_start=False)
->```
 
-- 模型评价
-  - ROC曲线：描绘的是不同的截断点时，并以FPR和TPR为横纵坐标轴，描述随着截断点的变小，TPR随着FPR的变化
-    - 纵轴：TPR=正例分对的概率 = TP/(TP+FN)，其实就是查全率/召回率
-    - 横轴：FPR=负例分错的概率 = FP/(FP+TN)    原本是0被预测为1的样本在所有0的样本中的概率
 
-  - **KS值** 
-    - 作图步骤
-    - 根据学习器的预测结果（注意，是正例的概率值，非0/1变量）对样本进行排序（从大到小）-----这就是截断点依次选取的顺序
-      按顺序选取截断点，并计算TPR和FPR ---也可以只选取n个截断点，分别在1/n，2/n，3/n等位置
-      横轴为样本的占比百分比（最大100%），纵轴分别为TPR和FPR，可以得到KS曲线max（TPR-FPR）
-    - ks = max（TPR-FPR）TPR和FPR曲线分隔最开的位置就是最好的”截断点“，最大间隔距离就是KS值，通常>0.2即可认为模型有比较好偶的预测准确性
+#### 7. 模型评估：ROC 曲线 & KS 值
 
-- 绘制ROC计算KS
+✅ 计算训练集 & 验证集 KS 值
 
 ```python
-#0：非违约概率，1：违约概率
-y_pred = lr_model.predict_proba(x)[:,1] #取出训练集预测值
-fpr_lr_train,tpr_lr_train,_ = roc_curve(y,y_pred) #计算TPR和FPR
-train_ks = abs(fpr_lr_train - tpr_lr_train).max() #计算训练集KS
-print('train_ks : ',train_ks)
+from sklearn.metrics import roc_curve
+import numpy as np
 
-y_pred = lr_model.predict_proba(val_x)[:,1] #计算验证集预测值
-fpr_lr,tpr_lr,_ = roc_curve(val_y,y_pred)   #计算验证集预测值
-val_ks = abs(fpr_lr - tpr_lr).max()         #计算验证集KS值
-print('val_ks : ',val_ks)
+# 训练集预测
+y_pred_train = lr_model.predict_proba(x)[:, 1]  # #0：非违约概率，1：违约概率
+fpr_train, tpr_train, _ = roc_curve(y, y_pred_train)
+train_ks = abs(fpr_train - tpr_train).max()
+print('Train KS:', train_ks)
 
-from matplotlib import pyplot as plt
-plt.plot(fpr_lr_train,tpr_lr_train,label = 'train LR') #绘制训练集ROC
-plt.plot(fpr_lr,tpr_lr,label = 'evl LR')               #绘制验证集ROC
-plt.plot([0,1],[0,1],'k--')
-plt.xlabel('False positive rate')
-plt.ylabel('True positive rate')
+# 验证集预测
+y_pred_val = lr_model.predict_proba(val_x)[:, 1]
+fpr_val, tpr_val, _ = roc_curve(val_y, y_pred_val)
+val_ks = abs(fpr_val - tpr_val).max()
+print('Val KS:', val_ks)
+```
+
+> ```
+> train_ks :  0.4151676259891534
+> val_ks :  0.3856283523530577
+> ```
+
+> ROC曲线：描绘的是以FPR和TPR为横纵坐标轴，TPR随着FPR的变化
+>
+> - 纵轴：TPR=正例分对的概率 = TP/(TP+FN)，其实就是查全率/召回率（正例是违约）
+> - 横轴：FPR=负例分错的概率 = FP/(FP+TN)    原本是0被预测为1的样本在所有0的样本中的概率
+
+📈 绘制 ROC 曲线
+
+```python
+import matplotlib.pyplot as plt
+
+plt.plot(fpr_train, tpr_train, label='Train LR')
+plt.plot(fpr_val, tpr_val, label='Eval LR')
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
 plt.title('ROC Curve')
-plt.legend(loc = 'best')
+plt.legend(loc='best')
 plt.show()
 ```
 
-><font color = red>显示结果：</font>
+> ✅ 评估标准说明
 >
->```
->train_ks :  0.4151676259891534
->val_ks :  0.3856283523530577
->```
+> | 指标    | 含义           | 判断标准                       |
+> | ------- | -------------- | ------------------------------ |
+> | **KS**  | max(TPR - FPR) | > 0.2 表示模型具有较好区分能力 |
+> | **AUC** | ROC 曲线下面积 | > 0.7 表示模型较好             |
 >
->![img](data:image/png;base64,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)
-
-- 使用lightgbm进行特征筛选
-
-这里用的是特征重要性来筛选。
-
-~~~shell
-#问：哪些算法有特征重要性的属性
-集成学习
-	Bagging：RandomForest
-	Boosting：Adaboost、GBDT、XGBoost、LightGBM
-决策树
-~~~
+> ![image-20250722093512253](assets\day05\image-20250722093512253.png)
 
 
+
+✅ 总结：Baseline 的意义
+
+> 你花两天学特征工程，不是为了现在用，而是为了**知道什么时候该用、什么时候不该用**。
+
+- **Baseline 是底线**：任何优化必须优于它。
+- **特征是武器**：用不用，取决于是否能提升模型效果。
+
+
+
+
+
+#### 8. 使用lightgbm进行特征筛选
+
+📌 1. 哪些算法自带「特征重要性」
+
+| 范式     | 代表算法                          |
+| -------- | --------------------------------- |
+| Bagging  | RandomForest                      |
+| Boosting | AdaBoost、GBDT、XGBoost、LightGBM |
+| 单模型   | 决策树（CART、ID3、C4.5）         |
+
+
+
+📌 2. LightGBM 训练 + 特征重要性
+
+> 版本：`lightgbm==3.0.0`
 
 ```python
-# lightgbm版本 3.0.0
+# ---------- 必要库 ----------
 import lightgbm as lgb
+import pandas as pd
 from sklearn.model_selection import train_test_split
-train_x,test_x,train_y,test_y = train_test_split(x,y,random_state=0,test_size=0.2)
 
-#定义模型训练的方法
-def  lgb_test(train_x,train_y,test_x,test_y):
-    #objective：binary表示二分类，metric：指标采用auc
-    clf =lgb.LGBMClassifier(boosting_type = 'gbdt',
-                           objective = 'binary',
-                           metric = 'auc',
-                           learning_rate = 0.1,
-                           n_estimators = 24,
-                           max_depth = 5,
-                           num_leaves = 20,
-                           max_bin = 45,
-                           min_data_in_leaf = 6,
-                           bagging_fraction = 0.6,
-                           bagging_freq = 0,
-                           feature_fraction = 0.8,
-                           )
-    #eval_set：用于作为验证集的(X, y)元组对的列表。
-    clf.fit(train_x,train_y,eval_set = [(train_x,train_y),(test_x,test_y)],eval_metric = 'auc')
-    return clf,clf.best_score_['valid_1']['auc']
+# ---------- 数据准备 ----------
+train_x, test_x, train_y, test_y = train_test_split(
+    x, y, test_size=0.2, random_state=0
+)
 
-#调用方法，训练模型
-lgb_model , lgb_auc  = lgb_test(train_x,train_y,test_x,test_y)
-feature_importance = pd.DataFrame({'name':lgb_model.booster_.feature_name(),
-                                   'importance':lgb_model.feature_importances_}).sort_values(by=['importance'],ascending=False)
+# ---------- 训练函数 ----------
+def lgb_test(train_x, train_y, test_x, test_y):
+    clf = lgb.LGBMClassifier(
+        boosting_type='gbdt',
+        objective='binary',      # 二分类
+        metric='auc',
+        learning_rate=0.1,
+        n_estimators=24,
+        max_depth=5,
+        num_leaves=20,
+        max_bin=45,
+        min_data_in_leaf=6,
+        bagging_fraction=0.6,
+        bagging_freq=0,
+        feature_fraction=0.8,
+    )
+    # eval_set 内顺序：(train, valid)
+    clf.fit(
+        train_x, train_y,
+        eval_set=[(train_x, train_y), (test_x, test_y)],
+        eval_metric='auc',
+        verbose=False
+    )
+    return clf, clf.best_score_['valid_1']['auc']
 
+# ---------- 训练 ----------
+lgb_model, lgb_auc = lgb_test(train_x, train_y, test_x, test_y)
+print('LightGBM AUC:', lgb_auc)
+
+# ---------- 特征重要性 ----------
+feature_importance = pd.DataFrame({
+    'name': lgb_model.booster_.feature_name(),
+    'importance': lgb_model.feature_importances_
+}).sort_values(by='importance', ascending=False)
 
 #查看特征重要性
 feature_importance
 ```
 
 ><font color = 'red'>显示结果：</font>
->
->feature_importance
 >
 >|      | name         | importance |
 >| :--- | :----------- | :--------- |
@@ -410,45 +436,61 @@ feature_importance
 >| 3    | rh_score     | 34         |
 >| 1    | jxl_score    | 32         |
 
-- 关于特征重要性, 需要注意的是, 这是一个相对的结果, 重要性得分的大小只在当前次训练有效果。不能在不同的模型对比得分， 当模型参数发生了变化、训练的数据发生变化， 重要性得分也会有变化
-  - 可以通过相对的结果判断哪个特征相对更加重要
-  - 可以结合着具体模型表现，决定要去掉/保留哪些特征, 也可以换几组数据, 多跑几次这个结果, 计算重要性的平均分, 获取一个更加可靠的重要性排序
-- 模型调优，去掉几个特征，重新建模
+**注意**
+
+- 重要性得分仅对本次训练有效，不同参数 / 数据会变化。
+- 可多次采样求平均，获得更稳健排序。
+
+
+
+📌 3. 根据重要性精简特征 → 重新建模（逻辑回归）
+
+3.1 选定新特征
 
 ```python
-#确定新的特征
-feature_lst = ['person_info','finance_info','credit_info','act_info']
-x = train[feature_lst]
-y = train['bad_ind']
+feature_lst = ['person_info', 'finance_info', 'credit_info', 'act_info']
 
-val_x =  val[feature_lst]
-val_y = val['bad_ind']
+x      = train[feature_lst]
+y      = train['bad_ind']
+val_x  = val[feature_lst]
+val_y  = val['bad_ind']
+```
 
-#训练逻辑回归模型
+3.2 训练并评估
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_curve
+
+# ---------- 训练 ----------
 lr_model = LogisticRegression(C=0.1)
-lr_model.fit(x,y)
+lr_model.fit(x, y)
 
-#预测结果，计算训练集的ks
-y_pred = lr_model.predict_proba(x)[:,1]
-fpr_lr_train,tpr_lr_train,_ = roc_curve(y,y_pred)
-train_ks = abs(fpr_lr_train - tpr_lr_train).max()
-print('train_ks : ',train_ks)
+# ---------- 训练集 KS ----------
+y_pred_train = lr_model.predict_proba(x)[:, 1]
+fpr_train, tpr_train, _ = roc_curve(y, y_pred_train)
+train_ks = abs(tpr_train - fpr_train).max()
+print('train_ks :', train_ks)
 
-#计算测试集的ks
-y_pred = lr_model.predict_proba(val_x)[:,1]
-fpr_lr,tpr_lr,_ = roc_curve(val_y,y_pred)
-val_ks = abs(fpr_lr - tpr_lr).max()
-print('val_ks : ',val_ks)
+# ---------- 验证集 KS ----------
+y_pred_val = lr_model.predict_proba(val_x)[:, 1]
+fpr_val, tpr_val, _ = roc_curve(val_y, y_pred_val)
+val_ks = abs(tpr_val - fpr_val).max()
+print('val_ks   :', val_ks)
+```
 
-#画图
-from matplotlib import pyplot as plt
-plt.plot(fpr_lr_train,tpr_lr_train,label = 'train LR')
-plt.plot(fpr_lr,tpr_lr,label = 'evl LR')
-plt.plot([0,1],[0,1],'k--')
-plt.xlabel('False positive rate')
-plt.ylabel('True positive rate')
-plt.title('ROC Curve')
-plt.legend(loc = 'best')
+3.3 可视化 ROC
+
+```python
+import matplotlib.pyplot as plt
+
+plt.plot(fpr_train, tpr_train, label='train LR')
+plt.plot(fpr_val, tpr_val, label='eval LR')
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve (after feature selection)')
+plt.legend(loc='best')
 plt.show()
 ```
 
@@ -463,7 +505,7 @@ plt.show()
 
 
 
-- 打印回归系数
+📌 4. 逻辑回归系数结果
 
 ```python
 # 系数
@@ -479,6 +521,16 @@ print('截距：',lr_model.intercept_)
 >系数： [[ 2.48386162  4.44901224  1.88254182 -1.43356854]]
 >截距： [-3.90631899]
 >```
+
+✅ 小结
+
+- **LightGBM 快速给出重要性**，为特征筛选提供量化依据。
+- **精简特征后重新建模**（逻辑回归），验证效果不降反升：
+  - train_ks ≈ 0.416
+  - val_ks   ≈ 0.393
+- **系数符号**符合业务直觉（正 / 负向影响）。
+
+
 
 - 生成报告
 
