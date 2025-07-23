@@ -721,185 +721,154 @@ val.level.groupby(val.level).count()/len(val)
 
 
 
-## 集成学习评分卡
+## 3、集成学习评分卡
 
-### LightGBM
+### 3.1 LightGBM
 
-#### 什么是lightGBM
+**1. 什么是 LightGBM**
 
-lightGBM是2017年1月，微软在GitHub上开源的一个新的梯度提升框架。
+- **发布**：2017 年 1 月，微软开源
+- **GitHub 主页**：[点击访问](https://github.com/microsoft/LightGBM)
+- **关键词**：
+  - 速度惊人
+  - 支持分布式
+  - 代码清晰易懂
+  - 占用内存小
 
-[github介绍链接](https://github.com/Microsoft/LightGBM)
+> 在 Higgs 数据集（分类任务：区分是否产生希格斯玻色子）上，LightGBM 比 XGBoost **快近 10 倍**，**内存占用仅约 1/6**。
+> 数据集链接：[Higgs Dataset](https://archive.ics.uci.edu/ml/datasets/HIGGS)
 
-在开源之后，就被别人冠以“速度惊人”、“支持分布式”、“代码清晰易懂”、“占用内存小”等属性。
 
-LightGBM主打的高效并行训练让其性能超越现有其他boosting工具。在Higgs数据集上的试验表明，LightGBM比XGBoost快将近10倍，内存占用率大约为XGBoost的1/6。
 
-> higgs数据集介绍：这是一个分类问题，用于区分产生希格斯玻色子的信号过程和不产生希格斯玻色子的信号过程。
->
-> [数据链接](https://archive.ics.uci.edu/ml/datasets/HIGGS)
+**2. LightGBM 核心优化原理**
 
-#### lightGBM原理
+| 优化维度         | 具体实现                                                  | 优势                                     |
+| ---------------- | --------------------------------------------------------- | ---------------------------------------- |
+| **决策树算法**   | 基于 **Histogram（直方图）**                              | 减少内存占用，加速分裂计算               |
+| **叶子生长策略** | **Leaf-wise**（带深度限制）<br>对比 XGBoost 的 Level-wise | 更高效的生长策略，优先分裂增益最大的叶子 |
+| **并行训练**     | 原生支持高效并行                                          | 多机多卡线性加速                         |
+| **分布式**       | 直接支持                                                  | 轻松扩展到大规模数据                     |
 
-**lightGBM 主要基于以下方面优化，提升整体特特性**
 
-1. 基于Histogram（直方图）的决策树算法
-2. Lightgbm 的Histogram（直方图）做差加速
-3. 带深度限制的Leaf-wise的叶子生长策略
-4. 直接支持类别特征
-5. 直接支持高效并行
 
-### LightGBM特征筛选
+### 3.2 LightGBM特征筛选
+
+#### 1. 数据准备
 
 ```python
 import pandas as pd
-from sklearn.metrics import roc_auc_score,roc_curve,auc
+from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
-from sklearn import metrics
-from sklearn.linear_model import LogisticRegression
-import numpy as np
-import random
-import math
-import time
 import lightgbm as lgb
+
+# 读取数据
 data = pd.read_csv('../data/Bcard.txt')
-data.head()
+
+# 按时间划分训练 / 验证
+df_train   = data[data['obs_mth'] != '2018-11-30']   # 训练
+val        = data[data['obs_mth'] == '2018-11-30']   # 验证
 ```
 
-><font color='red'>显示结果</font>
->
->|      |    obs_mth | bad_ind |       uid | td_score | jxl_score | mj_score | rh_score | zzc_score | zcx_score | person_info | finance_info | credit_info | act_info |
->| ---: | ---------: | ------: | --------: | -------: | --------: | -------: | -------: | --------: | --------: | ----------: | -----------: | ----------: | -------: |
->|    0 | 2018-10-31 |     0.0 | A10000005 | 0.675349 |  0.144072 | 0.186899 | 0.483640 |  0.928328 |  0.369644 |   -0.322581 |     0.023810 |        0.00 | 0.217949 |
->|    1 | 2018-07-31 |     0.0 |  A1000002 | 0.825269 |  0.398688 | 0.139396 | 0.843725 |  0.605194 |  0.406122 |   -0.128677 |     0.023810 |        0.00 | 0.423077 |
->|    2 | 2018-09-30 |     0.0 |  A1000011 | 0.315406 |  0.629745 | 0.535854 | 0.197392 |  0.614416 |  0.320731 |    0.062660 |     0.023810 |        0.10 | 0.448718 |
->|    3 | 2018-07-31 |     0.0 | A10000481 | 0.002386 |  0.609360 | 0.366081 | 0.342243 |  0.870006 |  0.288692 |    0.078853 |     0.071429 |        0.05 | 0.179487 |
->|    4 | 2018-07-31 |     0.0 |  A1000069 | 0.406310 |  0.405352 | 0.783015 | 0.563953 |  0.715454 |  0.512554 |   -0.261014 |     0.023810 |        0.00 | 0.423077 |
 
-- 采用相同的方式划分测试集验证集
+
+#### 2. 构造 5 折「时间交叉验证」
 
 ```python
-df_train = data[data['obs_mth']!='2018-11-30']
-val = data[data['obs_mth']=='2018-11-30']
-```
+# 按时间倒序，再打 5 折
+df_train = df_train.sort_values('obs_mth', ascending=False)
+df_train['rank'] = pd.cut(
+    df_train.reset_index().index,   # 0,1,2,... 
+    bins=5, labels=[i for i in range(5)]
+)
 
-- 使用LightGBM的特征重要性以及夸时间交叉验证方式进行特征筛选
-  - 将数据按时间排序
-
-```python
-df_train = df_train.sort_values(by = 'obs_mth',ascending = False)
-df_train.head()
-```
-
-><font color='red'>显示结果</font>
->
->| index | obs_mth |    bad_ind |  uid |  td_score | jxl_score | mj_score | rh_score | zzc_score | zcx_score | person_info | finance_info | credit_info | act_info |          |
->| ----: | ------: | ---------: | ---: | --------: | --------: | -------: | -------: | --------: | --------: | ----------: | -----------: | ----------: | -------: | -------- |
->|     0 |       0 | 2018-10-31 |  0.0 | A10000005 |  0.675349 | 0.144072 | 0.186899 |  0.483640 |  0.928328 |    0.369644 |    -0.322581 |    0.023810 |     0.00 | 0.217949 |
->| 33407 |   33407 | 2018-10-31 |  0.0 |  A2810176 |  0.146055 | 0.079922 | 0.250568 |  0.045240 |  0.766906 |    0.413713 |     0.013863 |    0.023810 |     0.00 | 0.269231 |
->| 33383 |   33383 | 2018-10-31 |  0.0 |  A2807687 |  0.551366 | 0.300781 | 0.225007 |  0.045447 |  0.735733 |    0.684182 |    -0.261014 |    0.071429 |     0.03 | 0.269231 |
->| 33379 |   33379 | 2018-10-31 |  0.0 |  A2807232 |  0.708547 | 0.769513 | 0.928457 |  0.739716 |  0.947453 |    0.361551 |    -0.128677 |    0.047619 |     0.00 | 0.269231 |
->| 33376 |   33376 | 2018-10-31 |  0.0 |  A2806932 |  0.482248 | 0.116658 | 0.286273 |  0.056618 |  0.047024 |    0.890433 |     0.078853 |    0.047619 |     0.00 | 0.269231 |
-
-- 将数据按照时间先后顺序分成5组
-
-```python
-df_train['rank'] = [i for i in range(df_train.shape[0])]
-df_train['rank'] = pd.cut(df_train['rank'],bins = 5,labels = [i for i in range(5)])
-df_train.head()
-```
-
-><font color='red'>显示结果</font>
->
->|       | index |    obs_mth | bad_ind |       uid | td_score | jxl_score | mj_score | rh_score | zzc_score | zcx_score | person_info | finance_info | credit_info | act_info | rank |
->| ----: | ----: | ---------: | ------: | --------: | -------: | --------: | -------: | -------: | --------: | --------: | ----------: | -----------: | ----------: | -------: | ---: |
->|     0 |     0 | 2018-10-31 |     0.0 | A10000005 | 0.675349 |  0.144072 | 0.186899 | 0.483640 |  0.928328 |  0.369644 |   -0.322581 |      0.02381 |        0.00 | 0.217949 |    1 |
->| 56822 | 56822 | 2018-10-31 |     0.0 |  A5492021 | 0.645511 |  0.058839 | 0.543122 | 0.235281 |  0.633456 |  0.186917 |   -0.053718 |      0.02381 |        0.10 | 0.166667 |    1 |
->| 56991 | 56991 | 2018-10-31 |     0.0 |   A560974 | 0.299629 |  0.344316 | 0.500635 | 0.245191 |  0.056203 |  0.084314 |    0.078853 |      0.02381 |        0.03 | 0.538462 |    1 |
->| 56970 | 56970 | 2018-10-31 |     0.0 |    A55912 | 0.929199 |  0.347249 | 0.438309 | 0.188931 |  0.611842 |  0.485462 |   -0.322581 |      0.02381 |        0.05 | 0.743590 |    1 |
->| 57520 | 57520 | 2018-10-31 |     0.0 |   A601797 | 0.149059 |  0.803444 | 0.167015 | 0.264857 |  0.208072 |  0.704634 |   -0.261014 |      0.02381 |        0.00 | 0.525641 |    1 |
-
-- 查看分组后，每组的数据量
-
-```
+# 各折样本量
 df_train['rank'].value_counts()
+# 0    15967
+# 1    15966
+# 2    15966
+# 3    15966
+# 4    15966
 ```
 
-><font color='red'>显示结果</font>
->
->```shell
->0    15967
->4    15966
->3    15966
->2    15966
->1    15966
->Name: num, dtype: int64
->```
 
-- 查看数据总量，与每组相加结果吻合
 
-```
-len(df_train)
-```
-
-><font color='red'>显示结果</font>
->
->79831
-
-- 使用LightGBM进行分组交叉特征筛选
+#### 3. 训练函数封装
 
 ```python
-import lightgbm as lgb
-# 把训练集的数据划分成 训练集和测试集
-def lgb_test(train_x,train_y,test_x,test_y):
-    # 创建lgb对象
-	clf =lgb.LGBMClassifier(boosting_type = 'gbdt',objective = 'binary',metric = 'auc',
-		learning_rate = 0.3,n_estimators = 100,max_depth = 3,num_leaves = 20,
-		max_bin = 45,min_data_in_leaf = 6,bagging_fraction = 0.6,bagging_freq = 0,
-		feature_fraction = 0.8,
-		)
-    # 使用这个对象训练lgb模型
-	clf.fit(train_x,train_y,eval_set = [(train_x,train_y),(test_x,test_y)],eval_metric = 'auc')
-    # 返回训练好的lgb模型, 返回最佳的分数
-	return clf,clf.best_score_['valid_1']['auc']
+def lgb_test(train_x, train_y, test_x, test_y):
+    clf = lgb.LGBMClassifier(
+        boosting_type='gbdt',
+        objective='binary',
+        metric='auc',
+        learning_rate=0.3,
+        n_estimators=100,
+        max_depth=3,
+        num_leaves=20,
+        max_bin=45,
+        min_data_in_leaf=6,
+        bagging_fraction=0.6,
+        bagging_freq=0,
+        feature_fraction=0.8
+    )
+    clf.fit(
+        train_x, train_y,
+        eval_set=[(train_x, train_y), (test_x, test_y)],
+        eval_metric='auc'
+    )
+    return clf, clf.best_score_['valid_1']['auc']
+```
 
 
-#准备几个空白的列表, 用来保存每次训练的关键结果
-feature_list = ['td_score', 'jxl_score', 'mj_score','rh_score', 'zzc_score', 'zcx_score', 'person_info', 'finance_info','credit_info', 'act_info']
-feature_importance_lst = []
-ks_train_lst = []
-ks_test_lst = []
-auc_list = []
 
+#### 4. 5 折时间交叉验证结果
 
+```python
+# 特征列表
+feature_list = [
+    'td_score', 'jxl_score', 'mj_score', 'rh_score', 'zzc_score',
+    'zcx_score', 'person_info', 'finance_info', 'credit_info', 'act_info'
+]
+
+# 容器：用于保存每折的关键结果
+feature_importance_lst = []   # 特征重要性
+ks_train_lst   = []           # 训练集 KS
+ks_test_lst    = []           # 验证集 KS
+auc_list       = []           # 验证集 AUC
+
+# 5 折时间交叉验证
 for rk in range(5):
-    ttest = df_train[df_train['rank'] == rk] # 挑出一组作为测试数据
-    ttrain = df_train[df_train['rank'] != rk] # 剩下4组作为训练数据
+    # 划分训练 / 验证
+    ttest  = df_train[df_train['rank'] == rk]      # 本折验证集
+    ttrain = df_train[df_train['rank'] != rk]      # 其余 4 折训练集
     
     train_x = ttrain[feature_list]
     train_y = ttrain['bad_ind']
+    test_x  = ttest[feature_list]
+    test_y  = ttest['bad_ind']
     
-    test_x = ttest[feature_list]
-    test_y = ttest['bad_ind']
+    # 训练 LightGBM
+    model, auc = lgb_test(train_x, train_y, test_x, test_y)
     
-    model, auc = lgb_test(train_x,train_y,test_x,test_y)
-    # 计算特征重要性
-    feature_importance_df = pd.DataFrame({'name':model.booster_.feature_name(),'importance':model.feature_importances_}).set_index('name') # 为了方便后面结果的拼接, 这里把name 特征的名字作为行索引
-    feature_importance_lst.append(feature_importance_df)
-    auc_list.append(auc) # 把每次训练得到的验证集的AUC 保存起来
+    # 保存验证集 AUC
+    auc_list.append(auc)
     
-    # 使用测试和训练集数据做预测
-    y_pred_train = model.predict_proba(train_x)[:,1]
-    y_pred_test = model.predict_proba(test_x)[:,1]
+    # 保存特征重要性（DataFrame，以特征名为索引）
+    importance_df = pd.DataFrame({
+        'name': model.feature_name(),
+        'importance': model.feature_importances_
+    }).set_index('name')
+    feature_importance_lst.append(importance_df)
     
-    # 得到fpr tpr
-    fpr_train,tpr_train,threshold_train = roc_curve(train_y,y_pred_train)
-    fpr_test,tpr_test,threshold_test = roc_curve(test_y,y_pred_test)
+    # 计算并保存 KS
+    y_pred_train = model.predict_proba(train_x)[:, 1]
+    y_pred_test  = model.predict_proba(test_x)[:, 1]
     
-    # 计算训练集, 测试集KS
-    train_ks = abs(fpr_train-tpr_train).max()
-    test_ks = abs(fpr_test-tpr_test).max()
-    # 把结果保存到列表
+    fpr_train, tpr_train, _ = roc_curve(train_y, y_pred_train)
+    fpr_test,  tpr_test,  _ = roc_curve(test_y,  y_pred_test)
+    
+    train_ks = abs(fpr_train - tpr_train).max()
+    test_ks  = abs(fpr_test  - tpr_test ).max()
+    
     ks_train_lst.append(train_ks)
     ks_test_lst.append(test_ks)
 ```
@@ -907,116 +876,137 @@ for rk in range(5):
 ><font color='red'>显示结果：</font>
 >
 >```shell
->train_ks:  0.49076511891289665
->test_ks:  0.4728837205200532
+>ks_train_lst:
+>[0.5975672844852717,
+>0.5783467616715372,
+>0.5695855263126663,
+>0.5709695906807863,
+>0.5856241417665808]
+>
+>ks_test_lst:
+>[0.3853595242452872,
+>0.4326870320933379,
+>0.4998707279229346,
+>0.48235428678191344,
+>0.4097696111627038]
 >```
 
 ```python
-feature_importance = pd.concat(feature_lst,axis = 1).mean(1).sort_values(ascending = False)
-feature_importance[(feature_importance>20)].index.tolist()
+feature_importance = pd.concat(feature_importance_lst,axis = 1).mean(1).sort_values(ascending = False)
+feature_importance
 ```
 
 ><font color='red'>显示结果：</font>
 >
->```shell
->['finance_info', 'person_info', 'credit_info', 'act_info']
->```
+>~~~shell
+>act_info        84.8
+>finance_info    79.4
+>mj_score        77.6
+>credit_info     75.6
+>rh_score        70.4
+>zzc_score       69.8
+>jxl_score       67.2
+>zcx_score       65.2
+>td_score        62.0
+>person_info     40.8
+>~~~
+>
 
-### LightGBM评分卡
+> **结论**：
+>
+> - 按时间滑窗交叉验证，可模拟真实线上效果，防止「未来数据泄漏」。
+> - 以平均重要度排序，保留 `act_info`、`finance_info`、`mj_score` 等头部特征即可显著提升模型效率与稳定性。
 
-- 最终筛选出4个特征
+
+
+### 3.3 LightGBM评分卡
+
+#### 1. 最终特征
 
 ```python
-lst = ['person_info','finance_info','credit_info','act_info']
+lst = ['person_info', 'finance_info', 'credit_info', 'act_info']
+```
 
-train = data[data.obs_mth != '2018-11-30'].reset_index().copy()
-evl = data[data.obs_mth == '2018-11-30'].reset_index().copy()
 
-x = train[lst]
-y = train['bad_ind']
 
-evl_x =  evl[lst]
-evl_y = evl['bad_ind']
+#### 2. 训练 / 验证集划分
 
-model,auc = lgb_test(x,y,evl_x,evl_y)
+```python
+train = data[data['obs_mth'] != '2018-11-30'].reset_index().copy()
+evl   = data[data['obs_mth'] == '2018-11-30'].reset_index().copy()
 
-y_pred = model.predict_proba(x)[:,1]
-fpr_lgb_train,tpr_lgb_train,_ = roc_curve(y,y_pred)
-train_ks = abs(fpr_lgb_train - tpr_lgb_train).max()
-print('train_ks : ',train_ks)
+x      = train[lst]
+y      = train['bad_ind']
+evl_x  = evl[lst]
+evl_y  = evl['bad_ind']
+```
 
-y_pred = model.predict_proba(evl_x)[:,1]
-fpr_lgb,tpr_lgb,_ = roc_curve(evl_y,y_pred)
-evl_ks = abs(fpr_lgb - tpr_lgb).max()
-print('evl_ks : ',evl_ks)
 
+
+#### 3. 训练 & 评估
+
+```python
+model, auc = lgb_test(x, y, evl_x, evl_y)
+
+# 计算 KS
+y_pred_train = model.predict_proba(x)[:, 1]
+fpr_train, tpr_train, _ = roc_curve(y, y_pred_train)
+train_ks = abs(fpr_train - tpr_train).max()
+print('Train KS:', train_ks)
+
+y_pred_evl = model.predict_proba(evl_x)[:, 1]
+fpr_evl, tpr_evl, _ = roc_curve(evl_y, y_pred_evl)
+evl_ks = abs(fpr_evl - tpr_evl).max()
+print('Eval KS:', evl_ks)
+```
+
+| 指标     | 数值   |
+| -------- | ------ |
+| Train KS | 0.4936 |
+| Eval KS  | 0.4359 |
+
+
+
+#### 4. ROC 曲线
+
+```python
 from matplotlib import pyplot as plt
-plt.plot(fpr_lgb_train,tpr_lgb_train,label = 'train LR')
-plt.plot(fpr_lgb,tpr_lgb,label = 'evl LR')
-plt.plot([0,1],[0,1],'k--')
-plt.xlabel('False positive rate')
-plt.ylabel('True positive rate')
+
+plt.plot(fpr_train, tpr_train, label='Train LightGBM')
+plt.plot(fpr_evl,  tpr_evl,  label='Eval LightGBM')
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
 plt.title('ROC Curve')
-plt.legend(loc = 'best')
+plt.legend(loc='best')
 plt.show()
 ```
 
-><font color='red'>显示结果：</font>
->
->```shell
->train_ks :  0.49356612822896156
->evl_ks :  0.435912868827033
->```
->
->
 
-![](assets/day05/roc2.png)
 
-- 从结果中看出，LightGBM效比LR要好，但LR通过一些处理，模型表现也会有提升
+![](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\roc2.png)
 
-- 将集成学习评分卡结果转换成分数
+#### 5. 概率 → 分数
 
 ```python
+import math
+
 def score(xbeta):
-    score = 600+50*(math.log2((1-xbeta)/xbeta))  #好人的概率/坏人的概率
-    return score
-evl['xbeta'] = model.predict_proba(evl_x)[:,1]   
-evl['score'] = evl.apply(lambda x : score(x.xbeta) ,axis=1)
-evl['score']
+    """将违约概率转换为评分"""
+    return 600 + 50 * math.log2((1 - xbeta) / xbeta)
+
+evl['xbeta'] = model.predict_proba(evl_x)[:,1]
+evl['score'] = evl['xbeta'].apply(score)
+
+# 验证分数 KS（与概率等价）
+fpr_score, tpr_score, _ = roc_curve(evl_y, evl['score'])
+val_ks = abs(fpr_score - tpr_score).max()
+print('Score KS:', val_ks)   # 0.4359（一致）
 ```
 
-><font color='red'>显示结果</font>
->
->```shell
->0        799.044524
->1        981.994370
->2        911.925133
->3        907.718692
->4        981.994370
->            ...    
->15970    761.518532
->15971    901.987537
->15972    901.987537
->15973    883.922367
->15974    785.625330
->Name: score, Length: 15975, dtype: float64
->```
 
-- 用转换的分数验证KS值
 
-```python
-fpr,tpr,_ = roc_curve(evl_y,evl['score'])
-val_ks = abs(fpr - tpr).max()
-val_ks
-```
-
-><font color='red'>显示结果</font>
->
->```
->0.43591286882703295
->```
-
-- 生成模型报告
+#### 6. 生成模型报告
 
 ```python
 # 把验证集的数据代入到训练好的模型, 输出违约率, 把所有的用户的违约率按从大到小排序, 然后均匀划分成20箱
@@ -1024,8 +1014,8 @@ val_ks
 bins = 20
 temp_df = pd.DataFrame() # 准备空白的df
 # 用训练好的模型, 输出测试集的违约率
-temp_df['bad_rate_predict'] = lr_model.predict_proba(val_x)[:,1] # 模型预测的违约率
-temp_df['real_bad']= val_y.values # 真实的标签
+temp_df['bad_rate_predict'] = model.predict_proba(evl_x)[:,1] # 模型预测的违约率
+temp_df['real_bad']= evl_y.values # 真实的标签
 
 temp_df = temp_df.sort_values('bad_rate_predict',ascending=False)
 
@@ -1042,7 +1032,7 @@ report['GOOD'] =temp_df.groupby('num')['real_bad'].count().astype(int)-report['B
 # 累计求和 累计到这一组, 有多少1, 多少0
 report['BAD_CNT'] = report['BAD'].cumsum()
 report['GOOD_CNT'] = report['GOOD'].cumsum()
-# 计算累计到当前组, 出现的1标签的比例 
+# 计算累计到当前组, 出现的1标签的比例
 good_total = report['GOOD_CNT'].max()
 bad_total = report['BAD_CNT'].max()
 report['BAD_PCTG'] = round(report['BAD_CNT']/bad_total,3)
@@ -1054,7 +1044,7 @@ def cal_ks(x):
 	ks = (x['BAD_CNT']/bad_total)-(x['GOOD_CNT']/good_total)
 	return round(abs(ks),3)
 report['KS'] = report.apply(cal_ks,axis = 1)
-print(report)
+report
 ```
 
 ><font color='red'>显示结果</font>
@@ -1132,43 +1122,46 @@ line.render()
 
 ><font color='red'>显示结果：</font>
 >
->![](assets/day05/card_plot.png)
+>![](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\card_plot.png)
+
+**结论**
+
+- **LightGBM** 在验证集上 KS = **0.4359**，明显优于传统 LR（未经调优）。
+- 仅需 **4 个特征**即可达到可上线的评分卡效果，后续可通过分箱、校准、单调性约束进一步优化
 
 
 
-## 整体流程梳理
+## 4、整体流程梳理（toad 一站式评分卡方案）
 
-### 加载数据
+> 以 toad 为核心库，从数据加载 → 特征筛选 → 分箱 → 调箱 → WOE → 逐步回归 → 建模 → 生成评分卡，全流程一次到位。
+>
+
+### 1️⃣ 数据加载
 
 ```python
-import pandas as pd  
-from sklearn.metrics import roc_auc_score,roc_curve,auc  
-from sklearn.model_selection import train_test_split  
-from sklearn.linear_model import LogisticRegression   
-import numpy as np  
-import math  
-import xgboost as xgb  
-import toad
-# 加载数据
+import pandas as pd
+from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.linear_model import LogisticRegression
+import toad, xgboost as xgb
+
 data_all = pd.read_csv("../data/scorecard.txt")
 
-# 指定不参与训练列名  
-ex_lis = ['uid', 'samp_type', 'bad_ind']  
-# 参与训练列名  
-ft_lis = list(data_all.columns)  
-for i in ex_lis:      
-    ft_lis.remove(i) 
+# 不参与训练的列
+ex_lis = ['uid', 'samp_type', 'bad_ind']
+ft_lis = [c for c in data_all.columns if c not in ex_lis]
 
-# 开发样本、验证样本与时间外样本  
-dev = data_all[(data_all['samp_type'] == 'dev')]
-val = data_all[(data_all['samp_type'] == 'val') ]  
-off = data_all[(data_all['samp_type'] == 'off') ]  
+# 按样本类型拆分，开发样本、验证样本与时间外样本  
+dev = data_all[data_all['samp_type'] == 'dev']
+val = data_all[data_all['samp_type'] == 'val']
+off = data_all[data_all['samp_type'] == 'off']
 ```
 
-- 探索性数据分析，同时处理数值型和字符型
+### 2️⃣ 探索性数据分析
+
+探索性数据分析，同时处理数值型和字符型
 
 ```python
-toad.detector.detect(data_all)
+toad.detector.detect(data_all)   # 自动输出缺失率、IV、分布等
 ```
 
 ><font color='red'>显示结果：</font>
@@ -1189,37 +1182,38 @@ toad.detector.detect(data_all)
 >|     act_info | float64 | 95806 |   0.00% |     74 |                     0.236197 |       0.157132 |       0.0769231 |      0.0769231 |     0.0769231 |       0.205128 |        0.346154 |       0.487179 |       0.615385 |        1.08974 |
 >|    samp_type |  object | 95806 |   0.00% |      3 |                   dev:68.16% |     off:16.67% |      val:15.16% |           None |          None |           None |            None |     dev:68.16% |     off:16.67% |     val:15.16% |
 
-### 特征筛选(缺失值,IV,相关系数)
+### 3️⃣ 粗筛：缺失率 + IV + 相关性
 
-- 使用缺失率、IV、相关系数进行特征筛选。但是考虑到后续建模过程要对变量进行分箱处理，该操作会使变量的IV变小，变量间的相关性变大，因此此处可以对IV和相关系的阈值限制适当放松，或不做限制
+> 考虑到后续分箱会使 IV 下降、相关性上升，阈值适当放宽。
 
 ```python
-dev_slct1, drop_lst= toad.selection.select(dev, dev['bad_ind'], 
-                                                   empty=0.7, iv=0.03, 
-                                                   corr=0.7, 
-                                                   return_drop=True, 
-                                                   exclude=ex_lis) 
+dev_slct1, drop_lst = toad.selection.select(
+    dev, dev['bad_ind'],
+    empty=0.7,           # 缺失率 >70% 删除
+    iv=0.03,             # IV <0.03 删除
+    corr=0.7,            # 相关系数 >0.7 删除
+    return_drop=True,
+    exclude=ex_lis
+)
+
 print("keep:", dev_slct1.shape[1],  
       "drop empty:", len(drop_lst['empty']), 
       "drop iv:", len(drop_lst['iv']),  
       "drop corr:", len(drop_lst['corr']))
 ```
 
-><font color='red'>显示结果：</font>
->
->```shell
->keep: 12 drop empty: 0 drop iv: 1 drop corr: 0
->```
+```
+keep: 12 drop empty: 0 drop iv: 1 drop corr: 0
+```
 
-### 卡方分箱
+### 4️⃣ 卡方分箱
 
 ```python
-# 得到切分节点  
-combiner = toad.transform.Combiner()  
-combiner.fit(dev_slct1, dev_slct1['bad_ind'], method='chi',
-                min_samples=0.05, exclude=ex_lis)  
-# 导出箱的节点  
-bins = combiner.export()  
+combiner = toad.transform.Combiner()
+combiner.fit(dev_slct1, dev_slct1['bad_ind'],
+             method='chi', min_samples=0.05, exclude=ex_lis)
+
+bins = combiner.export()
 print(bins)
 ```
 
@@ -1229,35 +1223,38 @@ print(bins)
 >{'td_score': [0.7989831262724624], 'jxl_score': [0.4197048501965005], 'mj_score': [0.3615303943747963], 'zzc_score': [0.4469861520889339], 'zcx_score': [0.7007847486465795], 'person_info': [-0.2610139784946237, -0.1286774193548387, -0.05371756272401434, 0.013863440860215051, 0.06266021505376344, 0.07885304659498207], 'finance_info': [0.047619047619047616], 'credit_info': [0.02, 0.04, 0.11], 'act_info': [0.1153846153846154, 0.14102564102564102, 0.16666666666666666, 0.20512820512820512, 0.2692307692307692, 0.35897435897435903, 0.3974358974358974, 0.5256410256410257]}
 >```
 
-### Bivar图,调整分箱
+### 5️⃣ Bivar 图检查单调性 & 调箱（示例 act_info）
 
 Bivar图，用于观察变量的单调性。
 
-- 画图观察**每个变量**在开发样本和时间外样本上的Bivar图，为方便阅读，这里只以单变量act_info做示范
+画图观察**每个变量**在开发样本和时间外样本上的Bivar图，为方便阅读，这里只以单变量act_info做示范
 
 ```python
-# 根据节点实施分箱  
-dev_slct2 = combiner.transform(dev_slct1)
+# 先分箱
+dev2 = combiner.transform(dev_slct1)
 val2 = combiner.transform(val[dev_slct1.columns])
 off2 = combiner.transform(off[dev_slct1.columns])
-# 分箱后通过画图观察
-from toad.plot import  bin_plot, badrate_plot
-bin_plot(dev_slct2, x='act_info', target='bad_ind')
-bin_plot(val2, x='act_info', target='bad_ind')  
-bin_plot(off2, x='act_info', target='bad_ind')
+
+# 画图
+from toad.plot import bin_plot
+bin_plot(dev2, x='act_info', target='bad_ind')
+bin_plot(val2,  x='act_info', target='bad_ind')
+bin_plot(off2,  x='act_info', target='bad_ind')
 ```
 
+>**若单调性不足，手动合并区间**
+>
 >开发样本：
 >
->![1715875375810](assets/day05/1715875375810.png)
+>![1715875375810](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875375810.png)
 >
 >测试样本：
 >
->![1715875407318](assets/day05/1715875407318.png)
+>![1715875407318](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875407318.png)
 >
 >跨时间样本：
 >
->![1715875451138](assets/day05/1715875451138.png)
+>![1715875451138](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875451138.png)
 
 - 由于前3箱的变化趋势与整体不符（整体为递减趋势），因此在接下来的步骤中将其合并。第4～6箱合并，最后3箱进行合并。从而得到严格递减的变化趋势。
 
@@ -1269,16 +1266,17 @@ bins['act_info']
 >
 >```shell
 >[0.1153846153846154,
-> 0.14102564102564102,
-> 0.16666666666666666,
-> 0.20512820512820512,
-> 0.2692307692307692,
-> 0.35897435897435903,
-> 0.3974358974358974,
-> 0.5256410256410257]
+>0.14102564102564102,
+>0.16666666666666666,
+>0.20512820512820512,
+>0.2692307692307692,
+>0.35897435897435903,
+>0.3974358974358974,
+>0.5256410256410257]
 >```
 
 ```python
+#通过手动设置分箱边界值来调整分箱
 adj_bin = {'act_info': [0.16666666666666666,0.35897435897435903,]}  
 combiner.set_rules(adj_bin)
 
@@ -1294,7 +1292,7 @@ bin_plot(off3, x='act_info', target='bad_ind')
 
 ><font color='red'>显示结果：</font>
 >
->![1715875529394](assets/day05/1715875529394.png)
+>![1715875529394](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875529394.png)
 >
 >开发样本
 >
@@ -1306,20 +1304,18 @@ bin_plot(off3, x='act_info', target='bad_ind')
 >
 >验证样本
 
-### 绘制负样本占比关联图
+
+
+**绘制负样本占比关联图**
 
 ```python
 data = pd.concat([dev_slct3,val3,off3], join='inner')   
-badrate_plot(data, x='samp_type', target='bad_ind', by='act_info') 
+badrate_plot(data, x='samp_type', target='bad_ind', by='act_info')
 ```
 
 ><font color='red'>显示结果：</font>
 >
->```
-><matplotlib.axes._subplots.AxesSubplot at 0x1b19b5c56c8>
->```
->
->![1715875621194](assets/day05/1715875621194.png)
+>![1715875621194](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875621194.png)
 
 - 上图中,图中的线没有交叉,故不需要对该特征的分组进行合并,即使有少量交叉也不会对结果造成明显的影响,只有当错位比较严重的情况下才进行调整
 
@@ -1330,100 +1326,74 @@ badrate_plot(data, x='samp_type', target='bad_ind', by='person_info')
 
 ><font color='red'>显示结果：</font>
 >
->```
-><matplotlib.axes._subplots.AxesSubplot at 0x1b19b608b08>
->```
->
->![1715875679964](assets/day05/1715875679964.png)
+>![1715875679964](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875679964.png)
 
 - 上图中,有变量错位情况,属于可以容忍范围,也可以考虑将变量person_info中编号为3,4,5的箱合并
 
-### WOE编码,并验证IV
+### 6️⃣ WOE 编码 & PSI 稳定性
 
 ```python
-t = toad.transform.WOETransformer()  
-dev_slct3_woe = t.fit_transform(dev_slct3, dev_slct3['bad_ind'], 
-                                      exclude=ex_lis) 
-val_woe = t.transform(val3[dev_slct3.columns])  
-off_woe = t.transform(off3[dev_slct3.columns])  
-data = pd.concat([dev_slct3_woe, val_woe, off_woe])
+woe = toad.transform.WOETransformer()
+dev_woe = woe.fit_transform(dev3, dev3['bad_ind'], exclude=ex_lis)
+val_woe  = woe.transform(val3[dev3.columns])
+off_woe  = woe.transform(off3[dev3.columns])
+data = pd.concat([dev_woe, val_woe, off_woe])
+
+# PSI 检查
+psi = toad.metrics.PSI(dev_woe, val_woe).sort_values()
+print(psi)
+
+# 剔除 PSI>0.13 的变量
+keep_cols = psi[psi < 0.13].index.tolist()
+dev_woe2 = dev_woe[keep_cols]
+val_woe2 = val_woe[keep_cols]
+off_woe2 = off_woe[keep_cols]
 ```
 
-- 计算训练样本与测试样本的PSI
-
-```python
-psi_df = toad.metrics.PSI(dev_slct3_woe, val_woe).sort_values(0)  
-psi_df = psi_df.reset_index()  
-psi_df = psi_df.rename(columns = {'index': 'feature', 0: 'psi'}) 
-psi_df
-```
-
-><font color='red'>显示结果：</font>
+>- 通常单个特征的PSI值建议在0.1以下，根据具体情况可以适当调整
+>- 本案例数据为演示数据变量PSI普遍较大，因此选择0.13作为阈
 >
->|      | feature      | psi          |
->| :--- | :----------- | :----------- |
->| 0    | uid          | 0.000000e+00 |
->| 1    | samp_type    | 0.000000e+00 |
->| 2    | td_score     | 8.778656e-07 |
->| 3    | zcx_score    | 4.183912e-06 |
->| 4    | jxl_score    | 2.901553e-05 |
->| 5    | zzc_score    | 3.764148e-05 |
->| 6    | mj_score     | 5.005908e-05 |
->| 7    | bad_ind      | 4.128345e-03 |
->| 8    | credit_info  | 9.489392e-02 |
->| 9    | act_info     | 1.237395e-01 |
->| 10   | person_info  | 1.278102e-01 |
->| 11   | finance_info | 1.341445e-01 |
-
-- 删除PSI大于0.13的特征
-  - 通常单个特征的PSI值建议在0.1以下，根据具体情况可以适当调整
-  - 本案例数据为演示数据变量PSI普遍较大，因此选择0.13作为阈值
-
-```python
-psi_013 = list(psi_df[psi_df.psi<0.13].feature)
-# 避免不参与计算的几个特征被删掉，把 uid,samp_type,bad_ind添加回来并去重
-psi_013.extend(ex_lis)
-psi_013 = list(set(psi_013))
-data = data[psi_013]
-dev_woe_psi = dev_slct3_woe[psi_013]
-val_woe_psi = val_woe[psi_013]
-off_woe_psi = off_woe[psi_013]
-print(data.shape)
-```
-
 ><font color='red'>显示结果：</font>
 >
 >```
->(95806, 11)
+>uid             0.000000e+00
+>samp_type       0.000000e+00
+>td_score        8.778656e-07
+>zcx_score       4.183912e-06
+>jxl_score       2.901553e-05
+>zzc_score       3.764148e-05
+>mj_score        5.005908e-05
+>bad_ind         4.128345e-03
+>credit_info     9.489392e-02
+>act_info        1.182993e-01
+>person_info     1.278102e-01
+>finance_info    1.341445e-01
 >```
 
-- 卡方分箱后部分变量的IV降低，且整体相关程度增大，需要再次筛选特征
-  - 使用的IV和相关系数阈值较实际建模场景都偏小，主要是因为演示数据并非真实数据
+### 7️⃣ 再次筛选（放松阈值）
+
+卡方分箱后部分变量的IV降低，且整体相关程度增大，需要再次筛选特征
 
 ```python
-dev_woe_psi2, drop_lst = toad.selection.select(dev_woe_psi,
-                                               dev_woe_psi['bad_ind'],
-                                               empty=0.6,   
-                                               iv=0.001, 
-                                               corr=0.5, 
-                                               return_drop=True, 
-                                               exclude=ex_lis)  
-print("keep:", dev_woe_psi2.shape[1],  
-      "drop empty:", len(drop_lst['empty']),  
-      "drop iv:", len(drop_lst['iv']),  
-      "drop corr:", len(drop_lst['corr'])) 
+dev_woe3, drop2 = toad.selection.select(
+    dev_woe2, dev_woe2['bad_ind'],
+    empty=0.6, iv=0.001, corr=0.5,
+    return_drop=True, exclude=ex_lis
+)
 
+print(f"最终保留 {dev_woe3.shape[1]} 个特征：")
+print(dev_woe3.columns)
 ```
 
-><font color='red'>显示结果：</font>
->
->```
->keep: 7 drop empty: 0 drop iv: 4 drop corr: 0
->```
+
+
+
+
+
 
 ### 特征筛选
 
-- 使用逐步回归进行特征筛选，使用线性回归模型，并选择KS作为评价指标
+- 使用**逐步回归**进行特征筛选，使用线性回归模型，并选择KS作为评价指标
   - estimator: 用于拟合的模型，支持'ols', 'lr', 'lasso', 'ridge'
   - direction: 逐步回归的方向，支持'forward', 'backward', 'both' （推荐）
     - Forward selection：将自变量逐个引入模型，引入一个自变量后查看该模型是否发生显著性变化
@@ -1448,11 +1418,11 @@ dev_woe_psi_stp = toad.selection.stepwise(dev_woe_psi2,
                                                   exclude=ex_lis,  
                                                   direction='both',   
                                                   criterion='ks',  
-                                                  estimator='ols',
+                                                  estimator='lr',
                                               intercept=False)
-val_woe_psi_stp = val_woe_psi[dev_woe_psi_stp.columns]  
-off_woe_psi_stp = off_woe_psi[dev_woe_psi_stp.columns]  
-data = pd.concat([dev_woe_psi_stp, val_woe_psi_stp, off_woe_psi_stp]) 
+val_woe_psi_stp = val_woe_psi[dev_woe_psi_stp.columns]
+off_woe_psi_stp = off_woe_psi[dev_woe_psi_stp.columns]
+data = pd.concat([dev_woe_psi_stp, val_woe_psi_stp, off_woe_psi_stp])
 print(data.shape)
 ```
 
@@ -1472,8 +1442,8 @@ dev_woe_psi_stp.columns
 >
 >```shell
 >Index(['uid', 'samp_type', 'bad_ind', 'credit_info', 'act_info',
->       'person_info'],
->      dtype='object')
+>  'person_info'],
+> dtype='object')
 >```
 
 ### 模型训练
@@ -1481,6 +1451,9 @@ dev_woe_psi_stp.columns
 - 定义函数用于模型训练
 
 ```python
+# 模型训练 分别使用 逻辑回归 和 XGBoost 训练评分卡模型
+# 在银行往往还在使用lr  XGB可以作为陪跑模型, 看lr效果是否还有提升空间
+# XGB作为线上模型  训练一个逻辑回归 可以提供模型的可解释性
 def lr_model(x, y, valx, valy, offx, offy, C):  
     model = LogisticRegression(C=C, class_weight='balanced')      
     model.fit(x,y)
@@ -1488,28 +1461,30 @@ def lr_model(x, y, valx, valy, offx, offy, C):
     y_pred = model.predict_proba(x)[:,1]  
     fpr_dev,tpr_dev,_ = roc_curve(y, y_pred)  
     train_ks = abs(fpr_dev - tpr_dev).max()  
-    print('train_ks : ', train_ks)
+    print('train_ks : ', train_ks)  
 
     y_pred = model.predict_proba(valx)[:,1]  
     fpr_val,tpr_val,_ = roc_curve(valy, y_pred)  
     val_ks = abs(fpr_val - tpr_val).max()  
-    print('val_ks : ', val_ks)
+    print('val_ks : ', val_ks)  
     
     y_pred = model.predict_proba(offx)[:,1]  
     fpr_off,tpr_off,_ = roc_curve(offy, y_pred)  
     off_ks = abs(fpr_off - tpr_off).max()  
-    print('off_ks : ', off_ks)
+    print('off_ks : ', off_ks)  
       
     from matplotlib import pyplot as plt  
     plt.plot(fpr_dev, tpr_dev, label='dev')  
     plt.plot(fpr_val, tpr_val, label='val')  
     plt.plot(fpr_off, tpr_off, label='off')  
-    plt.plot([0,1], [0,1], 'k--'
+    plt.plot([0,1], [0,1], 'k--')  
     plt.xlabel('False positive rate')  
     plt.ylabel('True positive rate')  
-    plt.title('ROC Curve')
-    plt.legend(loc='best')
-    plt.show()
+    plt.title('ROC Curve')  
+    plt.legend(loc='best')  
+    plt.show() 
+
+    
 
 def xgb_model(x, y, valx, valy, offx, offy):  
     model = xgb.XGBClassifier(learning_rate=0.05,  
@@ -1601,7 +1576,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.3758086175640308
 >```
 >
->![1715875857771](assets/day05/1715875857771.png)
+>![1715875857771](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875857771.png)
 >
 >```
 >逻辑回归反向：
@@ -1610,7 +1585,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.4061965880072622
 >```
 >
->![1715875885631](assets/day05/1715875885631.png)
+>![1715875885631](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875885631.png)
 >
 >```
 >XGBoost正向：
@@ -1619,7 +1594,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.37437103192850807
 >```
 >
->![1715875912336](assets/day05/1715875912336.png)
+>![1715875912336](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875912336.png)
 >
 >```
 >XGBoost反向：
@@ -1628,7 +1603,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.3936270948436908
 >```
 >
->![1715875954827](assets/day05/1715875954827.png)
+>![1715875954827](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875954827.png)
 
 - 从结果中看出:
   - XGBoost模型的效果并没有明显高于逻辑回归模型，因此当前特征不需要再进行组合。
@@ -1698,7 +1673,7 @@ print('特征PSI:','\n',toad.metrics.PSI(x,offx).sort_values(0))
 >AUC: 0.7435613582904539
 >模型PSI: 0.34091667386100255
 >特征PSI: 
-> credit_info    0.098585
+>credit_info    0.098585
 >act_info       0.124820
 >person_info    0.127833
 >dtype: float64
@@ -1709,7 +1684,7 @@ print('特征PSI:','\n',toad.metrics.PSI(x,offx).sort_values(0))
 ```python
 toad.metrics.KS_bucket(prob_off,offy,
                        bucket=15,
-                       method='quantile') 
+                       method='quantile')
 ```
 
 ><font color='red'>显示结果：</font>
@@ -1737,10 +1712,10 @@ toad.metrics.KS_bucket(prob_off,offy,
   - 该函数内嵌逻辑回归模型  参数 C '正则化强度', class_weight 与sklearn中逻辑回归参数一致
   - combiner: 传入训练好的 toad.Combiner 对象
   - transer: 传入先前训练的 toad.WOETransformer 对象
-  
+
   - pdo、rate、base_odds、base_score:
-   e.g. pdo=60, rate=2, base_odds=20,base_score=750
-        实际意义为当比率为1/20，输出基准评分750，当比率为基准比率2倍时，基准分下降60分
+    e.g. pdo=60, rate=2, base_odds=20,base_score=750
+       实际意义为当比率为1/20，输出基准评分750，当比率为基准比率2倍时，基准分下降60分
 
 ```python
 from toad.scorecard import ScoreCard  
@@ -1777,96 +1752,4 @@ final_card
 
 
 
-## 小结
-
-- 掌握KS值的计算方法
-
-  - KS= max（TPR-FPR）TPR和FPR曲线分隔最开的位置就是最好的”截断点“，
-
-- 知道评分映射方法
-
-  - $$score = 650+50 log_2(P_{正样本}/ P_{负样本})$$
-
-- 知道LightGBM基本原理
-
-  - XGBoost 和 LightGBM 都基于GBDT
-  - XGBoost在GBDT基础上做了二阶泰勒级数展开,效率更高,模型更精准
-  - LightGBM在XGBoost基础上进一步优化,直接支持类别特征,直接支持高效并行,基于直方图的决策树算法效率更高
-
-- 掌握使用lightGBM进行特征筛选的方法
-
-  - 利用lightGBM输出特征重要性
-  - 将样本用时间排序分组, 做跨时间交叉验证
-
-- 应用toad构建评分卡模型
-
-  - 探索性数据分析
-
-  ```python
-  toad.detector.detect(data_all)
-  ```
-
-  - 特征筛选(缺失值,IV,相关系数)
-
-  ```python
-  dev_slct1, drop_lst= toad.selection.select(dev, dev['bad_ind'], 
-                                                     empty=0.7, iv=0.03, 
-                                                     corr=0.7, 
-                                                     return_drop=True, 
-                                                     exclude=ex_lis) 
-  ```
-
-  - Bivar图,观察变量单调性
-
-  ```python
-  combiner.transform(dev_slct1)
-  ```
-
-  - 负样本占比关联图
-
-  ```python
-  badrate_plot(data, x='samp_type', target='bad_ind', by='act_info') 
-  ```
-
-  - WOE
-
-  ```python
-  t = toad.transform.WOETransformer()  
-  dev_slct3_woe = t.fit_transform(dev_slct3, dev_slct3['bad_ind'], 
-                                        exclude=ex_lis) 
-  ```
-
-  - 特征筛选
-
-  ```python
-  dev_woe_psi_stp = toad.selection.stepwise(dev_woe_psi2,  
-                                                    dev_woe_psi2['bad_ind'],  
-                                                    exclude=ex_lis,  
-                                                    direction='both',   
-                                                    criterion='ks',  
-                                                    estimator='ols',
-                                                intercept=False)  
-  ```
-
-  - 模型训练
-  - 生成模型报告
-
-  ```python
-  toad.metrics.KS_bucket(prob_off,offy,
-                         bucket=10,
-                         method='quantile') 
-  ```
-
-  - 生成评分卡
-
-  ```python
-  from toad.scorecard import ScoreCard  
-  card = ScoreCard(combiner=combiner, 
-                      transer=t, C=0.1, 
-                      class_weight='balanced', 
-                      base_score=600,
-                      base_odds=35,
-                      pdo=60,
-                      rate=2)
-  ```
 
