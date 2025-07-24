@@ -984,7 +984,7 @@ plt.show()
 
 
 
-![](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\roc2.png)
+![](assets\roc2.png)
 
 #### 5. 概率 → 分数
 
@@ -1122,7 +1122,7 @@ line.render()
 
 ><font color='red'>显示结果：</font>
 >
->![](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\card_plot.png)
+>![](assets\card_plot.png)
 
 **结论**
 
@@ -1246,15 +1246,15 @@ bin_plot(off2,  x='act_info', target='bad_ind')
 >
 >开发样本：
 >
->![1715875375810](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875375810.png)
+>![1715875375810](assets\1715875375810.png)
 >
 >测试样本：
 >
->![1715875407318](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875407318.png)
+>![1715875407318](assets\1715875407318.png)
 >
 >跨时间样本：
 >
->![1715875451138](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875451138.png)
+>![1715875451138](assets\1715875451138.png)
 
 - 由于前3箱的变化趋势与整体不符（整体为递减趋势），因此在接下来的步骤中将其合并。第4～6箱合并，最后3箱进行合并。从而得到严格递减的变化趋势。
 
@@ -1292,7 +1292,7 @@ bin_plot(off3, x='act_info', target='bad_ind')
 
 ><font color='red'>显示结果：</font>
 >
->![1715875529394](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875529394.png)
+>![1715875529394](assets\1715875529394.png)
 >
 >开发样本
 >
@@ -1315,7 +1315,7 @@ badrate_plot(data, x='samp_type', target='bad_ind', by='act_info')
 
 ><font color='red'>显示结果：</font>
 >
->![1715875621194](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875621194.png)
+>![1715875621194](assets\1715875621194.png)
 
 - 上图中,图中的线没有交叉,故不需要对该特征的分组进行合并,即使有少量交叉也不会对结果造成明显的影响,只有当错位比较严重的情况下才进行调整
 
@@ -1326,7 +1326,7 @@ badrate_plot(data, x='samp_type', target='bad_ind', by='person_info')
 
 ><font color='red'>显示结果：</font>
 >
->![1715875679964](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875679964.png)
+>![1715875679964](assets\1715875679964.png)
 
 - 上图中,有变量错位情况,属于可以容忍范围,也可以考虑将变量person_info中编号为3,4,5的箱合并
 
@@ -1385,57 +1385,57 @@ print(f"最终保留 {dev_woe3.shape[1]} 个特征：")
 print(dev_woe3.columns)
 ```
 
+### 7️⃣ 特征筛选（**逐步回归**）
 
+使用**逐步回归**进行特征筛选，使用线性回归模型，并选择KS作为评价指标
 
+**1. 核心参数说明**
 
+| 参数             | 取值 / 说明                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| **estimator**    | 用于拟合的模型`'ols'`、`'lr'`、`'lasso'`、`'ridge'`          |
+| **direction**    | • `'forward'`：前向选择<br>• `'backward'`：后向剔除<br>• **`'both'`（推荐）**：前向+后向 |
+| **criterion**    | 评价指标：`aic`、`bic`、`ks`、`auc`                          |
+| **max\_iter**    | 最大迭代次数，防止死循环                                     |
+| **return\_drop** | 是否返回被剔除的变量名                                       |
+| **exclude**      | 强制不参与训练的列（如 ID、时间戳）                          |
 
+**2. 三种策略对比**
 
+| 策略         | 思路                                         | 优点         | 缺点                           |
+| ------------ | -------------------------------------------- | ------------ | ------------------------------ |
+| **Forward**  | 从空模型开始，逐步加入最显著变量             | 简单快速     | 早期变量一旦进入，后期无法剔除 |
+| **Backward** | 从全量模型开始，逐步剔除最不显著变量         | 保证全局视角 | 初始变量多，计算量大           |
+| **Both**     | 每加一个新变量的同时，检查现有变量是否仍显著 | **最优组合** | 计算量中等，但最稳健           |
 
-### 特征筛选
+> - Forward selection：将自变量逐个引入模型，引入一个自变量后查看该模型是否发生显著性变化
+>   - 如果发生了显著性变化，那么则将该变量引入模型中，否则忽略该变量，直至遍历所有变量
+>   - 即将变量按照贡献度从大到小排列，依次加入
+> - Backward elimination：与Forward selection选择相反，将所有变量放入模型
+>   - 尝试将某一变量进行剔除，查看剔除后对整个模型是否有显著性变化
+>   - 如没有显著性变化则剔除，有则保留，直到留下所有对模型有显著性变化的因素
+>   - 也就是将自变量按贡献度从小到大，依次剔除
+> - both：将前向选择与后向消除同时进行
+>   - 模型中每加入一个自变量，可能使某个已放入模型的变量显著性减小
+>   - 显著性小于阈值时，可将该变量从模型中剔除
+>   - 即每增加一个新的显著变量的同时，检验模型中所有变量的显著性，剔除不显著变量，从而得到最优变量组合
 
-- 使用**逐步回归**进行特征筛选，使用线性回归模型，并选择KS作为评价指标
-  - estimator: 用于拟合的模型，支持'ols', 'lr', 'lasso', 'ridge'
-  - direction: 逐步回归的方向，支持'forward', 'backward', 'both' （推荐）
-    - Forward selection：将自变量逐个引入模型，引入一个自变量后查看该模型是否发生显著性变化
-      - 如果发生了显著性变化，那么则将该变量引入模型中，否则忽略该变量，直至遍历所有变量
-      - 即将变量按照贡献度从大到小排列，依次加入
-    - Backward elimination：与Forward selection选择相反，将所有变量放入模型
-      - 尝试将某一变量进行剔除，查看剔除后对整个模型是否有显著性变化
-      - 如没有显著性变化则剔除，有则保留，直到留下所有对模型有显著性变化的因素
-      - 也就是将自变量按贡献度从小到大，依次剔除
-    - both：将前向选择与后向消除同时进行
-      - 模型中每加入一个自变量，可能使某个已放入模型的变量显著性减小
-      - 显著性小于阈值时，可将该变量从模型中剔除
-      - 即每增加一个新的显著变量的同时，检验模型中所有变量的显著性，剔除不显著变量，从而得到最优变量组合
-  - criterion: 评判标准，支持'aic', 'bic', 'ks', 'auc'
-  - max_iter: 最大循环次数
-  - return_drop: 是否返回被剔除的列名
-  - exclude: 不需要被训练的列名，比如ID列和时间列
-
-```python
-dev_woe_psi_stp = toad.selection.stepwise(dev_woe_psi2,  
-                                                  dev_woe_psi2['bad_ind'],  
-                                                  exclude=ex_lis,  
-                                                  direction='both',   
-                                                  criterion='ks',  
-                                                  estimator='lr',
-                                              intercept=False)
-val_woe_psi_stp = val_woe_psi[dev_woe_psi_stp.columns]
-off_woe_psi_stp = off_woe_psi[dev_woe_psi_stp.columns]
-data = pd.concat([dev_woe_psi_stp, val_woe_psi_stp, off_woe_psi_stp])
-print(data.shape)
-```
-
-><font color='red'>显示结果：</font>
->
->```
->(95806, 6)
->```
-
-- 查看剩下的特征列
+**3. 代码示例（toad 实现）**
 
 ```python
-dev_woe_psi_stp.columns
+dev_step = toad.selection.stepwise(
+    dev_woe3, dev_woe3['bad_ind'],
+    exclude=ex_lis,
+    direction='both',
+    criterion='ks',
+    estimator='lr',
+    intercept=False
+)
+
+val_step = val_woe2[dev_step.columns]
+off_step = off_woe2[dev_step.columns]
+
+print(dev_step.columns)
 ```
 
 ><font color='red'>显示结果：</font>
@@ -1446,9 +1446,9 @@ dev_woe_psi_stp.columns
 > dtype='object')
 >```
 
-### 模型训练
+### 9️⃣ 建模（LR & XGBoost 双向验证）
 
-- 定义函数用于模型训练
+定义函数用于模型训练
 
 ```python
 # 模型训练 分别使用 逻辑回归 和 XGBoost 训练评分卡模型
@@ -1576,7 +1576,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.3758086175640308
 >```
 >
->![1715875857771](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875857771.png)
+>![1715875857771](assets\1715875857771.png)
 >
 >```
 >逻辑回归反向：
@@ -1585,7 +1585,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.4061965880072622
 >```
 >
->![1715875885631](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875885631.png)
+>![1715875885631](assets\1715875885631.png)
 >
 >```
 >XGBoost正向：
@@ -1594,7 +1594,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.37437103192850807
 >```
 >
->![1715875912336](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875912336.png)
+>![1715875912336](assets\1715875912336.png)
 >
 >```
 >XGBoost反向：
@@ -1603,7 +1603,7 @@ bi_train(data, dep='bad_ind', exclude=ex_lis)
 >off_ks :  0.3936270948436908
 >```
 >
->![1715875954827](C:\Users\Administrator\Desktop\ai_learn\阶段5金融风控\assets\1715875954827.png)
+>![1715875954827](assets\1715875954827.png)
 
 - 从结果中看出:
   - XGBoost模型的效果并没有明显高于逻辑回归模型，因此当前特征不需要再进行组合。
@@ -1749,7 +1749,6 @@ final_card
 >|   11 | person_info | [0.013863440860215051 ~ 0.06266021505376344)  | 108.83 |
 >|   12 | person_info | [0.06266021505376344 ~ 0.07885304659498207)   |  90.32 |
 >|   13 | person_info | [0.07885304659498207 ~ inf)                   |  75.46 |
-
 
 
 
