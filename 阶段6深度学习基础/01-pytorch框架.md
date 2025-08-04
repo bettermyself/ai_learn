@@ -1,92 +1,185 @@
-##  深度学习
+##  1、深度学习
 
-- 与机器学习的差别
-  - 不需要人工特征工程
-  - 特征工程+分类/回归 使用一个网络来完成
-- 优点
-  - 精确度高，性能好，效果好
-  - 拟合任意非线性的关系
-  - 框架多，不需我们自己造轮子
-- 缺点
-  - 黑箱，可解释性差
-  - 网络参数多，超参数多
-  - 需要大量的数据进行训练，训练时间长，对算力有较高要求
-  - 小数据集容易过拟合
+### 1.1 与机器学习的差别
 
-## pytorch框架
+- **无需人工特征工程**
+  - 传统机器学习：先人工做特征工程 → 再做分类/回归
+  - 深度学习：特征提取 + 分类/回归 由同一个网络来完成
+
+
+
+### 1.2 优点
+
+- **精度高**：在大量数据上表现优异
+- **拟合能力强**：可逼近任意非线性关系
+- **工具丰富**：TensorFlow、PyTorch 等成熟框架，无需“造轮子”
+
+
+
+### 1.3 缺点
+
+- **黑箱模型**：可解释性差，难理解内部决策逻辑
+- **超参数多**：网络结构、学习率、正则化等参数需要精细调节
+- **数据饥渴**：需要海量训练数据，训练时间长，对算力要求高
+- **易过拟合**：在小数据集上表现不佳，需正则化、数据增强等手段缓解
+
+
+
+## 2、pytorch框架
+
+### 2.1 环境 & 安装
 
 ```
-pip install torch = X.XXX
+pip install torch==1.10.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### 张量创建
 
-#### 创建张量
 
-- torch.tensor() : 将数据创建为张量
-- torch.Tensor()：指定形状或指定数据创建张量
-- torch.IntTensor()：指定元素类型，指定形状或指定数据创建张量
+### 2.2 张量创建
 
-#### 线性张量
+| 功能                         | 接口                                       | 示例（来自 PDF）                          |
+| ---------------------------- | ------------------------------------------ | ----------------------------------------- |
+| 从已有数据                   | `torch.tensor(data)`                       | `torch.tensor([[10.,20.],[30.,40.]])`     |
+| 指定形状（随机值）或已有数据 | `torch.Tensor(*shape)`                     | `torch.Tensor(2,3)`/`torch.Tensor([100])` |
+| 指定类型                     | `torch.IntTensor/FloatTensor/DoubleTensor` | `torch.IntTensor([1,2,3])`                |
+| 线性间隔-**左闭右开**        | `torch.arange(start,end,step)`             | `torch.arange(0,10,2)`                    |
+| 线性等分-**左闭右闭**        | `torch.linspace(start,end,num)`            | `torch.linspace(0,9,10)`                  |
+| 随机正态                     | `torch.randn(*shape)`                      | `torch.randn(2,3)`                        |
+| 随机整型-**左闭右开**        | `torch.randint(low,high,size)`             | `torch.randint(0,10,[2,3])`               |
+| 获取随机数据种子             | `torch.random.initial_seed()`              | -                                         |
+| 设置随机数据种子             | `torch.manual_seed(seed)`                  | `torch.manual_seed(100)`                  |
+| 全 0                         | `torch.zeros(shape)`                       | `torch.zeros(2,3)`                        |
+| 全 1                         | `torch.ones(shape)`                        | `torch.ones(2,3)`                         |
+| 全指定值                     | `torch.full(shape,val)`                    | `torch.full([2,3], 7)`                    |
+| 复用形状                     | `*_like` 系列                              | `torch.zeros_like(x)`                     |
 
-- torch.arange(start,end,step) : 左闭右开[start,end)
-- torch.linspace(start,end,num):左闭右闭[start,end]
+```python
+import torch
+import numpy as np
 
-#### 随机张量
+# 1. 张量创建 ----------------------------------------------------------
+print("1. 张量创建")
+x_list = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+t1 = torch.tensor(x_list)                # 从 Python 列表
+t2 = torch.Tensor(2, 3)                  # 未初始化，仅分配空间
+t3 = torch.arange(0, 10, 2)              # 线性 [0,2,4,6,8]
+t4 = torch.linspace(0, 9, 10)            # 等分 10 个点
+t5 = torch.randn(2, 3)                   # 标准正态 N(0,1)
+t6 = torch.randint(0, 10, (2, 3))        # 离散均匀 [0,10)
+t7 = torch.zeros(2, 3)                   # 全 0
+t8 = torch.ones(2, 3)                    # 全 1
+t9 = torch.full((2, 3), 7)               # 全 7ß
+```
 
-- torch.randn(2,3,4)
-- torch.randint(0,10,[2,3,4])
-- torch.random.manual_seed():设置随机数据种子
-- torch.random.initial_seed():获取随机数据种子
 
-#### 0,1,指定值张量
 
-- torch.zeros(shape)   torch.zeros_like(data) 
-- torch.ones(shape)   torch.ones_like(data) 
-- torch.full(shape,num)   torch.full_like(data,num) 
+### 2.3 类型转换
 
-#### 元素类型转换
+| 场景           | 不共享内存                                                | 共享内存                |
+| -------------- | --------------------------------------------------------- | ----------------------- |
+| Tensor → NumPy | `data_tensor.numpy().copy()`                              | `data_tensor.numpy()`   |
+| NumPy → Tensor | `torch.tensor(arr) \ torch.from_numpy(data_np.copy())`    | `torch.from_numpy(arr)` |
+| 元素类型       | `data = data.type(torch.DoubleTensor)` 或 `data.double()` | —                       |
 
-- data.type(torch.IntTensor)
-- data.int()
+```python
+# 截图 2：类型转换 ----------------------------------------------------
 
-### 张量类型转换
+# Tensor <--> NumPy
+data_tensor = torch.tensor([2, 3, 4])
+data_numpy = data_tensor.numpy()          # 共享内存
 
-#### 张量与ndarray
+data_numpy[0] = 100
+print(data_tensor)                        # tensor([100, 3, 4])
 
-- 张量->ndarray
-  - data_tensor.numpy()   :共享内存
-  - data_tensor.numpy().copy()   :不共享内存
-- 张量<-ndarray
-  - torch.from_numpy(data_np) :共享内存
-  - torch.from_numpy(data_np.copy()) :不共享内存
-  - torch.tensor(data_np):不共享内存
+# 不共享
+data_numpy = data_tensor.numpy().copy()
+data_numpy[0] = 200
+print(data_tensor)                        # tensor([100, 3, 4])
 
-#### 张量到数值
+# NumPy -> Tensor
+data_np = np.array([2, 3, 4])
+data_tensor = torch.from_numpy(data_np)   # 共享内存
+data_tensor[0] = 300
+print(data_np)                            # [300 3 4]
 
-- data_tensor.item()
+data_tensor = torch.tensor(data_np)       # 不共享
+data_tensor[0] = 400
+print(data_np)                            # [300 3 4]
+```
 
-### 张量的运算
 
-#### 加减乘除
 
-- add add_
-- sub sub_
-- mul mul_
-- div div_
-- neg neg_
+### 2.4 张量 ↔ Python 标量
 
-#### 点乘： 数组的形状必须一样的
+```python
+scalar = torch.tensor(3.14)
+value  = scalar.item()      # 3.14 data_tensor.item()
+```
 
-- torch.mul()
-- *号
 
-#### 矩阵乘法： （n,m）x(m,p) = (n,p)
 
-- torch.matmul()
-- @号
+### 2.5 基本运算
 
-#### 运算函数
+| 数学       | 函数                      | 方法调用(不修改原数据) | 原地版本（修改原数据） |
+| ---------- | ------------------------- | ---------------------- | ---------------------- |
+| +          | `torch.add(a,b)`          | `a.add(b)`             | `a.add_(b)`            |
+| -          | `torch.sub(a,b)`          | `a.sub(b)`             | `a.sub_(b)`            |
+| \*（点乘） | `torch.mul(a,b)` 或 `a*b` | `a.mul(b)`             | `a.mul_(b)`            |
+| /          | `torch.div(a,b)`          | `a.div(b)`             | `a.div_(b)`            |
+| 取负       | `torch.neg(a)`            | `a.neg()`              | `a.neg_()`             |
+
+```python
+# 截图 3：基本运算 ----------------------------------------------------
+data = torch.randint(0, 10, [2, 3])
+print(data)
+
+new_data = data.add(10)                   # 不修改原 data
+print(new_data)
+
+data.add_(10)                             # 原地修改
+print(data)
+
+print(data.sub(100))
+print(data.mul(100))
+print(data.div(100))
+print(data.neg())
+```
+
+
+
+### 2.6 线性代数运算
+
+| 操作             | 语法                           | 备注                       |
+| ---------------- | ------------------------------ | -------------------------- |
+| 点乘（Hadamard） | `a * b` 或 `torch.mul(a,b)`    | 形状必须完全相同           |
+| 矩阵乘法         | `a @ b` 或 `torch.matmul(a,b)` | 形状 (n,m) × (m,p) → (n,p) |
+
+```python
+# 点乘
+data1 = torch.tensor([[1, 2], [3, 4]])
+data2 = torch.tensor([[5, 6], [7, 8]])
+print(torch.mul(data1, data2))
+print(data1 * data2)
+
+# 矩阵乘法
+data1 = torch.tensor([[1, 2], [3, 4], [5, 6]])
+data2 = torch.tensor([[5, 6], [7, 8]])
+print("data1 @ data2:\n", data1 @ data2)
+print("torch.matmul:\n", torch.matmul(data1, data2))
+```
+
+
+
+### 2.7 统计 & 数学函数
+
+| 功能     | 示例                                 |
+| -------- | ------------------------------------ |
+| 均值     | `x.mean(dim=0)`                      |
+| 求和     | `x.sum(dim=1)`                       |
+| 平方     | `torch.pow(x, 2)`                    |
+| 平方根   | `x.sqrt()`                           |
+| 指数 e^x | `x.exp()`                            |
+| 对数     | `x.log()` / `x.log2()` / `x.log10()` |
 
 ```python
 # 均值 avg
@@ -105,22 +198,55 @@ print(data.log2())
 print(data.log()) # 以e为底
 ```
 
-### 索引操作
+
+
+### 2.8 索引 & 切片
+
+| 需求      | 写法                | PDF 原例 |
+| --------- | ------------------- | -------- |
+| 取第 1 行 | `data[0]`           | ✅        |
+| 取第 1 列 | `data[:, 0]`        | ✅        |
+| 列表索引  | `data[[0,1],[2,3]]` | ✅        |
+| 范围      | `data[2:10:2, :2]`  | ✅        |
+| 布尔      | `data[data[:,2]>5]` | ✅        |
+| 多维      | `data[:, :, 0]`     | ✅        |
 
 ```python
-# 行列
-print(data[1])
-print(data[:,1])
-# 列表
-print(data[[1,2],[2,3]])
+# 行列索引
+print(data[1])         # 取第1行（下标从0开始），返回一维张量
+print(data[:,1])       # 取所有行的第1列，返回一维张量
+
+# 列表索引（高级索引）
+print(data[[1,2],[2,3]]) 
+# 取 (1,2) 和 (2,3) 这两个位置的元素，结果是一维张量，等价于 [data[1,2], data[2,3]]
+
 print(data[[[1],[2]],[2,3]])
-# 范围
+# 第一个索引是二维([[1],[2]] shape为(2,1))，第二个索引是一维([2,3] shape为(2,))
+# 广播后得到 shape (2,2)，等价于：
+# [[data[1,2], data[1,3]],
+#  [data[2,2], data[2,3]]]
+
+# 范围索引
 print(data[2:10:2,:2])
-# 布尔
-print(data[data[:,2]>5,data[0]>5])
+# 取第2行到第10行（步长为2），每行的前两列
+
+# 布尔索引
+print(data[data[:,2]>5, data[0]>5])
+# 先筛选出第3列大于5的行，再筛选第1行大于5的列
+
 # 多维索引
 print(data[:,:,1])
+# 取所有行、所有列的第1个通道（适用于三维及以上张量）
 ```
+
+> 在 data[[[1],[3]],[1,3]] 这种索引方式中，广播（broadcasting）的意思是：
+> 第一个索引 [[[1],[3]]] 形状为 (2,1)，第二个索引 [1,3] 形状为 (2,)，PyTorch 会自动将它们扩展为相同的形状 (2,2)，然后组合成所有可能的索引对，最终取出如下元素：
+> data[1,1], data[1,3]
+> data[3,1], data[3,3]
+> 结果是一个 2x2 的张量。
+> 这种自动扩展索引长度的机制就叫做广播
+
+
 
 ### 形状操作
 
