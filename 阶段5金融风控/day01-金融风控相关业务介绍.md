@@ -179,6 +179,7 @@
 
 ```python
 import pandas as pd
+
 from pyecharts.charts import *  # 画图需要，暂时不需要了解pyecharts画图的代码
 from pyecharts import options as opts
 
@@ -272,7 +273,7 @@ df2['实际到账日'] = pd.to_datetime(df2['实际到账日']).fillna(today_tim
 
 > **为什么fillna填充的参数0需要用引号？**
 >
-> - df2['实际到账日'] 这一列是字符串（object）类型而不是日期（datetime）或数字类型。用不带引号的 0（即数字）填充会导致类型不匹配，因为 fillna(0) 表示用整数 0 填充，而字符串列无法直接接受数值类型。
+> - `df2['实际到账日']` 这一列是字符串（object）类型而不是日期（datetime）或数字类型。用不带引号的 0（即数字）填充会导致类型不匹配，因为 fillna(0) 表示用整数 0 填充，而字符串列无法直接接受数值类型。
 >
 > **既然df2['实际到账日'] 是字符串类型，为什么可以用max来取最大的日期？**
 >
