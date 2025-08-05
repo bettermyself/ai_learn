@@ -248,12 +248,22 @@ print(data[:,:,1])
 
 
 
-### 形状操作
+### 2.9 形状操作
+
+| 目标       | 接口                 | 注意事项               |
+| ---------- | -------------------- | ---------------------- |
+| 改变形状   | `x.reshape(1, -1)`   | 元素总数不变           |
+| 升维       | `x.unsqueeze(dim)`   | 插入 size=1 的维度     |
+| 降维       | `x.squeeze()`        | 去掉所有 size=1 的维度 |
+| 交换两维   | `x.transpose(d1,d2)` | 之后内存可能不连续     |
+| 多维度重排 | `x.permute(order)`   | 同上                   |
+| 连续化     | `x.contiguous()`     | 与 `view` 连用         |
+| 展平       | `x.view(-1)`         | 要求内存连续           |
 
 ```python
 # 调整形状：保证数据元素个数不能变换
 data.reshape(1,6)
-# unsqueeze 升维  squeeze降维 【5,1,1】
+# unsqueeze 升维  squeeze降维 
 data.unsqueeze(dim=-1).squeeze()
 # transpose 只交换两个维度 permute 多个维度
 print(torch.transpose(torch.transpose(data,1,2),0,1).shape)
@@ -268,88 +278,169 @@ if data.is_contiguous():
 else:
     print('F')
     print(data.contiguous().view(-1))
-    
-    
- # 拼接：两个张量，要求除指定维度其他维度维数是一样
-torch.cat([data1,data2],dim=0)
 ```
 
 
 
+### 2.10 拼接
+
+```python
+# 拼接：两个张量，要求除指定维度其他维度维数是一样
+# torch.cat([data1,data2],dim=0)
+
+import torch
+
+a = torch.ones(2, 3)     # [[1,1,1],[1,1,1]]
+b = torch.zeros(2, 3)    # [[0,0,0],[0,0,0]]
+
+# 按第 0 维（行）拼
+c = torch.cat([a, b], dim=0)   # -> shape 4×3
+print(c)
+```
+
+```tex
+tensor([[1., 1., 1.],
+        [1., 1., 1.],
+        [0., 0., 0.],
+        [0., 0., 0.]])
+```
+
+```python
+import torch
+
+a = torch.ones(2, 3)     # [[1,1,1],[1,1,1]]
+b = torch.zeros(2, 3)    # [[0,0,0],[0,0,0]]
+
+# 按第 1 维（列）拼
+c = torch.cat([a, b], dim=1)   # -> shape 2×6
+print(c)
+```
+
+```tex
+tensor([[1., 1., 1., 0., 0., 0.],
+        [1., 1., 1., 0., 0., 0.]])
+```
 
 
 
+### 2.11 自动微分
+
+```python
+import torch
+
+# 1. 当 x 为标量时梯度的计算
+def test01():
+    # 输入标量
+    x = torch.tensor(5.0, dtype=torch.float32)
+
+    # 目标值
+    y = torch.tensor(0.0, dtype=torch.float32)
+
+    # 权重 w 与偏置 b，设置 requires_grad=True 以便自动求导
+    w = torch.tensor(1.0, requires_grad=True, dtype=torch.float32)
+    b = torch.tensor(3.0, requires_grad=True, dtype=torch.float32)
+
+    # 前向计算：z = x * w + b
+    z = x * w + b
+
+    # 定义并计算损失
+    loss_fn = torch.nn.MSELoss()
+    loss = loss_fn(z, y)
+
+    # 反向传播
+    loss.backward()
+
+    # 打印梯度
+    print("W 的梯度:", w.grad)
+    print("b 的梯度:", b.grad)
+
+if __name__ == "__main__":
+    test01()
+```
 
 
 
-### 自动微分模块
-
-backward()
-
-### 案例
+## 3、案例
 
 DataLoader，shuffle的作用
 按批次循环，如何确保数据是不一致的
 
 ```python
-# 导入相关模块
-import torch
-from torch.utils.data import TensorDataset  # 构造数据集对象
-from torch.utils.data import DataLoader  # 数据加载器
-from torch import nn  # nn模块中有平方损失函数和假设函数
-from torch import optim  # optim模块中有优化器函数
-from sklearn.datasets import make_regression  # 创建线性回归模型数据集
+# 构造数据集
+from sklearn.datasets import make_regression
+# 构造适合torch数据集
+from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
+import torch
 
-# 1.构建数据集
-def create_dataset():
-    x,y,coef =make_regression(n_samples=100,n_features=1,noise=10,bias=1.5,coef=True)
-    x = torch.tensor(x)
-    y = torch.tensor(y)
-    return x,y,coef
+# 构建数据集
+x, y, coef = make_regression(n_samples=100,  # 样本个数
+                             n_features=1,  # 特征维度
+                             noise=10,  # 噪声
+                             bias=1.5,  # 偏置
+                             coef=True  # 返回,斜率
+                             )
 
-x,y,coef = create_dataset()
-print(coef)
-dataset=TensorDataset(x,y)
-dataloader =DataLoader(dataset=dataset,batch_size=16,shuffle=True)
+plt.scatter(x, y)
 
-# 2.构建模型
-model =nn.Linear(in_features=1,out_features=1)
+# 数据获取
 
-# 3.损失函数和优化器设置
-loss = nn.MSELoss()
-opt = optim.SGD(params=model.parameters(),lr=0.0001)
+# 转换成tensor
+x = torch.tensor(x)
+y = torch.tensor(y)
+# 构造适合torch数据集:100个数据
+dataset = TensorDataset(x, y)
+# 构建batch数据
+daloader = DataLoader(dataset=dataset, batch_size=8, shuffle=True, drop_last=False)
 
-# 4.模型训练
-loss_list = []
-total_loss = 0
-num = 0
-for epoch in range(100):
-    for train_x,train_y in dataloader:
-        y_pred =model(train_x.float())
-        MSE_loss =loss(y_pred,train_y.reshape(-1,1).float())
-        total_loss+=MSE_loss.item()
-        num += len(train_y)
-        opt.zero_grad()
-        MSE_loss.backward()
-        opt.step()
-    loss_list.append(total_loss/num)
+# 构建模型:线性回归
+model = torch.nn.Linear(in_features=1,  # 输入x的维度
+                        out_features=1  # 输出y的维度
+                        )
 
-plt.plot(range(10),loss_list)
+print(model.parameters())
+
+# 模型训练
+# 损失:均方误差
+cri = torch.nn.MSELoss()
+# 优化器
+optimizer = torch.optim.SGD(params=model.parameters(), lr=0.001)
+# 遍历"epoch batch
+loss_num = []
+# 遍历每个epoch
+for i in range(100):
+    sum = 0
+    sample = 0
+    # 获取batch数据
+    for x_, y_ in daloader:
+        # 模型预测
+        y_predict = model(x_.type(torch.float32))
+        # 损失计算
+        loss = cri(y_predict, y_.reshape(-1, 1).type(torch.float32))
+        sum += loss.item()
+        sample += len(y_)
+        # 梯度清零
+        #梯度清零（optimizer.zero_grad()）需要放在前面，是因为 PyTorch 在每次反向传播时，梯度是累加的（而不是自动清零）。如果不在每次反向传播前清零，梯度会叠加，导致参数更新不正确。因此，通常在每个 batch 的 loss.backward() 之前先调用 optimizer.zero_grad()，确保每次只用当前 batch 的梯度进行参数更新。
+        optimizer.zero_grad()
+        # 自动微分
+        loss.backward()
+        # 更新参数
+        optimizer.step()
+    loss_num.append(sum / sample)
+
+# 绘制拟合直线
+x = torch.linspace(x.min(), x.max(), 1000)
+y1 = torch.tensor([v * model.weight + model.bias for v in x])
+y2 = torch.tensor([v * coef + 1.5 for v in x])
+plt.plot(x, y1, label='train')
+plt.plot(x, y2, label='real')
+plt.grid()
+plt.legend()
 plt.show()
 
-print(model.weight)
-print(model.bias)
-
-
-# if __name__ == '__main__':
-#     x,y,coef=create_dataset()
-#     plt.scatter(x,y)
-#     x = torch.linspace(x.min(),x.max(),1000)
-#     y = torch.tensor([i*coef+1.5 for i in x])
-#     plt.plot(x,y)
-#     plt.grid()
-#     plt.show()
-
+# 绘制损失变化曲线
+plt.plot(range(100), loss_num)
+plt.grid()
+plt.show()
 ```
 
