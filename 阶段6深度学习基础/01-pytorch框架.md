@@ -288,7 +288,8 @@ backward()
 
 ### 案例
 
-
+DataLoader，shuffle的作用
+按批次循环，如何确保数据是不一致的
 
 ```python
 # 导入相关模块
