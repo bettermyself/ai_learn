@@ -58,7 +58,6 @@ import torch
 import numpy as np
 
 # 1. 张量创建 ----------------------------------------------------------
-print("1. 张量创建")
 x_list = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
 t1 = torch.tensor(x_list)                # 从 Python 列表
 t2 = torch.Tensor(2, 3)                  # 未初始化，仅分配空间
@@ -68,25 +67,27 @@ t5 = torch.randn(2, 3)                   # 标准正态 N(0,1)
 t6 = torch.randint(0, 10, (2, 3))        # 离散均匀 [0,10)
 t7 = torch.zeros(2, 3)                   # 全 0
 t8 = torch.ones(2, 3)                    # 全 1
-t9 = torch.full((2, 3), 7)               # 全 7ß
+t9 = torch.full((2, 3), 7)               # 全 7
 ```
+
+> **区别**：`torch.tensor([100])`创建的是1维张量(形状为[1])，而`torch.tensor(100)`创建的是0维张量(标量，形状为[])
 
 
 
 ### 2.3 类型转换
 
-| 场景           | 不共享内存                                                | 共享内存                |
-| -------------- | --------------------------------------------------------- | ----------------------- |
-| Tensor → NumPy | `data_tensor.numpy().copy()`                              | `data_tensor.numpy()`   |
-| NumPy → Tensor | `torch.tensor(arr) \ torch.from_numpy(data_np.copy())`    | `torch.from_numpy(arr)` |
-| 元素类型       | `data = data.type(torch.DoubleTensor)` 或 `data.double()` | —                       |
+| 场景           | 不共享内存                                                   | 共享内存                |
+| -------------- | ------------------------------------------------------------ | ----------------------- |
+| Tensor → NumPy | `data_tensor.numpy().copy()`                                 | `data_tensor.numpy()`   |
+| NumPy → Tensor | `torch.tensor(arr) \ torch.from_numpy(data_np.copy())`       | `torch.from_numpy(arr)` |
+| 张量的元素类型 | `data_tensor = data_tensor.type(torch.DoubleTensor)` 或 `data_tensor.double()` | —                       |
 
 ```python
 # 截图 2：类型转换 ----------------------------------------------------
 
-# Tensor <--> NumPy
+# 共享内存  Tensor <--> NumPy
 data_tensor = torch.tensor([2, 3, 4])
-data_numpy = data_tensor.numpy()          # 共享内存
+data_numpy = data_tensor.numpy()          
 
 data_numpy[0] = 100
 print(data_tensor)                        # tensor([100, 3, 4])
@@ -129,7 +130,7 @@ value  = scalar.item()      # 3.14 data_tensor.item()
 | 取负       | `torch.neg(a)`            | `a.neg()`              | `a.neg_()`             |
 
 ```python
-# 截图 3：基本运算 ----------------------------------------------------
+# 3：基本运算 ----------------------------------------------------
 data = torch.randint(0, 10, [2, 3])
 print(data)
 
@@ -147,7 +148,7 @@ print(data.neg())
 
 
 
-### 2.6 线性代数运算
+### 2.6 <font color='red'>线性代数运算</font>
 
 | 操作             | 语法                           | 备注                       |
 | ---------------- | ------------------------------ | -------------------------- |
