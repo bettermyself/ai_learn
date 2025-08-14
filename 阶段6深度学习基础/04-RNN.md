@@ -328,7 +328,10 @@ def build_vocab():
     for line in open(file_name, 'r', encoding='utf-8'):
         words = jieba.lcut(line.strip())  # 分词（返回列表）
         all_words.append(words)
-        unique_words.extend([w for w in words if w not in unique_words])  # 去重
+        for word in words:
+            if word not in unique_words:
+                unique_words.append(word)
+        # unique_words.extend([w for w in words if w not in unique_words])  # 去重，不能使用这个方法，unique_words不会动态更新
 
     # 构建映射
     word_to_index = {word: idx for idx, word in enumerate(unique_words)}
@@ -441,7 +444,7 @@ def train():
 **输出**：  
 `epoch 10 loss: 0.10058`
 
----
+
 
 ### **阶段 5：生成歌词**
 #### **5.1 预测函数**
@@ -472,14 +475,17 @@ def predict(start_word, sentence_length):
 if __name__ == "__main__":
     predict('想要', 50)
 ```
-**示例**：  
-输入 `predict('分手', 50)` →  
+**示例**：  输入 `predict('分手', 50)` →  
+
 **输出**：  
+
 > 分手的话像语言暴力  
+>
 > 我已无能为力再提起决定中断熟悉  
+>
 > ...（后续歌词）
 
----
+
 
 ### **总结**
 1. **构建词表**：分词 → 去重 → 映射索引。  
