@@ -148,7 +148,7 @@ print(data.neg())
 
 
 
-### 2.6 <font color='red'>线性代数运算</font>
+### 2.6 线性代数运算
 
 | 操作             | 语法                           | 备注                       |
 | ---------------- | ------------------------------ | -------------------------- |
@@ -173,14 +173,14 @@ print("torch.matmul:\n", torch.matmul(data1, data2))
 
 ### 2.7 统计 & 数学函数
 
-| 功能     | 示例                                 |
-| -------- | ------------------------------------ |
-| 均值     | `x.mean(dim=0)`                      |
-| 求和     | `x.sum(dim=1)`                       |
-| 平方     | `torch.pow(x, 2)`                    |
-| 平方根   | `x.sqrt()`                           |
-| 指数 e^x | `x.exp()`                            |
-| 对数     | `x.log()` / `x.log2()` / `x.log10()` |
+| 功能     | 示例                                                         |
+| -------- | ------------------------------------------------------------ |
+| 均值     | `data_tensor.mean(dim=0)`                                    |
+| 求和     | `data_tensor.sum(dim=1)`                                     |
+| 平方     | `torch.pow(data_tensor, 2)`                                  |
+| 平方根   | `data_tensor.sqrt()`                                         |
+| 指数 e^x | `data_tensor.exp()`                                          |
+| 对数     | `data_tensor.log()` / `data_tensor.log2()` / `data_tensor.log10()` |
 
 ```python
 # 均值 avg
@@ -203,14 +203,14 @@ print(data.log()) # 以e为底
 
 ### 2.8 索引 & 切片
 
-| 需求      | 写法                | PDF 原例 |
-| --------- | ------------------- | -------- |
-| 取第 1 行 | `data[0]`           | ✅        |
-| 取第 1 列 | `data[:, 0]`        | ✅        |
-| 列表索引  | `data[[0,1],[2,3]]` | ✅        |
-| 范围      | `data[2:10:2, :2]`  | ✅        |
-| 布尔      | `data[data[:,2]>5]` | ✅        |
-| 多维      | `data[:, :, 0]`     | ✅        |
+| 需求      | 写法                |
+| --------- | ------------------- |
+| 取第 1 行 | `data[0]`           |
+| 取第 1 列 | `data[:, 0]`        |
+| 列表索引  | `data[[0,1],[2,3]]` |
+| 范围      | `data[2:10:2, :2]`  |
+| 布尔      | `data[data[:,2]>5]` |
+| 多维      | `data[:, :, 0]`     |
 
 ```python
 # 行列索引
@@ -218,8 +218,8 @@ print(data[1])         # 取第1行（下标从0开始），返回一维张量
 print(data[:,1])       # 取所有行的第1列，返回一维张量
 
 # 列表索引（高级索引）
-print(data[[1,2],[2,3]]) 
-# 取 (1,2) 和 (2,3) 这两个位置的元素，结果是一维张量，等价于 [data[1,2], data[2,3]]
+print(data[[1,2],[3,3]]) 
+# 取 (1,3) 和 (2,3) 这两个位置的元素，结果是一维张量，等价于 [data[1,3], data[2,3]]
 
 print(data[[[1],[2]],[2,3]])
 # 第一个索引是二维([[1],[2]] shape为(2,1))，第二个索引是一维([2,3] shape为(2,))
@@ -233,7 +233,7 @@ print(data[2:10:2,:2])
 
 # 布尔索引
 print(data[data[:,2]>5, data[0]>5])
-# 先筛选出第3列大于5的行，再筛选第1行大于5的列
+# 先筛选出第3列大于5的行，再筛选第1行大于5的列，筛选出同时满足的区域
 
 # 多维索引
 print(data[:,:,1])
@@ -246,6 +246,8 @@ print(data[:,:,1])
 > data[3,1], data[3,3]
 > 结果是一个 2x2 的张量。
 > 这种自动扩展索引长度的机制就叫做广播
+
+> <font color='red'>`,`区分行和列，但是要具体看数据的维度，来确定哪个`,`才是区分点。</font>要理解`data[[1,2],[3,4]]`为什么取取 (1,3) 和 (2,4) 这两个位置的元素。
 
 
 
@@ -264,8 +266,10 @@ print(data[:,:,1])
 ```python
 # 调整形状：保证数据元素个数不能变换
 data.reshape(1,6)
+
 # unsqueeze 升维  squeeze降维 
 data.unsqueeze(dim=-1).squeeze()
+
 # transpose 只交换两个维度 permute 多个维度
 print(torch.transpose(torch.transpose(data,1,2),0,1).shape)
 print(torch.permute(data,[2,0,1]).shape)
@@ -361,10 +365,7 @@ if __name__ == "__main__":
 
 
 
-## 3、案例
-
-DataLoader，shuffle的作用
-按批次循环，如何确保数据是不一致的
+## 3、案例-线性回归
 
 ```python
 # 构造数据集
@@ -417,7 +418,7 @@ for i in range(100):
         # 模型预测
         y_predict = model(x_.type(torch.float32))
         # 损失计算
-        loss = cri(y_predict, y_.reshape(-1, 1).type(torch.float32))
+        loss = cri(y_predict, y_.reshape(-1, 1).type(torch.float32))  #一定要加上reshape(-1, 1)，以为要和y_predict维度保持一致
         sum += loss.item()
         sample += len(y_)
         # 梯度清零
@@ -444,4 +445,3 @@ plt.plot(range(100), loss_num)
 plt.grid()
 plt.show()
 ```
-
