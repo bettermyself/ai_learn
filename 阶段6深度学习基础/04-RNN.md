@@ -83,11 +83,6 @@ nn.Embedding(
 )
 ```
 
-| 参数             | 含义     | 示例 |
-| ---------------- | -------- | ---- |
-| `num_embeddings` | 词表大小 | 100  |
-| `embedding_dim`  | 向量维度 | 128  |
-
 
 
 ### 2.3 标准流程（4 步）  
@@ -194,7 +189,7 @@ h0 ──→ RNN_Cell ──→ h1 ──→ RNN_Cell ──→ h2 ──→ 全
         ↑“我”                    ↑“爱”
 ```
 
-> 首先初始化出第一个隐藏状态h0，一般都是全0的一个向量，然后将 "我" 进行词嵌入，转换为向量的表示形式，送入到第一个时间步，然后输出隐藏状态 h1，然后将 h1 和 "爱" 输入到第二个时间步，得到隐藏状态 h2, 将 h2 送入到全连接网络，得到 "你" 的预测概率。
+> 首先初始化出第一个隐藏状态h0，**一般都是全0的一个向量**，然后将 "我" 进行词嵌入，转换为向量的表示形式，送入到第一个时间步，然后输出隐藏状态 h1，然后将 h1 和 "爱" 输入到第二个时间步，得到隐藏状态 h2, 将 h2 送入到全连接网络，得到 "你" 的预测概率。
 
 
 
@@ -256,7 +251,7 @@ output, hn = rnn(x, h0)
 
 | 参数 | 形状                               | 含义                                                         |
 | ---- | ---------------------------------- | ------------------------------------------------------------ |
-| `x`  | `[seq_len, batch, input_size]`     | 输入序列张量：<br>- `seq_len`：句子长度（时间步数）<br>- `batch`：批次大小<br>- `input_size`：每个时间步输入的特征维度（如词向量维度） |
+| `x`  | `[seq_len, batch, input_size]`     | 输入序列张量：<br>- `seq_len`：句子长度，也就是词语个数<br>- `batch`：批次大小，也就是句子的个数<br>- `input_size`：每个时间步输入的特征维度（如词向量维度） |
 | `h0` | `[num_layers, batch, hidden_size]` | 初始隐藏状态：<br>- `num_layers`：RNN 层数（堆叠层数）<br>- `batch`：批次大小<br>- `hidden_size`：隐藏层维度 |
 
 **输出结果说明**
@@ -304,7 +299,7 @@ if __name__ == "__main__":
 
 ## 4、文本生成案例
 
-> **项目需求：**文本生成任务是一种常见的自然语言处理任务，输入一个开始词能够预测出后面的词序列。本案例将会使用循环神经网络来实现周杰伦歌词生成任务。
+> **项目需求：**文本生成是一种常见的自然语言处理任务，输入一个开始词能够预测出后面的词序列。本案例将会使用循环神经网络来实现周杰伦歌词生成任务。
 
 ### **阶段 1：数据预处理**
 #### **1.1 获取数据集并构建词表**
@@ -368,7 +363,9 @@ class LyricsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         """获取第idx个样本：输入序列x和目标序列y"""
-        start = idx * self.num_chars  # 起始位置
+        # 一定要这个，损失才小
+        start = min(max(idx, 0), self.word_count - self.num_chars - 2)
+        # start = idx * self.num_chars  # 起始位置
         x = self.corpus_idx[start : start + self.num_chars]       # 输入序列
         y = self.corpus_idx[start + 1 : start + self.num_chars + 1]  # 目标序列（右移1位）
         return torch.tensor(x), torch.tensor(y)
@@ -396,8 +393,8 @@ class TextGenerator(nn.Module):
 
     def forward(self, inputs, hidden):
         """前向传播：输入形状(batch, seq_len)"""
-        embed = self.ebd(inputs).transpose(0, 1)  # (seq_len, batch, 128)
-        output, hidden = self.rnn(embed, hidden)  # RNN输出：(seq_len, batch, 128)
+        embed = self.ebd(inputs).transpose(0, 1)  # 输出(seq_len, batch, 128)
+        output, hidden = self.rnn(embed, hidden)  # RNN输出：(seq_len, batch, 256)
         output = self.out(output.reshape(-1, 128))  # 输出：(seq_len*batch, word_count)
         return output, hidden
 
@@ -431,7 +428,9 @@ def train():
         for x, y in dataloader:
             hidden = model.init_hidden(8)  # 每批次重置隐藏状态
             output, _ = model(x, hidden)   # 前向传播
-            loss = criterion(output, y.view(-1))  # 计算损失（展平y）
+            # y:[batch,seq_len]->[seq_len,batch]->[seq_len*batch]
+						y = torch.transpose(y, 0, 1).contiguous().view(-1)  # （展平y）
+            loss = criterion(output, y)  # 计算损失
             
             optimizer.zero_grad()  # 清零梯度
             loss.backward()        # 反向传播
