@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 全黑
+# black = np.zeros([200,200,3],dtype=np.uint8)
 black = np.zeros([200, 200, 3])
 plt.imshow(black.astype('uint8'))
 plt.show()
@@ -114,9 +115,9 @@ plt.show()
 
 #### 3. Padding（填充）
 
-问题：卷积后特征图尺寸缩小。
+**问题**：卷积后特征图尺寸缩小。
 
-解决：在原图四周补 0（或其他值），即可保持输出尺寸不变。
+**解决**：在原图四周补 0（或其他值），即可保持输出尺寸不变。
 
 **示例**：
 
@@ -128,7 +129,7 @@ Stride=1, Padding=1 → 输入 5×5 → 输出 5×5
 
 #### 4. Stride（步长）
 
-定义：卷积核每次滑动的像素数。
+**定义**：卷积核每次滑动的像素数。
 
 - Stride = 1：逐像素滑动，输出尺寸较大。
 
@@ -194,7 +195,7 @@ $$
 
 #### 3. PyTorch 卷积层 API
 
-##### 函数原型
+##### 定义卷积层
 
 ```python
 nn.Conv2d(
@@ -433,7 +434,7 @@ def test(valid_ds):
 
     for x, y in loader:
         pred = model(x)
-        correct += (pred.argmax(pred,dim=-1) == y).sum().item()
+        correct += (torch.argmax(pred,dim=-1) == y).sum().item()
         # correct += (pred.argmax(1) == y).sum().item()
         #功能分解：
         # pred.argmax(1) - 获取每个样本预测概率最高的类别索引
