@@ -284,120 +284,202 @@ result = pseg.lcut(content)
 
 
 
-几个冒号代表几维
+> **复习：张量切片的维度计算**
+>
+> ```python
+> a = torch.randn(3,3,4)
+> # 有几个冒号就是几维，省略代表有冒号
+> print(a[:1].shape)      # torch.Size([1, 3, 4])
+> print(a[:1,:,:].shape)  # torch.Size([1, 3, 4])
+> print(a[:1,:2].shape)   # torch.Size([1, 2, 4])
+> print(a[1,:2,3].shape)  # torch.Size([2])
+> print(a[:,2,:2].shape)  # torch.Size([3, 2])
+> ```
 
-![image-20250819195715475](assets/image-20250819195715475.png)
 
-### 2.3 文本张量的表示方法
 
-- 文本张量表示
+### 2.3 文本张量表示
 
-  ```properties
-  意义：将文本转换为向量（数字）的形式，使得模型能够识别进而实现训练，一般是进行词向量的表示
-  实现的方式：
-  one-hot
-  word2Vec
-  wordEmbedding
-  ```
+**文本张量表示的意义**
 
-  One-Hot 词向量表示
+将文本转换为向量（数字）的形式，使得模型能够识别进而实现训练，一般是进行**词向量的表示**。
 
-  - 定义：
 
-  ```properties
-  针对每一个词汇，都会用一个向量表示，向量的长度是n,n代表去重之后的词汇总量，而且向量中只有0和1两种数字
-  俗称：独热编码、01编码
-  ```
 
-  - 代码实现
+**实现方式**
 
-    ```python
-    import jieba
-    # 导入keras中的词汇映射器Tokenizer
-    from tensorflow.keras.preprocessing.text import Tokenizer
-    # 导入用于对象保存与加载的joblib
-    from sklearn.externals import joblib
-    
-    # 思路分析 生成onehot
+- One-Hot
+- Word2Vec
+- Word Embedding
+
+
+
+#### 1. One-Hot 词向量表示
+
+**定义**
+
+- 针对每一个词汇，都会用一个向量表示。
+- 向量的长度为 **n**，n 代表去重之后的词汇总量。
+- 向量中只有 **0 和 1** 两种数字，俗称**独热编码**或**01编码**。
+
+
+
+**代码实现：生成 One-Hot 编码**
+
+思路分析：
+
+- 准备语料（词汇表）`vocabs`
+- 实例化词汇映射器 `Tokenizer`，拟合文本数据（内部生成 `index_word` 和 `word_index`）
+- 查询单词索引，赋值 `zero_list`，生成 One-Hot
+- 使用 `joblib` 保存映射器
+
+代码示例：
+
+```python
+import jieba
+# 导入keras中的词汇映射器Tokenizer
+from tensorflow.keras.preprocessing.text import Tokenizer
+# 导入用于对象保存与加载的joblib
+import joblib
+
+
+def dm_onehot_gen():
+
     # 1 准备语料 vocabs
+    vocabs = {"周杰伦", "陈奕迅", "王力宏", "李宗盛", "吴亦凡", "鹿晗"}
+
     # 2 实例化词汇映射器Tokenizer, 使用映射器拟合现有文本数据 (内部生成 index_word word_index)
     # 2-1 注意idx序号-1
+    mytokenizer = Tokenizer()
+    mytokenizer.fit_on_texts(vocabs)
+
     # 3 查询单词idx 赋值 zero_list，生成onehot
-    # 4 使用joblib工具保存映射器 joblib.dump()
-    def dm_onehot_gen():
-    
-        # 1 准备语料 vocabs
-        vocabs = {"周杰伦", "陈奕迅", "王力宏", "李宗盛", "吴亦凡", "鹿晗"}
-    
-        # 2 实例化词汇映射器Tokenizer, 使用映射器拟合现有文本数据 (内部生成 index_word word_index)
-        # 2-1 注意idx序号-1
-        mytokenizer = Tokenizer()
-        mytokenizer.fit_on_texts(vocabs)
-    
-        # 3 查询单词idx 赋值 zero_list，生成onehot
-        for vocab in vocabs:
-            zero_list = [0] * len(vocabs)
-            idx = mytokenizer.word_index[vocab] - 1
-            zero_list[idx] = 1
-            print(vocab, '的onehot编码是', zero_list)
-    
-        # 4 使用joblib工具保存映射器 joblib.dump()
-        mypath = './mytokenizer'
-        joblib.dump(mytokenizer, mypath)
-        print('保存mytokenizer End')
-    
-        # 注意5-1 字典没有顺序 onehot编码没有顺序 []-有序 {}-无序 区别
-        # 注意5-2 字典有的单词才有idx idx从1开始
-        # 注意5-3 查询没有注册的词会有异常 eg: 狗蛋
-        print(mytokenizer.word_index)
-        print(mytokenizer.index_word)
-    
-    ```
-
-    - One-Hot的使用
-
-    ```python
-    # 思路分析
-    # 1 加载已保存的词汇映射器Tokenizer joblib.load(mypath)
-    # 2 查询单词idx 赋值zero_list，生成onehot 以token为'李宗盛'
-    # 3 token = "狗蛋" 会出现异常
-    def dm_onehot_use():
-    
-        vocabs = {"周杰伦", "陈奕迅", "王力宏", "李宗盛", "吴亦凡", "鹿晗"}
-    
-        # 1 加载已保存的词汇映射器Tokenizer joblib.load(mypath)
-        mypath = './mytokenizer'
-        mytokenizer = joblib.load(mypath)
-    
-        # 2 编码token为"李宗盛"  查询单词idx 赋值 zero_list，生成onehot
-        token = "李宗盛"
+    for vocab in vocabs:
         zero_list = [0] * len(vocabs)
-        idx = mytokenizer.word_index[token] - 1
+        idx = mytokenizer.word_index[vocab] - 1
         zero_list[idx] = 1
-        print(token, '的onehot编码是', zero_list)
-    
-    ```
+        print(vocab, '的onehot编码是', zero_list)
 
-- One-Hot编码的缺点：
+    # 4 使用joblib工具保存映射器 joblib.dump()
+    mypath = './mytokenizer'
+    joblib.dump(mytokenizer, mypath)
+    print('保存mytokenizer End')
 
-  - 割裂了词与词之间的联系
-  - 如果n过大，会导致占用大量的内存（维度爆炸）
+    # 注意5-1 字典没有顺序 onehot编码没有顺序 []-有序 {}-无序 区别
+    # 注意5-2 字典有的单词才有idx idx从1开始
+    # 注意5-3 查询没有注册的词会有异常 eg: 狗蛋
+    print(mytokenizer.word_index)
+    print(mytokenizer.index_word)
+```
 
-- Word2Vec模型
 
-  ```properties
-  word2vec是一种无监督的训练方法，本质是训练一个模型，将模型的参数矩阵当作所有词汇的词向量表示
-  两种训练方式：cbow、skipgram
-  ```
 
-- CBOW介绍
+**使用已保存的 One-Hot 编码**
 
-  ```properties
-  给一段文本，选择一定的窗口，然后利用上下文预测中间目标词
-  ```
+代码示例：
 
-  - 实现过程：
+```python
+# 思路分析
+# 1 加载已保存的词汇映射器Tokenizer joblib.load(mypath)
+# 2 查询单词idx 赋值zero_list，生成onehot 以token为'李宗盛'
+# 3 token = "狗蛋" 会出现异常
+def dm_onehot_use():
 
-  ![CBOW讲解1--01](assets/day01/01.png)
+    vocabs = {"周杰伦", "陈奕迅", "王力宏", "李宗盛", "吴亦凡", "鹿晗"}
 
-  - ![CBOW3](assets/day01/02.png)
+    # 1 加载已保存的词汇映射器Tokenizer joblib.load(mypath)
+    mypath = './mytokenizer'
+    mytokenizer = joblib.load(mypath)
+
+    # 2 编码token为"李宗盛"  查询单词idx 赋值 zero_list，生成onehot
+    token = "李宗盛"
+    zero_list = [0] * len(mytokenizer.word_index)
+    idx = mytokenizer.word_index[token] - 1
+    zero_list[idx] = 1
+    print(token, '的onehot编码是', zero_list)
+```
+
+
+
+**One-Hot 编码的缺点**
+
+- **割裂了词与词之间的联系**（无法体现语义相似性）
+- **维度灾难**：如果词汇量 n 过大，会导致占用大量内存（维度爆炸）
+
+
+
+#### 2. Word2Vec模型
+
+- **模型介绍：**Word2vec 是一种无监督词向量训练方法，通过训练一个浅层神经网络，把网络权重当作词的稠密向量表示。
+
+- **两种训练方式**：`cbow`、`skipgram`
+
+
+
+##### CBOW介绍
+
+> 给一段文本，选择一定的窗口（一般为奇数），然后利用上下文预测中间目标词
+
+![avatar](assets/CBOW.png)
+
+分析：图中窗口大小为9, 使用前后4个词汇对目标词汇进行预测.
+
+
+
+**实现过程：**
+
+- **训练语料**：Hope **can** set you free
+- **窗口大小**：3 ⇒ 上下文各取 1 词
+- **目标词**：can
+
+
+
+1️⃣ 构造首个训练样本
+
+| 角色     | 词汇 | One-hot 维度 |
+| -------- | ---- | ------------ |
+| 上下文词 | Hope | 5×1          |
+| 上下文词 | set  | 5×1          |
+| 目标词   | can  | 5×1          |
+
+
+
+2️⃣ 前向传播
+
+在模型训练时， Hope，can，set等词汇都使用它们的one-hot编码. 如图所示: 每个one-hot编码的单词与各自的变换矩阵(即参数矩阵3x5, 这里的3是指最后得到的词向量维度)相乘之后再相加, 得到上下文表示矩阵(3x1).
+
+![avatar](assets/CBOW_1.png)
+
+接着, 将上下文表示矩阵与变换矩阵(参数矩阵5x3, 所有的变换矩阵共享参数)相乘, 得到5x1的结果矩阵, 它将与我们真正的目标矩阵即can的one-hot编码矩阵(5x1)进行损失L的计算。
+
+![avatar](assets/CBOW_2.png)
+
+
+
+- 共享权重矩阵
+  - 输入层 → 隐藏层：`W`  3×5
+  - 隐藏层 → 输出层：`W'` 5×3
+- 计算流程
+  1. `h = W · (Hope + set)`                 (3×1)
+  2. `ŷ = W' · h`                           (5×1)
+  3. 损失 `L = CrossEntropy(ŷ, can_onehot)`
+
+
+
+3️⃣ 反向传播 & 参数更新
+
+- 根据 `L` 同时更新 `W` 与 `W'`。
+
+- 窗口右滑，生成下一个样本 → 重复直至遍历完整语料。
+
+
+
+4️⃣ 训练结束后的产物
+
+- 最终得到的 **W(3×5)** 即为词向量矩阵。
+- 任意词 `v` 的 Word2Vec 表示：`vec(v) = W · onehot(v)` (3×1)。
+
+
+
+![CBOW讲解1--01](assets/day01/01.png)
+
