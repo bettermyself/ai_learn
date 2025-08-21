@@ -187,7 +187,7 @@ for idx in range(len(tok.index_word)):
   print('%4s'%(mytokenizer.index_word[idx+1]), tmpvec.detach().numpy())
 
 # 根据词来获取词向量 
-vec = embed(torch.tensor(tok.word_index['黑马'])).detach().numpy() # 需不需要减去1呢？
+vec = embed(torch.tensor(tok.word_index['黑马']-1)).detach().numpy() 
 ```
 
 
@@ -217,6 +217,11 @@ vec = embed(torch.tensor(tok.word_index['黑马'])).detach().numpy() # 需不需
 **代码实现**：
 
 ```python
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
 def dm_label_sns_countplot():
 
     # 1 设置显示风格plt.style.use('fivethirtyeight')
@@ -369,13 +374,13 @@ import jieba
 from itertools import chain
 
 # 进行训练集的句子进行分词, 并统计出不同词汇的总数
+# map(lambda x: jieba.lcut(x), train_data['sentence'])会对每个句子进行分词，返回多个列表，而chain(*)则将这些列表"扁平化"成一个单一的迭代器，最后通过list()转换为一个包含所有词汇的列表。简单来说，chain在这里的作用就是将多个分词列表合并成一个大的词汇列表。
 train_vocab = set(chain(*map(lambda x: jieba.lcut(x), train_data["sentence"])))
 print("训练集共包含不同词汇总数为：", len(train_vocab))
 
 # 进行验证集的句子进行分词, 并统计出不同词汇的总数
 valid_vocab = set(chain(*map(lambda x: jieba.lcut(x), valid_data["sentence"])))
 print("训练集共包含不同词汇总数为：", len(valid_vocab))
-
 ```
 
 **结果速览：**
