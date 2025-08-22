@@ -304,3 +304,4 @@ def padding(x_train):
 
 
 
+ 
