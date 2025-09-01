@@ -168,7 +168,7 @@ def padding(x_train):
         形状为 (样本数, cutlen) 的二维数组，不足补 0，超长截断
     """
     # 直接使用 Keras 提供的 pad_sequences 完成截断与填充
-    return pad_sequences(x_train, maxlen=cutlen, padding='post', truncating='post')
+    return pad_sequences(x_train, maxlen=cutlen, padding='post', truncating='post')  #  post默认是后比如补齐或者截断，pre:默认在前面补齐或者截断
 ```
 
 **调用示例**
