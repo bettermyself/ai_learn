@@ -440,10 +440,9 @@ $$
 
 ![img](assets/RNN22.gif)
 
+### 3.5 RNN模型实现
 
-
-
-  **RNN模型实现**
+####   **RNN模型实现1**
 
   ```python
   import torch
@@ -506,3 +505,210 @@ $$
       print(f"  output 形状: {output.shape}, 数值: {output}")
       print(f"  h      形状: {h.shape}, 数值: {h}\n")
   ```
+
+####   **RNN模型实现2**
+
+```python
+import torch
+import torch.nn as nn
+
+def demo_rnn_variable_seqlen():
+    """
+    演示 nn.RNN 在输入序列长度发生变化时的基本用法
+    这里我们关注的是：
+    1. RNN 的构造参数
+    2. 输入张量、隐藏状态张量的形状
+    3. 输出张量、最终隐藏状态的形状
+    """
+
+    # 1. 构造 RNN 层 ----------------------------------------------------------
+    # 参数说明：
+    #   input_size  : 每个时间步输入向量的维度（这里是 5）
+    #   hidden_size : 隐藏层维度（隐藏层神经元个数，这里是 6）
+    #   num_layers  : RNN 层数（这里是 1）
+    rnn = nn.RNN(input_size=5, hidden_size=6, num_layers=1)
+
+    # 2. 构造输入张量 x --------------------------------------------------------
+    # 形状：(seq_len, batch_size, input_size)
+    #   seq_len    : 输入序列的长度（这里是 20）
+    #   batch_size : 批次大小（这里是 3）
+    #   input_size : 每个时间步输入向量的维度（与上面保持一致，5）
+    x = torch.randn(20, 3, 5)
+
+    # 3. 构造初始隐藏状态 h0 ---------------------------------------------------
+    # 形状：(num_layers * num_directions, batch_size, hidden_size)
+    #   num_layers * num_directions : 层数 * 方向数（单向=1，双向=2）
+    #   batch_size                  : 批次大小（与输入保持一致，3）
+    #   hidden_size                 : 隐藏层维度（与上面保持一致，6）
+    h0 = torch.randn(1, 3, 6)
+
+    # 4. 前向传播 -------------------------------------------------------------
+    # 返回值：
+    #   out : 所有时间步的隐藏状态（形状 [seq_len, batch_size, hidden_size]）
+    #   hn  : 最后一个时间步的隐藏状态（形状 [num_layers*num_directions, batch_size, hidden_size]）
+    out, hn = rnn(x, h0)
+
+    # 5. 打印结果 --------------------------------------------------------------
+    print("输入张量 x 的形状 :", x.shape)          # torch.Size([20, 3, 5])
+    print("初始隐藏状态 h0 的形状 :", h0.shape)     # torch.Size([1, 3, 6])
+    print("输出张量 out 的形状 :", out.shape)       # torch.Size([20, 3, 6])
+    print("最终隐藏状态 hn 的形状 :", hn.shape)     # torch.Size([1, 3, 6])
+    print("\n构建的 RNN 模型:\n", rnn)
+
+if __name__ == "__main__":
+    demo_rnn_variable_seqlen()
+```
+
+运行效果示例（固定随机种子后可复现）：
+
+```properties
+输入张量 x 的形状 : torch.Size([20, 3, 5])
+初始隐藏状态 h0 的形状 : torch.Size([1, 3, 6])
+输出张量 out 的形状 : torch.Size([20, 3, 6])
+最终隐藏状态 hn 的形状 : torch.Size([1, 3, 6])
+
+构建的 RNN 模型:RNN(5, 6)
+```
+
+####   **RNN模型实现3**
+
+```python
+import torch
+import torch.nn as nn
+
+
+def demo_rnn_hidden_layers():
+    """
+    演示 nn.RNN 在隐藏层数量（num_layers）变化时的用法
+    本例中：
+        num_layers = 2
+    需要重点注意：
+        1. 隐藏状态 h0 的第一维必须等于 num_layers * num_directions
+        2. output 始终是所有时间步最后一层（第 2 层）的隐藏状态
+        3. hn 包含所有层在最后一个时间步的隐藏状态
+    """
+
+    # 1. 构造 RNN
+    #   input_size  : 5
+    #   hidden_size : 6
+    #   num_layers  : 2  ← 隐藏层数量增加到 2
+    rnn = nn.RNN(input_size=5, hidden_size=6, num_layers=2)
+
+    # 2. 构造输入张量
+    #   shape = (seq_len, batch_size, input_size)
+    #   seq_len    = 1  （序列长度）
+    #   batch_size = 3  （批次大小）
+    #   input_size = 5  （必须与 RNN 定义一致）
+    x = torch.randn(1, 3, 5)
+
+    # 3. 构造初始隐藏状态 h0
+    #   shape = (num_layers * num_directions, batch_size, hidden_size)
+    #   num_layers * num_directions = 2 * 1 = 2
+    #   batch_size = 3
+    #   hidden_size = 6
+    h0 = torch.randn(2, 3, 6)
+
+    # 4. 前向传播
+    #   out : 最后一层在每个时间步的隐藏状态，形状 (seq_len, batch_size, hidden_size)
+    #   hn  : 所有层在最后一个时间步的隐藏状态，形状 (num_layers, batch_size, hidden_size)
+    out, hn = rnn(x, h0)
+
+    # 5. 打印结果
+    print("输入张量 x 的形状 :", x.shape)      # torch.Size([1, 3, 5])
+    print("初始隐藏状态 h0 的形状 :", h0.shape)  # torch.Size([2, 3, 6])
+    print("输出张量 out 的形状 :", out.shape)    # torch.Size([1, 3, 6])
+    print("最终隐藏状态 hn 的形状 :", hn.shape)   # torch.Size([2, 3, 6])
+    print("\n输出张量 out:\n", out)
+    print("\n最终隐藏状态 hn:\n", hn)
+    print("\nRNN 模型结构:\n", rnn)
+
+    # 6. 结论
+    #   - 当 num_layers = 1 时，out 的最后一时间步等于 hn
+    #   - 当 num_layers > 1 时：
+    #       · out 始终是最后一层在所有时间步的隐藏状态
+    #       · hn 是所有层在最后一个时间步的隐藏状态，因此 hn[0] 是第一层，hn[-1] 是最后一层
+
+
+if __name__ == "__main__":
+    demo_rnn_hidden_layers()
+```
+
+运行结果（示例）：
+
+```properties
+输入张量 x 的形状 : torch.Size([1, 3, 5])
+初始隐藏状态 h0 的形状 : torch.Size([2, 3, 6])
+输出张量 out 的形状 : torch.Size([1, 3, 6])
+最终隐藏状态 hn 的形状 : torch.Size([2, 3, 6])
+
+输出张量 out:
+ tensor([[[ 0.4987, -0.5756,  0.1934,  0.7284,  0.4478, -0.1244],
+         [ 0.6753,  0.5011, -0.7141,  0.4480,  0.7186,  0.5437],
+         [ 0.6260,  0.7600, -0.7384, -0.5080,  0.9054,  0.6011]]],
+       grad_fn=<StackBackward>)
+
+最终隐藏状态 hn:
+ tensor([[[ 0.4862,  0.6872, -0.0437, -0.7826, -0.7136, -0.5715],
+         [ 0.8942,  0.4524, -0.1695, -0.5536, -0.4367, -0.3353],
+         [ 0.5592,  0.0444, -0.8384, -0.5193,  0.7049, -0.0453]],
+
+        [[ 0.4987, -0.5756,  0.1934,  0.7284,  0.4478, -0.1244],
+         [ 0.6753,  0.5011, -0.7141,  0.4480,  0.7186,  0.5437],
+         [ 0.6260,  0.7600, -0.7384, -0.5080,  0.9054,  0.6011]]],
+       grad_fn=<StackBackward>)
+
+RNN 模型结构:
+ RNN(5, 6, num_layers=2)
+```
+
+多层RNN的解析
+
+![1685938431553](assets/02.png)
+
+### 3.6 传统RNN优缺点
+
+#### **1. 传统RNN的优势**
+
+由于内部结构简单，对计算资源要求低，相比之后我们要学习的RNN变体：LSTM 和 GRU 模型参数总量少了很多，在短序列任务上性能和效果都表现优异。
+
+#### 2. 传统RNN的缺点
+
+传统RNN在解决长序列之间的关联时，通过实践，证明经典RNN表现很差，原因是在进行反向传播的时候，过长的序列导致梯度的计算异常，发生梯度消失或爆炸。
+
+#### 3. 梯度消失与梯度爆炸
+
+##### 3.1 数学描述
+
+根据反向传播算法与链式法则，梯度可简化为连乘形式：
+
+$$
+D_n = \sigma'(z_1) \cdot w_1 \cdot \sigma'(z_2) \cdot w_2 \cdots \sigma'(z_n) \cdot w_n
+$$
+
+- **Sigmoid导数**：  $\sigma'(\cdot) \in (0, 0.25]$，始终为小于1的正值。
+  
+  > • 讲解梯度消失时用 sigmoid 是为了「放大」问题，便于理解；
+  > • 真正跑代码、看论文时，RNN 的隐藏层几乎清一色用 **tanh**。
+  
+- **权重$w$**：  
+  
+  若$|w| < 1$，连乘后梯度指数级缩小——梯度消失；  
+  
+  若$|w| > 1$，连乘后梯度指数级放大——梯度爆炸。
+
+#### 3.2 危害
+
+- **梯度消失**：  
+  
+  权重几乎得不到更新，模型难以学习长期依赖，训练失败。
+  
+- **梯度爆炸**：  
+  
+  参数更新幅度过大，导致网络不稳定，甚至产生NaN溢出值，训练崩溃。
+
+
+
+
+
+
+

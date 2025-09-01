@@ -2,62 +2,17 @@
 
 
 
-### 传统RNN模型
 
-- 内部结构
 
-  - 输入：当前时间步xt和上一时间步输出的ht-1
-  - 输出：ht和ot （一个时间步内：ht=ot）
+------
 
-  ![image-20240617180601111](assets/day04/01.png)
-
-  ------
-
-  ![RNN基本工作原理](assets/day04/03.png)
+![RNN基本工作原理](assets/day04/03.png)
 
 - ------
 
-  多层RNN的解析
+  
 
-  ![1685938431553](assets/day04/02.png)
 
-- RNN模型实现
-
-  ```python
-  # 输入数据长度发生变化
-  def  dm_rnn_for_sequencelen():
-      '''
-      第一个参数：input_size(输入张量x的维度)
-      第二个参数：hidden_size(隐藏层的维度， 隐藏层的神经元个数)
-      第三个参数：num_layer(隐藏层的数量)
-      '''
-      rnn = nn.RNN(5, 6, 1) #A
-      '''
-      第一个参数：sequence_length(输入序列的长度)
-      第二个参数：batch_size(批次的样本数量)
-      第三个参数：input_size(输入张量的维度)
-      '''
-      input = torch.randn(20, 3, 5) #B
-      '''
-      第一个参数：num_layer * num_directions(层数*网络方向)
-      第二个参数：batch_size(批次的样本数)
-      第三个参数：hidden_size(隐藏层的维度， 隐藏层神经元的个数)
-      '''
-      h0 = torch.randn(1, 3, 6) #C
-  
-      # [20,3,5],[1,3,6] --->[20,3,6],[1,3,6]
-      output, hn = rnn(input, h0)  #
-  
-      print('output--->', output.shape)
-      print('hn--->', hn.shape)
-      print('rnn模型--->', rnn)
-  
-  # 程序运行效果如下： 
-  output---> torch.Size([20, 3, 6])
-  hn---> torch.Size([1, 3, 6])
-  rnn模型---> RNN(5, 6)
-  
-  ```
 
 ### LSTM模型
 
