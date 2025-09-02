@@ -1,15 +1,15 @@
-# RNN人名分类器案例
+### 1. 案例说明
 
-## 1 任务目的：
+- **任务**：输入一个人名，模型判断其最可能的国家。
+- **场景**：国际化注册流程，自动分配国家、国旗、手机号位数等。
 
-```properties
-目的: 给定一个人名，来判定这个人名属于哪个国家
-典型的文本分类任务: 18分类---多分类任务
-```
+> 典型的文本分类任务: 18分类---多分类任务
 
-## 2 数据格式
 
-- 注意：两列数据，第一列是人名，第二列是国家类别，中间用制表符号"\t"隔开
+
+### 2. 数据格式
+
+注意：两列数据，第一列是人名，第二列是国家类别，中间用制表符号"\t"隔开
 
 ```properties
 Ang	Chinese
@@ -19,34 +19,55 @@ Yuhara	Japanese
 Yunokawa	Japanese
 ```
 
-## 3 任务实现流程
+
+
+### 3. 整体步骤
 
 ```properties
 1. 获取数据:案例中是直接给定的
 2. 数据预处理: 脏数据清洗、数据格式转换、数据源Dataset的构造、数据迭代器Dataloader的构造
-3. 模型搭建: RNN、LSTM、GRU一系列模型
+3. 模型搭建: 构建 RNN 系列模型（RNN / LSTM / GRU）
 4. 模型训练和评估（测试）
 5. 模型上线---API接口(后续会讲)
 ```
 
-## 4 数据预处理
 
-### 4.1读取txt文档数据
 
-目的：
+### 4. 数据预处理
 
-```properties
-将文档里面的数据读取到内存中，实际上我们做了一个操作: 将人名存放到一个列表中，国家类别存放到一个列表中
+> 这里需要对数据进行处理，以满足训练要求。
+
+#### 4.1 字符集
+
+```python
+all_letters = string.ascii_letters + " .,;'"        # 52 个大小写字母 + 5 个常用标点
+n_letters   = len(all_letters)            # 57
 ```
 
-代码实现
+
+
+#### 4.2 国家列表
+
+```py
+# 国家名 种类数
+categorys = ['Italian', 'English', 'Arabic', 'Spanish', 'Scottish', 'Irish', 'Chinese', 'Vietnamese', 'Japanese',
+             'French', 'Greek', 'Dutch', 'Korean', 'Polish', 'Portuguese', 'Russian', 'Czech', 'German']
+# 国家名 个数
+categorynum = len(categorys)             # 18
+```
+
+
+
+#### 4.3 读文件到内存
+
+目的：将文档里面的数据读取到内存中，将人名存放到一个列表中，国家类别存放到一个列表中
 
 ```python
 def read_data(filename):
     # 1. 初始化两个空列表
     my_list_x, my_list_y = [], []
     # 2. 读取文件内容
-    with open(filename,'r', encoding='utf-8') as fr:
+    with open(filename, mode='r', encoding='utf-8') as fr:
         for line in fr.readlines():
             if len(line) <= 5:
                 continue
@@ -58,9 +79,9 @@ def read_data(filename):
     return my_list_x, my_list_y
 ```
 
-### 4.2 构建自己的数据源DataSet
 
-目的：
+
+#### 4.4 构建自己的数据源DataSet
 
 ```properties
 使用Pytorch框架，一般遵从一个规矩：使用DataSet方法构造数据源，来让模型进行使用
@@ -69,56 +90,93 @@ __len__(): 一般返回的是样本的总个数，我们可以直接len(dataset�
 __getitem__(): 可以根据某个索引取出样本值，我们可以直接用dataset对象[index]来直接获得结果
 ```
 
-代码实现：
-
 ```python
 class NameClassDataset(Dataset):
+    """
+    人名–国家 数据集
+    将人名转成 one-hot 张量，国家转成类别索引，供后续 DataLoader 使用。
+    """
     def __init__(self, mylist_x, mylist_y):
         self.mylist_x = mylist_x
         self.mylist_y = mylist_y
         self.sample_len = len(mylist_x)
 
-    # 定义魔法方法len
+    # --------------------------
+    # 魔法方法：返回数据集大小
+    # --------------------------
     def __len__(self):
         return self.sample_len
 
-    # 定义魔法方法getitem
+    # ----------------------------------------------
+    # 魔法方法：按索引取出一条样本
+    # 返回 (tensor_name, tensor_country)
+    # ----------------------------------------------
     def __getitem__(self, index):
         # 1.index异常值处理
         index = min(max(index, 0), self.sample_len - 1)
+        
         # 2. 根据index取出人名和国家名
         x = self.mylist_x[index]
-        # print(f'x--->{x}')
         y = self.mylist_y[index]
-        # print(f'y--->{y}')
+
         # 3.需要对人名进行one-hot编码表示：这里的思路是：针对每个人名组成的单词进行one-hot，然后再拼接
         tensor_x = torch.zeros(len(x), n_letter)
-        # print(f'tensor_x-->{tensor_x}')
+
         for li, letter in enumerate(x):
             tensor_x[li][all_letters.find(letter)] = 1
-       # 4.获取标签
-       #  print(f'dataset内部的tensor_x--》{tensor_x.shape}')
+       
+    	# 4.获取标签
         tensor_y = torch.tensor(categorys.index(y), dtype=torch.long)
-        # print(f'dataset内部的tensor_y-->{tensor_y}')
+        
         return tensor_x, tensor_y
 ```
 
-### 4.3 构建数据源Dataloader
 
-目的：
 
-```properties
-为了将Dataset我们上一步构建的数据源，进行再次封装，变成一个迭代器，可以进行for循环，而且，可以自动为我们dataset里面的数据进行增维（bath_size）,也可以随机打乱我们的取值顺序
-```
+#### 4.5 构建数据源Dataloader
+
+目的：把上一步的 `Dataset` 进一步封装成**可迭代对象**，实现：
+
+- `for` 循环遍历
+- 自动 **补维（batch）**
+- 随机 **打乱顺序**
+
+> ⚠️ 本任务中人名长度不一，若设置 `batch_size>1`，需额外做 **填充 / 截断**；示例先用 `batch_size=1` 便于理解。
+
+
 
 代码实现：
 
 ```python
+from torch.utils.data import DataLoader
+
+# 1. 读取原始数据
 filename = './data/name_classfication.txt'
 my_list_x, my_list_y = read_data(filename)
+
+# 2. 构建 Dataset
 mydataset = NameClassDataset(mylist_x=my_list_x, mylist_y=my_list_y)
-my_dataloader = DataLoader(dataset=mydataset, batch_size=1, shuffle=True)  # 这里batch_size=1只能为1，因为每个人的人民长度不一致
+
+# 3. 构建 DataLoader
+my_dataloader = DataLoader(dataset=mydataset, 
+                           batch_size=1,  # 单条样本，避免长度不一致问题
+                           shuffle=True   # 每个 epoch 随机打乱
+                          ) 
+
+# 4. 使用示例
+for name_tensor, country_idx in my_dataloader:
+    print("人名张量形状:", name_tensor.shape)
+    print("国家索引:", country_idx.item())
+    break
 ```
+
+
+
+
+
+
+
+
 
 ## 5 模型搭建
 
