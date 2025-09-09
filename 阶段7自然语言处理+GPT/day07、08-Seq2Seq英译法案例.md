@@ -675,46 +675,18 @@ class AttentionDecoderGRU(nn.Module):
 
         # 7. LogSoftmax 用于 NLLLoss
         self.softmax = nn.LogSoftmax(dim=-1)
-    
-
-    
-    def forward(self, input, hidden, encoder_output):
-        # input-->query--》解码器输入某个词[1, 1]
-        # hidden-->key--》上一时间步隐藏层输出[1, 1, 256]
-        # encoder_output--->value-->编码器的输出结果[10, 256]--[max_length, 256]
-        # 1. 将input送入embedding-->input_x-->[1,1,256]--query(真正)
-        input_x = self.embed(input)
-        # 1.1对input_x进行dropout
-        input_x = self.droupout(input_x)
-        # 2. 计算注意力权重分数self.attn_weight-->[1, 10]-->[1, max_length]
-        attn_weight = F.softmax(self.attn(torch.cat((input_x[0], hidden[0]), dim=-1)), dim=-1)
-        # 3. 将注意力权重和Value相乘:[1, 1,10]*[1,10,256]-->self.attn_applied-->[1, 1,256]
-        attn_applied = torch.bmm(attn_weight.unsqueeze(0), encoder_output.unsqueeze(0))
-        # 4.将query和self.attn_applied结果拼接之后，再经过线性的变换self.output1-->[1, 1, 256]
-        output1 = self.attn_combin(torch.cat((input_x[0], attn_applied[0]), dim=-1)).unsqueeze(0)
-        # 5. 经过relu激活函数
-        relu_output = F.relu(output1)
-        # 6. 将self.relu_output，以及hidden送入GRU模型中-->gru_output-->[1, 1,256]
-        gru_output, hidden = self.gru(relu_output , hidden)
-
-        # 7.将gru的结果送入输出层，得到最后的预测结果output-->[1, 4345]
-        output = self.out(gru_output[0])
-        return self.softmax(output), hidden, attn_weight
-
-    def inithidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
       
       
     # --------------------------
     # 前向传播（单步）
     # --------------------------
-    def forward(self, input, hidden, encoder_outputs):
+    def forward(self, input, hidden, encoder_outputs_c):
         """
         参数
         ----
-        input           : Tensor [B, 1]          当前时间步单词索引
-        hidden          : Tensor [1, B, D]       上一时间步隐状态
-        encoder_outputs : Tensor [B, T, D]       编码器全部时间步输出（T == max_length）
+        input-->query           : Tensor [B, 1]     [1, 1]                   当前时间步单词索引
+        hidden-->key            : Tensor [1, B, D]  [1, 1, 256]              上一时间步隐状态
+        encoder_outputs-->value : Tensor [B, T, D]  [10, 256]                编码器全部时间步输出（T == max_length）
 
         返回
         ----
@@ -733,7 +705,7 @@ class AttentionDecoderGRU(nn.Module):
         #    key   = hidden[0]             -> [B, D]
         query_key = torch.cat((emb[:, 0], hidden[0]), dim=1)  # [B, 2D]
         attn_scores = self.attn(query_key)                    # [B, max_length]
-        attn_weights = F.softmax(attn_scores, dim=1)          # [B, T]
+        attn_weights = F.softmax(attn_scores, dim=1)          # [B, max_length]
 
         # 3. 加权求和得到上下文向量  [B, 1, T] @ [B, T, D] -> [B, 1, D]
         context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
@@ -750,46 +722,53 @@ class AttentionDecoderGRU(nn.Module):
         prob = self.softmax(logits)
 
         return prob, hidden, attn_weights
+      
+    # --------------------------
+    # 初始化 h0
+    # --------------------------
+    def init_hidden(self, batch_size: int = 1):
+        return torch.zeros(1, batch_size, self.hidden_size, device=device)
 ```
 
 模型测试
 
 ```python
-# 测试带attention的解码器
-def test_AttenDecoder():
-    # 1.实例化dataset
-    mydataset = Seq2SeqDaset(my_pairs)
-    # 2.实例化dataloader
-    my_dataloader = DataLoader(dataset=mydataset, batch_size=1, shuffle=True)
+# ==========================================
+# 测试带 Attention 的解码器（端到端单批次）
+# ==========================================
 
-    # 3.实例化编码器模型
-    my_encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256)
-    # my_encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256).to(device)
-    my_encoder.to(device)
+def test_atten_decoder():
+    """
+    1. 取一条英-法句子对  
+    2. 编码器输出 → 补齐到 MAX_LENGTH 得到 encoder_output_c  
+    3. 逐词送入 AttentionDecoder，打印中间形状与注意力权重
+    """
+    # 1. 数据
+    dataset    = Seq2SeqDataset(my_pairs)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-   # 4.实例化解码器模型
-    my_attenDecoder = AttentionDecoderGRU(vocab_size=french_word_n, hidden_size=256)
-    my_attenDecoder.to(device)
+    # 2. 模型
+    encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256).to(device)
+    decoder = AttentionDecoderGRU(vocab_size=french_word_n, hidden_size=256).to(device)
 
-    #5.循环数据送入模型
-    for x, y in my_dataloader:
-        print(f'x--》{x.shape}')
-        print(f'y--》{y.shape}')
-        # 1.将x送入编码器模型得到结果
-        h0 = my_encoder.inithidden()
-        encoder_output, hidden = my_encoder(input=x, hidden=h0)
-        # print(f'encoder_output--》{encoder_output.shape}')
-        # 2.将编码的结果进行处理，统一长度，方便计算注意力
-        encoder_output_c = torch.zeros(MAX_LENGTH, my_encoder.hidden_size, device=device)
-        # print(f'encoder_output_c--》{encoder_output_c.shape}')
+    for x, y in dataloader:
+        B, T_y = y.shape
+        # x: [B, T_x]  英语
+        # y: [B, T_y]  法语（含 <EOS>）
 
-        # 2.1将真实的编码的输出 结果赋值到encoder_output_c中，多余的都是用0来表示
-        for i in range(encoder_output.shape[1]):
-            # print(f'encoder_output[0][i]-->{encoder_output[0][i].shape}')
-            # print(f'encoder_output[0, i]-->{encoder_output[0, i].shape}')
-            encoder_output_c[i] = encoder_output[0][i]
-        # 3.测试:进行解码应用
-        for j in range(y.shape[1]):
+        # 2.1 编码器前向
+        h0_enc       = encoder.init_hidden(B)
+        encoder_out, _ = encoder(x, h0_enc)  # encoder_out: [B, T_x, D]
+
+        # 2.2 补齐到 MAX_LENGTH，方便注意力计算
+        D = encoder.hidden_size
+        encoder_output_c = torch.zeros(MAX_LENGTH, D, device=device)  # [MAX_LENGTH, D]
+        real_len = encoder_out.size(1)  # 实际句子长度
+        encoder_output_c[:real_len] = encoder_out[0]  # 赋值，其余为 0
+
+
+        # 3. 逐词解码（Teacher Forcing 示例）
+        for j in range(T_y):
             temp = y[0][j].view(1, -1)
             output, hidden, attn_weight = my_attenDecoder(temp, hidden, encoder_output_c)
             print(f'output--》{output.shape}')
@@ -797,6 +776,11 @@ def test_AttenDecoder():
             print(f'attn_weight--》{attn_weight.shape}')
             print("*"*80)
         break
+
+
+# 直接运行本文件即可测试
+if __name__ == "__main__":
+    test_atten_decoder()
 ```
 
 ------
