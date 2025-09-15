@@ -1,6 +1,6 @@
 # SeqSeq英译法案例
 
-## 1、任务目的：
+### 1 任务目的：
 
 ```properties
 目的: 给定一段英文，翻译为法文
@@ -106,7 +106,7 @@ def normalize_string(s):
         s (str): 原始字符串
 
     返回:
-        str: 清洗后的字符串
+        s (str): 清洗后的字符串
     """
     s = s.lower().strip()  # 转为小写并去除首尾空格
 
@@ -214,32 +214,6 @@ __getitem__(): 可以根据某个索引取出样本值，我们可以直接用da
 代码实现：
 
 ```python
-# 3.构建数据源Dataset
-class Seq2SeqDaset(Dataset):
-    def __init__(self, my_pairs):
-        self.my_pairs = my_pairs
-        self.sample_len = len(my_pairs)
-
-    def __len__(self):
-        return self.sample_len
-
-    def __getitem__(self, index):
-        # 1.index异常值处理[0, self.sample_len-1]
-        index = min(max(index, 0), self.sample_len-1)
-
-        # 2. 根据index取出样本数据
-        x = self.my_pairs[index][0]
-        y = self.my_pairs[index][1]
-
-        # 3.进行文本数据数字化的转换
-        x1 = [english_word2index[word] for word in x.split(' ')]
-        tensor_x = torch.tensor(x1, dtype=torch.long, device=device)
-
-        y1 = [french_word2index[word] for word in y.split(' ')]
-        y1.append(EOS_token)
-        tensor_y = torch.tensor(y1, dtype=torch.long, device=device)
-
-        return tensor_x, tensor_y
 # ==========================
 # 构建 Dataset 类，用于加载英法语句子对
 # ==========================
@@ -250,7 +224,7 @@ class Seq2SeqDataset(Dataset):
         初始化数据集
 
         参数:
-            my_pairs (list): 英法语句子对列表，每个元素是 [英语句子, 法语句子]
+            my_pairs (list): 英、法语句子对列表，每个元素是 [英语句子, 法语句子]
         """
         self.my_pairs = my_pairs
         self.sample_len = len(my_pairs)
@@ -293,7 +267,7 @@ class Seq2SeqDataset(Dataset):
         # 4. 法语句子 -> 单词列表 -> 索引列表 -> 添加 EOS -> 张量
         # --------------------------
         y_list = [french_word2index[word] for word in y.split(' ')]
-        y_list.append(EOS_TOKEN)  # 添加结束符
+        y_list.append(EOS_token)  # 添加结束符
         tensor_y = torch.tensor(y_list, dtype=torch.long, device=device)
 
         return tensor_x, tensor_y
@@ -368,7 +342,7 @@ def get_dataloader(batch_size: int = 1, shuffle: bool = True):
 
 ```properties
 GRU模型在实例化的时候，默认batch_first=False，因此，需要小心输入数据的形状
-因为: dataloader返回的结果x---》shape--〉[batch_size, seq_len, input_size], 所以课堂上代码和讲义稍微有点不同，讲义是默认的batch_first=False，而我们的代码是batch_first=True，这样做的目的，可以直接承接x的输入。
+因为: dataloader返回的结果x.shape--〉[batch_size, seq_len, input_size], 所以课堂上代码和讲义稍微有点不同，讲义是默认的batch_first=False，而我们的代码是batch_first=True，这样做的目的，可以直接承接x的输入。
 ```
 
 - 编码器结构图
@@ -396,7 +370,7 @@ class EncoderGRU(nn.Module):
         vocab_size : int
             源语言（英语）词汇表大小（去重）
         hidden_size : int
-            词嵌入维度，同时也是 GRU 的输入/输出维度（我们让他相等）
+            词嵌入维度，同时也是 GRU 的输入/输出维度（我们让它相等）
         """
         super().__init__()
         self.vocab_size = vocab_size
@@ -405,7 +379,7 @@ class EncoderGRU(nn.Module):
         # 1. 嵌入层，目的：将每个词汇进行向量表示：[vocab_size, hidden_size]
         self.embed = nn.Embedding(vocab_size, hidden_size)
 
-        # 2. GRU 层：batch_first=True → 输入形状 [B, T, D]
+        # 2. GRU 层：batch_first=True → 输入形状 [batch_size, seq_len, hidden_size]
         # 定义GRU层第一个self.hidden_size实际上是embedding的输出结果词嵌入维度
         # 定义GRU层第二个self.hidden_size实是我们指定的GRU模型的输出维度，只不过这里GRU输入和输出一样
         self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
@@ -417,13 +391,13 @@ class EncoderGRU(nn.Module):
         """
         参数
         ----
-        input : Tensor [B, T]  单词索引序列
-        hidden: Tensor [1, B, D]  初始隐状态
+        input : Tensor [batch_size, seq_len]  单词索引序列
+        hidden: Tensor [1, batch_size, hidden_size]  初始隐状态
 
         返回
         ----
-        output: Tensor [B, T, D]  所有时间步输出
-        hidden: Tensor [1, B, D]  最后时刻隐状态
+        output: Tensor [batch_size, seq_len, hidden_size]  所有时间步输出
+        hidden: Tensor [1, batch_size, hidden_size]  最后时刻隐状态
         """
         # 1. 嵌入 → [B, T, D]；input-->[1, 6]需要经过embedding--》[1,6, 256]
         input_x = self.embed(input)
@@ -466,8 +440,6 @@ def test_encoder_gru():
 
     # 3. 取一个批次
     for x, y in data_loader:
-        # x: [B, T_x]  英语索引序列
-        batch_size = x.size(0)
 
         # 4. 初始化 h0
         h0 = encoder.init_hidden()
@@ -552,8 +524,8 @@ class DecoderGRU(nn.Module):
         # 2. GRU： [B, 1, D] -> [B, 1, D]； hidden 不变形状
         output, hidden = self.gru(input_x, hidden)
 
-        # 3. 投影到词汇表： [B, 1, D] -> [B, vocab_size]
-        logits = self.out(output.squeeze(1))  # 去掉长度为 1 的时间轴
+        # 3. 投影到词汇表： [B=1, 1, D] -> [B=1, vocab_size]
+        logits = self.out(output[0])  # 去掉长度为 1 的时间轴
 
         # 4. LogSoftmax
         prob = self.softmax(logits)
@@ -569,46 +541,75 @@ class DecoderGRU(nn.Module):
 代码测试
 
 ```python
-# ==========================================
-# 解码器测试函数
-# ==========================================
+# -------------------------------------------------
+# 测试不带 Attention 机制的 GRU 解码器
+# -------------------------------------------------
+def test_DecoderGRU():
+    """
+    功能：
+        1. 构造英-法句子对数据集（Seq2SeqDataset）
+        2. 构造 DataLoader，batch_size=1
+        3. 实例化 EncoderGRU 与 DecoderGRU
+        4. 将英文句子送入编码器，得到上下文向量 hidden（即 c）
+        5. 基于 c，逐步解码法语句子的每一个词
+    """
 
-def test_decoder_gru():
-    """单批次循环解码，验证维度"""
-    # 1. 数据
-    dataset = Seq2SeqDataset(my_pairs)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    # 1. 构造数据集
+    my_dataset = Seq2SeqDataset(my_pairs)          # my_pairs: 英-法句子对列表
 
-    # 2. 模型
-    encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256).to(device)
-    decoder = DecoderGRU(vocab_size=french_word_n, hidden_size=256).to(device)
+    # 2. 构造 DataLoader
+    my_dataloader = DataLoader(
+        dataset=my_dataset,
+        batch_size=1,        # 单样本调试，方便打印
+        shuffle=True
+    )
 
-    for x, y in dataloader:
-        # x: [B, T_x]  英语
-        # y: [B, T_y]  法语（含 EOS）
-        B, T_y = y.shape
+    # 3. 实例化编码器
+    my_encoder = EncoderGRU(
+        vocab_size=english_word_n,   # 英文词表大小
+        hidden_size=256
+    ).to(device)                     # 移动到 GPU/CPU
 
-        # 2.1 编码器得到上下文向量
-        h0_enc = encoder.init_hidden(B)
-        _, hidden = encoder(x, h0_enc)  # hidden 作为解码器初始状态
+    # 4. 实例化解码器
+    my_decoder = DecoderGRU(
+        vocab_size=french_word_n,    # 法文词表大小
+        hidden_size=256
+    ).to(device)
 
-        # 2.2 逐词解码（Teacher Forcing 示例）
-        for i in range(T_y):
-            # 取第 i 个词索引，并 reshape 为 [B, 1]
-            temp = y[0][i].view(1, -1)
-            prob, hidden = decoder(y_t, hidden)  # prob: [B, vocab_size]
+    # 5. 遍历 DataLoader 进行训练/测试
+    for x, y in my_dataloader:
+        # x: [batch=1, src_len]  英文索引序列
+        # y: [batch=1, tgt_len]  法文索引序列
+        print("x:", x)
+        print("x.shape:", x.shape)
+        print("y.shape:", y.shape)
+        print("y:", y)
 
-            # 可视化形状
-            if t == 0:
-                print(f"y 序列长度: {T_y}")
-                print(f"第 {i} 步 decoder 输出 prob 形状: {prob.shape}")
-                print(f"hidden 形状: {hidden.shape}")
-        break  # 只测一个批次
+        # 5.1 编码阶段：得到上下文向量 hidden（即 c）
+        # output  : [batch, src_len, hidden_size]  所有时刻隐藏状态（可忽略）
+        # hidden  : [num_layers, batch, hidden_size]  最后时刻隐藏状态，作为上下文 c
+        output, hidden = my_encoder(input=x, hidden=my_encoder.init_hidden())
+
+        # 5.2 解码阶段：逐词生成
+        for i in range(y.shape[1]):          # 遍历法语句子的每个位置
+            # 取当前目标词作为下一步输入（teacher-forcing 模式）
+            curr_token = y[:, i].view(1, -1)  # [1, 1]
+
+            # 单步解码
+            dec_out, hidden = my_decoder(input=curr_token, hidden=hidden)
+
+            # dec_out: [1, 1, french_word_n]  当前时刻各词概率分布
+            print(f"Step {i} -> dec_out.shape: {dec_out.shape}")
+
+        # 仅跑一个 batch 就退出（调试目的）
+        break
 
 
-# 直接运行本文件即可测试
+# -------------------------------------------------
+# 调用测试函数
+# -------------------------------------------------
 if __name__ == "__main__":
-    test_decoder_gru()
+    test_DecoderGRU()
 ```
 
 #### 5.3 搭建解码器带Attention模型
@@ -655,120 +656,129 @@ class AttentionDecoderGRU(nn.Module):
         self.dropout_p = dropout_p
         self.max_length = max_length
 
-        # 1. 嵌入层
+        # 1. 词嵌入层
         self.embed = nn.Embedding(vocab_size, hidden_size)
 
-        # 2. 注意力：把 [query; key] 映射到长度维 -> 权重分数
+        # 2. 注意力打分层：将「当前输入嵌入」与「上一时刻隐藏状态」映射到 max_length 维向量
         self.attn = nn.Linear(hidden_size * 2, max_length)
 
-        # 3. dropout
+        # 3. Dropout 层
         self.dropout = nn.Dropout(dropout_p)
 
-        # 4. 注意力输出合并：把 [query; context] 映射回 hidden 维（让注意力按照指定维度输出）
+        # 4. 注意力融合层：将「当前输入嵌入」与「加权后的编码器输出」融合
         self.attn_combine = nn.Linear(hidden_size * 2, hidden_size)
 
         # 5. GRU 层
         self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
 
-        # 6. 输出层
+        # 6. 输出层：映射到词表大小
         self.out = nn.Linear(hidden_size, vocab_size)
 
-        # 7. LogSoftmax 用于 NLLLoss
+        # 7. LogSoftmax 用于后续 NLLLoss
         self.softmax = nn.LogSoftmax(dim=-1)
       
       
     # --------------------------
     # 前向传播（单步）
     # --------------------------
-    def forward(self, input, hidden, encoder_outputs_c):
+    def forward(self, input, hidden, encoder_output):
         """
-        参数
-        ----
-        input-->query           : Tensor [B, 1]     [1, 1]                   当前时间步单词索引
-        hidden-->key            : Tensor [1, B, D]  [1, 1, 256]              上一时间步隐状态
-        encoder_outputs-->value : Tensor [B, T, D]  [10, 256]                编码器全部时间步输出（T == max_length）
+        参数：
+            input         : [batch=1, 1]               当前时刻输入的词索引（法语）
+            hidden        : [1, batch=1, hidden_size]  上一时刻隐藏状态
+            encoder_output: [max_length, hidden_size]  编码器所有时刻输出（作为 value）
 
-        返回
-        ----
-        prob       : Tensor [B, vocab_size]  当前步词汇表概率分布
-        hidden     : Tensor [1, B, D]        更新后的隐状态
-        attn_weight: Tensor [B, T]           注意力权重（可视化用）
+        返回：
+            output        : [1, vocab_size]            当前时刻预测分布
+            hidden        : [1, 1, hidden_size]        更新后的隐藏状态
+            attn_weights  : [1, max_length]            当前时刻对各编码器位置的注意力权重
         """
-        B, T, D = encoder_outputs.size()
-        assert T == self.max_length
 
-        # 1. 嵌入 + dropout  [B, 1] -> [B, 1, D]
-        emb = self.dropout(self.embed(input))
+        # 1. 词嵌入 + Dropout
+        #    [1, 1] -> [1, 1, hidden_size]
+        embedded = self.dropout(self.embed(input))
 
         # 2. 计算注意力权重
-        #    query = emb[:, 0, :]          -> [B, D]
-        #    key   = hidden[0]             -> [B, D]
-        query_key = torch.cat((emb[:, 0], hidden[0]), dim=1)  # [B, 2D]
-        attn_scores = self.attn(query_key)                    # [B, max_length]
-        attn_weights = F.softmax(attn_scores, dim=1)          # [B, max_length]
+        #    将 embedded[0] 与 hidden[0] 拼接 -> [hidden_size*2]
+        #    经线性层后 -> [max_length]
+        #    再 softmax 归一化 -> [1, max_length]
+        attn_weights = F.softmax(
+            self.attn(torch.cat((embedded[0], hidden[0]), dim=-1)), dim=-1
+        )
 
-        # 3. 加权求和得到上下文向量  [B, 1, T] @ [B, T, D] -> [B, 1, D]
-        context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
+        # 3. 将注意力权重与编码器输出加权求和
+        #    attn_weights : [1, max_length]
+        #    encoder_output: [max_length, hidden_size]
+        #    先扩充维度 -> [1, 1, max_length] @ [1, max_length, hidden_size]
+        #    结果 -> [1, 1, hidden_size]
+        attn_applied = torch.bmm(
+            attn_weights.unsqueeze(0),           # [1, 1, max_length]
+            encoder_output.unsqueeze(0)          # [1, max_length, hidden_size]
+        )
 
-        # 4. 合并 query 与 context，再线性变换  [B, 1, 2D] -> [B, 1, D]
-        combined = torch.cat((emb, context), dim=2)
-        output = torch.tanh(self.attn_combine(combined))  # 用 tanh 更稳定
+        # 4. 融合「当前输入嵌入」与「加权上下文」
+        #    拼接后 -> [hidden_size*2] 再线性变换 -> [hidden_size]
+        output = torch.cat((embedded[0], attn_applied[0]), dim=-1)
+        output = self.attn_combine(output).unsqueeze(0)  # [1, 1, hidden_size]
 
-        # 5. 送入 GRU  [B, 1, D] -> [B, 1, D]
-        gru_out, hidden = self.gru(output, hidden)
+        # 5. 激活函数
+        output = F.relu(output)
 
-        # 6. 投影到词汇表  [B, D] -> [B, vocab_size]
-        logits = self.out(gru_out.squeeze(1))
-        prob = self.softmax(logits)
+        # 6. 送入 GRU 更新隐藏状态
+        #    output: [1, 1, hidden_size]
+        #    hidden: [1, 1, hidden_size]
+        output, hidden = self.gru(output, hidden)
 
-        return prob, hidden, attn_weights
-      
-    # --------------------------
-    # 初始化 h0
-    # --------------------------
-    def init_hidden(self, batch_size: int = 1):
-        return torch.zeros(1, batch_size, self.hidden_size, device=device)
+        # 7. 预测下一词分布
+        #    output[0]: [1, hidden_size] -> [1, vocab_size]
+        output = self.softmax(self.out(output[0]))
+
+        return output, hidden, attn_weights
+
+    # -------------------------------------------------
+    # 初始化隐藏状态
+    # -------------------------------------------------
+    def init_hidden(self):
+        """
+        返回：
+            [1, 1, hidden_size] 的全零张量，用于第一个时间步
+        """
+        return torch.zeros(1, 1, self.hidden_size, device=device)
 ```
 
 模型测试
 
 ```python
-# ==========================================
-# 测试带 Attention 的解码器（端到端单批次）
-# ==========================================
+# 测试带attention的解码器
+def test_AttenDecoder():
+    # 1.实例化dataset
+    mydataset = Seq2SeqDaset(my_pairs)
+    # 2.实例化dataloader
+    my_dataloader = DataLoader(dataset=mydataset, batch_size=1, shuffle=True)
 
-def test_atten_decoder():
-    """
-    1. 取一条英-法句子对  
-    2. 编码器输出 → 补齐到 MAX_LENGTH 得到 encoder_output_c  
-    3. 逐词送入 AttentionDecoder，打印中间形状与注意力权重
-    """
-    # 1. 数据
-    dataset    = Seq2SeqDataset(my_pairs)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    # 3.实例化编码器模型
+    my_encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256).to(device)
 
-    # 2. 模型
-    encoder = EncoderGRU(vocab_size=english_word_n, hidden_size=256).to(device)
-    decoder = AttentionDecoderGRU(vocab_size=french_word_n, hidden_size=256).to(device)
+   # 4.实例化解码器模型
+    my_attenDecoder = AttentionDecoderGRU(vocab_size=french_word_n, hidden_size=256)
+    my_attenDecoder.to(device)
 
-    for x, y in dataloader:
-        B, T_y = y.shape
-        # x: [B, T_x]  英语
-        # y: [B, T_y]  法语（含 <EOS>）
+    #5.循环数据送入模型
+    for x, y in my_dataloader:
+        print(f'x--》{x.shape}')
+        print(f'y--》{y.shape}')
+        # 1.将x送入编码器模型得到结果
+        h0 = my_encoder.inithidden()
+        encoder_output, hidden = my_encoder(input=x, hidden=h0)
 
-        # 2.1 编码器前向
-        h0_enc       = encoder.init_hidden(B)
-        encoder_out, _ = encoder(x, h0_enc)  # encoder_out: [B, T_x, D]
+        # 2.将编码的结果进行处理，统一长度，方便计算注意力
+        encoder_output_c = torch.zeros(MAX_LENGTH, my_encoder.hidden_size, device=device)
 
-        # 2.2 补齐到 MAX_LENGTH，方便注意力计算
-        D = encoder.hidden_size
-        encoder_output_c = torch.zeros(MAX_LENGTH, D, device=device)  # [MAX_LENGTH, D]
-        real_len = encoder_out.size(1)  # 实际句子长度
-        encoder_output_c[:real_len] = encoder_out[0]  # 赋值，其余为 0
-
-
-        # 3. 逐词解码（Teacher Forcing 示例）
-        for j in range(T_y):
+        # 2.1将真实的编码的输出 结果赋值到encoder_output_c中，多余的都是用0来表示
+        for i in range(encoder_output.shape[1]):
+            encoder_output_c[i] = encoder_output[0][i]
+        # 3.测试:进行解码应用
+        for j in range(y.shape[1]):
             temp = y[0][j].view(1, -1)
             output, hidden, attn_weight = my_attenDecoder(temp, hidden, encoder_output_c)
             print(f'output--》{output.shape}')
@@ -776,11 +786,6 @@ def test_atten_decoder():
             print(f'attn_weight--》{attn_weight.shape}')
             print("*"*80)
         break
-
-
-# 直接运行本文件即可测试
-if __name__ == "__main__":
-    test_atten_decoder()
 ```
 
 ------
