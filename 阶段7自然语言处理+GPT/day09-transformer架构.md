@@ -87,7 +87,7 @@ word Embeddding + Positional Encoding
 
 ![img](assets/5-1758006055839-3.png)
 
-#### 1.1 输入部分介绍
+### 1.1 输入部分介绍
 
 输入部分包含两个主要模块：
 
@@ -98,7 +98,7 @@ word Embeddding + Positional Encoding
 
 
 
-#### 1.2 文本嵌入层的作用
+### 1.2 文本嵌入层的作用
 
 - 将词汇的 **数字索引** 转换为 **高维向量表示**。
 - 在高维空间中捕捉词汇之间的语义关系。
@@ -106,7 +106,7 @@ word Embeddding + Positional Encoding
 
 
 
-#### 1.3 文本嵌入层代码实现
+### 1.3 文本嵌入层代码实现
 
 ```python
 class Embeddings(nn.Module):
@@ -174,14 +174,14 @@ class Embeddings(nn.Module):
 
 
 
-#### 1.4 位置编码器的作用
+### 1.4 位置编码器的作用
 
 - Transformer 没有循环结构，无法捕捉序列顺序。
 - 位置编码器为每个词向量添加 **位置信息**，将词汇的位置可能代表的不同特征信息和`word_embedding`进行融合，以此来弥补位置信息的缺失。
 
 
 
-#### 1.5 位置编码器代码实现
+### 1.5 位置编码器代码实现
 
 ```properties
 1、保证同一词汇随着所在位置不同它对应位置嵌入向量会发生变化
@@ -241,7 +241,7 @@ class PositionalEncoding(nn.Module):
         """
         # 按实际序列长度截取 PE，并设为不需要梯度
         # 注意：输入的x形状2*4*512  pe是1*60*512 形状 如何进行相加（广播机制）
-        x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
+        x = x + self.pe[:, :x.size(1)]
         return self.dropout(x)
 ```
 > **为什么使用三角函数来进行位置编码：**
@@ -365,12 +365,55 @@ class PositionalEncoding(nn.Module):
 
 
 
+### 1.6 可视化位置编码
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 绘制PE位置特征sin-cos曲线
+def dm_draw_PE_feature():
+
+    # 1 创建pe位置矩阵[1,5000,20]，每一列数值信息：奇数列sin曲线 偶数列cos曲线
+    my_pe = PositionalEncoding(d_model=20, dropout=0)
+    print('my_positionalencoding.shape--->', my_pe.pe.shape)
+
+    # 2 创建数据x[1,100,20], 给数据x添加位置特征  [1,100,20] ---> [1,100,20]
+    y = my_pe(Variable(torch.zeros(1, 100, 20)))
+    print('y--->', y.shape)
+
+    # 3 画图 绘制pe位置矩阵的第4-7列特征曲线
+    plt.figure(figsize=(20, 20))
+    # 第0个句子的，所有单词的，绘制4到8维度的特征 看看sin-cos曲线变化
+    plt.plot(np.arange(100), y[0, :, 4:8].numpy())
+    plt.legend(["dim %d" %p for p in [4,5,6,7]])
+    plt.show()
+```
+
+![img](assets/11-8023059.png)
+
+> ✅效果分析：
+>
+> - 每个维度的正弦/余弦曲线代表不同位置的特征变化。
+> - 同一词汇在不同位置，其嵌入向量会发生变化。
+> - 值域范围为 [-1, 1]，有助于控制梯度大小，加快模型收敛。
+
+| 模块                   | 功能                     |
+| ---------------------- | ------------------------ |
+| **Embeddings**         | 将词汇索引转为向量表示   |
+| **PositionalEncoding** | 为词向量添加位置信息     |
+| **可视化**             | 展示不同位置对特征的影响 |
+
+
+
 ## 二、编码部分
 
 ### 2.1 编码部分组成
 
+![img](assets/7.png)
+
 ```properties
-由N个编码器层组成
+由N个编码器层组成（原论文N=6）
 1、每个编码器层由两个子层连接结构
 2、第一个子层连接结构：多头自注意力机制层+残差连接层+规范化层
 3、第二个子层连接结构：前馈全连接层+残差连接层+规范层
@@ -378,37 +421,87 @@ class PositionalEncoding(nn.Module):
 
 ### 2.2 掩码张量
 
-作用：
+#### 1. 定义与本质
 
-```properties
-掩码：掩就是遮掩、码就是张量。掩码本身需要一个掩码张量，掩码张量的作用是对另一个张量进行数据信息的掩盖。一般掩码张量是由0和1两种数字组成，至于是0对应位置或是1对应位置进行掩码，可以自己设定
-掩码分类：
-PADDING MASK: 句子补齐的PAD,去除影响
-SETENCES MASK:解码器端，防止未来信息被提前利用
+- **掩**＝遮掩；**码**＝张量中的数值。
+- 掩码本身需要一个掩码张量，元素仅取 0 或 1，至于是0对应位置或是1对应位置进行掩码，可以自己设定。
+- 作用：让**另一个张量**的对应位置数值被**屏蔽或替换**。
+
+#### 2. 在 Transformer 中的角色
+
+- 应用场景：**Attention 计算**。
+- 风险：训练时整个输出一次性 Embedding，模型可能**偷看到未来 token**。
+- 目标：保证解码器**自回归**特性——当前位置只能依赖**已生成**的内容。
+- 手段：用掩码张量把**未来位置**置为无效（−∞ 或 0），防止信息泄露。
+
+#### 3. 掩码分类
+
+- PADDING MASK：句子补齐的PAD,去除影响
+
+![image-20250916201225063](assets/image-20250916201225063.png)
+
+| 要点     | 说明                                                         |
+| -------- | ------------------------------------------------------------ |
+| 目的     | 让 **PAD token** 不参与注意力计算，避免模型把无效信息当成语义。 |
+| 典型场景 | ① Encoder Self-Attention<br>② Decoder Cross-Attention（Encoder-Decoder Attention） |
+| 取值     | **1** 表示**真实 token**（保留）<br>**0** 表示**PAD**（遮掩） |
+| 实现方式 | 把 PAD 位置置为 **−∞**（softmax 后概率 ≈ 0）                 |
+
+- SETENCES MASK：解码器端，防止未来信息被提前利用
+
+![image-20250916201451745](assets/image-20250916201451745.png)
+
+**掩码张量（Mask Tensor）小结**：
+
+**Padding Mask** 挡“空白”，**Subsequent Mask** 挡“未来”；一个护语义，一个保生成，
+
+| 要点                    | 说明                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| 定义                    | 仅含 0/1 的张量，尺寸任意；0 或 1 代表「遮掩」还是「保留」可自定义。 |
+| 在 Transformer 中的目的 | 防止 Attention 计算时窥见「未来」token，保证自回归性质。     |
+| 典型用法                | 生成「下三角」矩阵，用在 Decoder 的 Self-Attention。         |
+
+
+
+```python
+import numpy as np
+import torch
+
+def subsequent_mask(size: int) -> torch.Tensor:
+    """
+    生成 (1, size, size) 的下三角掩码张量；
+    返回 torch.uint8 类型，1 表示「可见」，0 表示「被遮掩」。
+    """
+    # 1) 先构造上三角（k=1 表示不包含对角线）
+    upper_tri = np.triu(m=np.ones((1, size, size)), k=1).astype('uint8')
+    # 2) 1 - upper_tri 即为下三角（含对角线）
+    return torch.from_numpy(1 - upper_tri)
+
+# --- 测试 ---
+if __name__ == "__main__":
+    print(subsequent_mask(5))
 ```
 
-实现方式：
 
-```properties
-# 返回下三角矩阵 torch.from_numpy(1 - my_mask )
-def subsequent_mask(size):
-    # 产生上三角矩阵 产生一个方阵
-    subsequent_mask = np.triu(m = np.ones((1, size, size)), k=1).astype('uint8')
-    # 返回下三角矩阵
-    return torch.from_numpy(1 - subsequent_mask)
-```
 
 ## 三、注意力机制
 
 ### 3.1 计算规则:
 
-```properties
-自注意力机制，规则：Q乘以K的转置，然后除以根号下D_K，然后再进行Softmax，最后和V进行张量矩阵相乘
-```
+我们使用的注意力计算规则如下：
+$$
+Attention(Q, K, V) = Softmax \left( \frac{QK^T}{\sqrt{d_k}} \right) V
+$$
+其中：
 
-### 3.2 注意力计算
+- $Q$：查询矩阵（Query）
+- $K$：键矩阵（Key）
+- $V$：值矩阵（Value）
+- $d_k$：键向量的维度，用于缩放点积，防止梯度消失
 
-代码实现
+
+
+### 3.2 注意力机制的代码实现
 
 ```properties
 def attention(query, key, value, mask=None, dropout=None):
@@ -440,13 +533,78 @@ def attention(query, key, value, mask=None, dropout=None):
     return torch.matmul(p_attn, value), p_attn
 ```
 
+> **为什么编码器需要计算注意力？**
+>
+> **编码器做“注意力”不是为了“看”别人，而是为了把整句话里所有词重新洗牌、融合成新的上下文向量，让每个词都带上整句的语义。**
+> 下面拆开讲。
+>
+> ------
+>
+> 1. 没有注意力，编码器只能“各扫门前雪”
+>
+> - Transformer 的输入是**独立嵌入**（每个词只知道自己是谁）。
+> - 如果仅做前馈网络，一个词永远不知道它前面是“not”还是“very”，语义就被锁死在局部。
+>
+> 2. 注意力 = 全局信息高速公路
+>
+> - 用 query 去查整句的 key/value，相当于一次性问完“整句话里谁跟我有关？有多相关？”
+> - 输出是**带权重的全局和**，每个位置都融合了整句信息。
+> - 这样“bank”在遇到“river”时就能激活“河岸”义，遇到“investment”时激活“银行”义。
+>
+> 3. 多头注意力再放大差异
+>
+> - 单头只能学一种关联方式；多头把 embedding 切成多份，各自学不同的关联（句法、指代、实体等）。
+> - 编码器重复堆叠 6 层（N=6），每一层都让信息再“洗一次牌”，语义越来越全局、抽象。
+>
+> 4. 并行与效率
+>
+> - RNN 必须从左到右一步步传隐状态，远距离依赖“梯度缩水”。
+> - 注意力矩阵一次性算出所有位置两两相关度，**并行+直接长依赖**，训练快，效果也好。
+>
+> ------
+>
+> 总结一句话
+>
+> > 编码器算注意力，是为了**把孤立的词向量升级成“整句上下文”向量**，为后续层（自注意力或交叉注意力）提供**富含全局语义**的表示，否则模型根本“看不懂”句子。
+
+
+
 ### 3.3 多头注意力机制：
 
-概念：
+#### 1. 概念解析
+
+- **多头注意力的“头”并非指多组线性变换层**，而是**仅使用一组线性变换层**（即三个变换张量对 Q、K、V 分别进行线性变换）。
+- 变换不会改变张量尺寸，因此变换矩阵为**方阵**。
+- **多头的作用体现在词义层面**：将输出张量按最后一维（词嵌入维度）切分成多个部分，每个“头”获得一组 Q、K、V。
+- 每个头只处理词嵌入的一部分，最终并行计算注意力，形成**多头注意力机制**。
+
+
+
+#### 2. 多头注意力的作用
+
+- **优化不同特征子空间**：每个头关注词嵌入的不同部分，捕捉多样化语义特征。
+- **均衡注意力偏差**：避免单一注意力机制带来的偏差。
+- **提升模型表达能力**：实验表明，多头机制可显著提升模型性能。
+
+
+
+#### 3. 结构图示意
 
 ```properties
-将模型分为多个头, 可以形成多个子空间, 让模型去关注不同方面的信息, 最后再将各个方面的信息综合起来得到更好的效果.
+输入 Q, K, V
+   ↓
+Linear（3个，分别作用于Q、K、V）
+   ↓
+拆分成多个头（head）
+   ↓
+Scaled Dot-Product Attention（并行计算）
+   ↓
+Concat（拼接多头结果）
+   ↓
+Linear（最终输出）
 ```
+
+
 
 架构图：
 
@@ -454,23 +612,32 @@ def attention(query, key, value, mask=None, dropout=None):
 
 代码实现：
 
-```properties
-# 深度copy模型 输入模型对象和copy的个数 存储到模型列表中
+```python
+# --------------------------------------------------
+# 工具：深度copy模型 输入模型对象和copy的个数 存储到模型列表中
+# --------------------------------------------------
 def clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
+
+# --------------------------------------------------
+# 多头注意力层
+# --------------------------------------------------
 
 class MultiHeadedAttention(nn.Module):
 
     def __init__(self, head, embedding_dim, dropout=0.1):
-
+        """
+        head: 头数
+        embedding_dim: 模型维度（必须能被 head 整除）
+        """
         super(MultiHeadedAttention, self).__init__()
-        # 确认数据特征能否被被整除 eg 特征尺寸256 % 头数8
+        # 确认数据特征能否被被整除 eg 特征尺寸512 % 头数8
         assert embedding_dim % head == 0
-        # 计算每个头特征尺寸 特征尺寸256 // 头数8 = 64
+        # 计算每个头特征尺寸 特征尺寸512 // 头数8 = 64
         self.d_k = embedding_dim // head
         # 多少头数
         self.head = head
-        # 四个线性层
+        # 4 个线性层：3 个用于 Q/K/V，1 个用于最后输出
         self.linears = clones(nn.Linear(embedding_dim, embedding_dim), 4)
         # 注意力权重分布
         self.attn = None
@@ -478,7 +645,13 @@ class MultiHeadedAttention(nn.Module):
         self.dropout = nn.Dropout(p = dropout)
 
     def forward(self, query, key, value, mask=None):
-
+        """
+        参数：
+            query/key/value: [batch, seq_len, embedding_dim]
+            mask: [batch, seq_len, seq_len]  0 表示 mask
+        返回：
+            out: [batch, seq_len, embedding_dim]
+        """
         # 若使用掩码，则掩码增加一个维度[8,4,4] -->[1,8,4,4]
         if mask is not None:
             mask = mask.unsqueeze(0)
@@ -491,18 +664,6 @@ class MultiHeadedAttention(nn.Module):
         query, key, value = [model(x).view(batch_size, -1, self.head, self.d_k).transpose(1,2)
             for model, x in zip(self.linears, (query, key, value) ) ]
 
-        # myoutptlist_data = []
-        # for model, x in zip(self.linears, (query, key, value)):
-        #     print('x--->', x.shape) # [2,4,512]
-        #     myoutput = model(x)
-        #     print('myoutput--->',  myoutput.shape)  # [2,4,512]
-        #     # [2,4,512] --> [2,4,8,64] --> [2,8,4,64]
-        #     tmpmyoutput = myoutput.view(batch_size, -1,  self.head, self.d_k).transpose(1, 2)
-        #     myoutptlist_data.append( tmpmyoutput )
-        # mylen = len(myoutptlist_data)   # mylen:3
-        # query = myoutptlist_data[0]     # [2,8,4,64]
-        # key = myoutptlist_data[1]       # [2,8,4,64]
-        # value = myoutptlist_data[2]     # [2,8,4,64]
 
         # 注意力结果表示x形状 [2,8,4,64] 注意力权重attn形状：[2,8,4,4]
         # attention([2,8,4,64],[2,8,4,64],[2,8,4,64],[1,8,4,4]) ==> x[2,8,4,64], self.attn[2,8,4,4]]
@@ -515,7 +676,7 @@ class MultiHeadedAttention(nn.Module):
         return self.linears[-1](x)
 ```
 
-------
+
 
 ## 四、前馈全连接层
 
