@@ -680,55 +680,99 @@ class MultiHeadedAttention(nn.Module):
 
 ## 四、前馈全连接层
 
-概念：
+**前馈全连接层简介**
 
-```properties
-两个全连接层
-```
+在 Transformer 模型中，**前馈全连接层**是一个包含两层线性变换的神经网络模块。
 
-作用：
+| 要点 | 说明                                                       |
+| ---- | ---------------------------------------------------------- |
+| 位置 | 夹在每一个 Encoder / Decoder 层的“多头注意力”之后。        |
+| 结构 | 两层线性映射 + 一次非线性激活 + Dropout。                  |
+| 作用 | 增强模型的表达能力，弥补注意力机制在复杂函数拟合上的不足。 |
 
-```properties
-增强模型的拟合能力
-```
 
-代码实现：
 
-```properties
+**代码实现**
+
+```python
+import torch.nn as nn
+import torch.nn.functional as F
+
 class PositionwiseFeedForward(nn.Module):
-    def __init__(self,  d_model, d_ff, dropout=0.1):
-        # d_model  第1个线性层输入维度
-        # d_ff     第2个线性层输出维度
+    """
+    Position-wise 前馈全连接层
+    输入形状：(batch, seq_len, d_model)
+    输出形状：(batch, seq_len, d_model)
+    """
+
+    def __init__(self, d_model, d_ff, dropout=0.1):
         super(PositionwiseFeedForward, self).__init__()
-        # 定义线性层w1 w2 dropout
+        # 第一层：升维 ⬅️
         self.w1 = nn.Linear(d_model, d_ff)
+        # 第二层：降维 ⬅️
         self.w2 = nn.Linear(d_ff, d_model)
-        self.dropout = nn.Dropout(p= dropout)
+        # Dropout 层
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        # 数据依次经过第1个线性层 relu激活层 dropout层，然后是第2个线性层
-        return  self.w2(self.dropout(F.relu(self.w1(x))))
+        """
+        x: (batch, seq_len, d_model)
+        """
+        # ① 升维 → ② ReLU → ③ Dropout → ④ 降维 ⬅️
+        return self.w2(self.dropout(F.relu(self.w1(x))))
 ```
+
+
+
+**小结**
+
+| 维度     | 内容                                         |
+| -------- | -------------------------------------------- |
+| **输入** | 任意形状 `(..., d_model)`                    |
+| **输出** | 同输入形状，保持维度不变                     |
+| **核心** | 两层 Linear：先升维 `d_ff`，再降维 `d_model` |
+| **激活** | ReLU（默认），也可换 GELU / Swish            |
+| **正则** | 仅一次 Dropout，放在激活之后、第二层之前     |
+
+
 
 ## 五、规范化层
 
-作用：
+### 5.1 作用
 
-```properties
-随着网络深度的增加，模型参数会出现过大或过小的情况，进而可能影响模型的收敛，因此进行规范化，将参数规范致某个特征范围内，辅助模型快速收敛。
-```
+- 规范化层是**所有深层网络模型中不可或缺的标准网络层**。
+- 随着网络层数的增加，经过多层计算后，参数可能会出现**过大或过小**的情况。
+- 这种情况可能导致：
+  - 学习过程异常；
+  - 模型收敛速度变慢。
+- 因此，通常在若干层之后接入规范化层，对特征值进行**数值规范化**，使其保持在合理范围内，从而**稳定训练过程**。
 
-代码实现:
+> 这里的“参数”指的是**参数的数值（value）**，而不是参数的个数（数量）。
+>
+> 在深层网络中，随着层数加深，**激活值或梯度的数值**可能会因为连乘、连加等操作而变得过大（爆炸）或过小（消失），导致训练不稳定或收敛缓慢。规范化层的作用就是对**这些数值进行标准化处理**，使其保持在合理范围内，从而稳定训练过程。
 
-```properties
+
+
+### 5.2 代码实现
+
+```python
 class LayerNorm(nn.Module):
+    """
+    层标准化 (Layer Normalization)
+    适用于 Transformer 等深层网络，缓解内部协变量偏移问题
+    """
 
-    def __init__(self, features, eps=1e-6):
-        # 参数features 待规范化的数据
-        # 参数 eps=1e-6 防止分母为零
+    def __init__(self, features: int, eps: float = 1e-6):
+        """
+        参数
+        ----
+        features : 输入张量最后一维的宽度（即 d_model）
+        eps      : 防止分母为 0 的小常数
+        """
 
         super(LayerNorm, self).__init__()
-
+        
+        # 可学习参数：缩放 γ 与偏移 β
         # 定义a2 规范化层的系数 y=kx+b中的k
         self.a2 = nn.Parameter(torch.ones(features))
 
@@ -739,7 +783,7 @@ class LayerNorm(nn.Module):
 
     def forward(self, x):
 
-        # 对数据求均值 保持形状不变
+        # 对数据求均值 保持形状不变（保持维度，方便广播）
         # [2,4,512] -> [2,4,1]
         mean = x.mean(-1,keepdims=True)
 
@@ -750,10 +794,9 @@ class LayerNorm(nn.Module):
         # 对数据进行标准化变换 反向传播可学习参数a2 b2
         # 注意 * 表示对应位置相乘 不是矩阵运算
         y = self.a2 * (x-mean)/(std + self.eps) + self.b2
+        
         return  y
 ```
-
-------
 
 
 
