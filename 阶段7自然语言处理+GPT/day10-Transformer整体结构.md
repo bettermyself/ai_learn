@@ -1,16 +1,23 @@
-# Day10_Transformer模型架构
 
-------
 
 ## 六、子层连接结构
 
-结构图：
+### **6.1 什么是子层连接结构**
 
-![image-20230611235106582](img/image-20230611235106582.png)
+- 输入到每个子层以及规范化层的过程中使用了残差链接（跳跃连接），因此把这一部分整体称为**子层连接**。
+- 每个编码器层包含两个子层，对应形成两个子层连接结构。
+
+
+
+**结构图：**
+
+![img](assets/16.png)
+
+![img](assets/15.png)
 
 代码实现：
 
-```properties
+```python
 class SublayerConnection(nn.Module):
     def __init__(self, size, dropout=0.1):
         # 参数size 词嵌入维度尺寸大小
@@ -30,6 +37,39 @@ class SublayerConnection(nn.Module):
         # 方式2 # 数据sublayer() -> self.norm() ->self.dropout() + x
         # myres = x + self.dropout(self.norm(sublayer(x)))
         return myres
+        
+class SublayerConnection(nn.Module):
+    """
+    子层连接结构（残差 + LayerNorm + Dropout）
+    参数
+    ----
+    size : 词嵌入维度尺寸大小。
+    dropout : Dropout 置零比率，默认 0.1。
+    """
+    def __init__(self, size, dropout=0.1):
+        super(SublayerConnection, self).__init__()
+        self.norm   = nn.LayerNorm(size)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, sublayer):
+        """
+        参数
+        ----
+        x : Tensor
+            上一层输出。
+        sublayer : Callable
+            子层函数（多头注意力或前馈全连接）的入口地址。
+
+        返回
+        ----
+        Tensor
+            经过子层连接结构处理后的输出。
+        """
+        # 方式 1：Pre-Norm（Transformer 原始论文采用）
+        return x + self.dropout(sublayer(self.norm(x)))
+
+        # 方式 2：Post-Norm（注释掉）
+        # return x + self.dropout(self.norm(sublayer(x)))
 ```
 
 ------
@@ -38,7 +78,7 @@ class SublayerConnection(nn.Module):
 
 结构图：
 
-![image-20230611235248501](img/image-20230611235248501.png)
+![image-20230611235248501](assets/day10/image-20230611235248501.png)
 
 作用：
 
@@ -80,7 +120,7 @@ class EncoderLayer(nn.Module):
 
 ## 八、编码器
 
-![image-20230611235404513](img/image-20230611235404513.png)
+![image-20230611235404513](assets/day10/image-20230611235404513.png)
 
 代码实现：
 
@@ -112,7 +152,7 @@ class Encoder(nn.Module):
 
 结构图：
 
-![image-20230611235709413](img/image-20230611235709413.png)
+![image-20230611235709413](assets/day10/image-20230611235709413.png)
 
 组成部分：
 
@@ -225,7 +265,7 @@ class Generator(nn.Module):
 
 完整的编码器-解码器结构：
 
-![image-20230611235828839](img/image-20230611235828839.png)
+![image-20230611235828839](assets/day10/image-20230611235828839.png)
 
 ### 1、编码器-解码器结构的代码：
 
