@@ -1,118 +1,189 @@
-# Day10_Transformer模型架构
-
-------
-
 ## 六、子层连接结构
 
 结构图：
 
-![image-20230611235106582](img/image-20230611235106582.png)
+![img](assets/16.png)
+
+![img](assets/15.png)
 
 代码实现：
 
-```properties
+```python
 class SublayerConnection(nn.Module):
-    def __init__(self, size, dropout=0.1):
-        # 参数size 词嵌入维度尺寸大小
-        # 参数dropout 置零比率
+    """
+    子层连接结构（残差 + LayerNorm + Dropout）
+    适用于 Transformer 中“多头注意力”或“前馈全维”子层。
+    """
 
+    def __init__(self, d_model, dropout=0.1):
+        """
+        参数
+        ----
+        d_model : 词嵌入/隐藏层维度。
+        dropout : 置零比率。
+        """
         super(SublayerConnection, self).__init__()
-        # 定义norm层
-        self.norm = LayerNorm(size)
-        # 定义dropout
-        self.dropout = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(d_model)   # 1. 层归一化
+        self.dropout = nn.Dropout(dropout)  # 2. Dropout
 
     def forward(self, x, sublayer):
-        # 参数x 代表数据
-        # sublayer 函数入口地址 子层函数(前馈全连接层 或者 注意力机制层函数的入口地址)
-        # 方式1 # 数据self.norm() -> sublayer()->self.dropout() + x
-        myres = x + self.dropout(sublayer(self.norm(x)))
-        # 方式2 # 数据sublayer() -> self.norm() ->self.dropout() + x
-        # myres = x + self.dropout(self.norm(sublayer(x)))
-        return myres
+        """
+        前向传播：残差连接 + 层归一化 + Dropout
+
+        参数
+        ----
+        x : Tensor[batch, seq_len, d_model]
+            来自上一子层的输入。
+        sublayer : callable
+            当前子层的计算函数（多头注意力或前馈网络）。
+
+        返回
+        ----
+        Tensor[batch, seq_len, d_model]
+            经过残差与归一化后的输出。
+        """
+        # 方式 1：Pre-Norm（Transformer 原版）
+        # 数据self.norm() -> sublayer()->self.dropout() + x
+        return x + self.dropout(sublayer(self.norm(x)))
+
+        # 方式 2：Post-Norm（注释掉，按需启用）
+        # 数据sublayer() -> self.norm() ->self.dropout() + x
+        # return self.norm(x + self.dropout(sublayer(x)))
 ```
 
-------
+
 
 ## 七、编码器层
 
 结构图：
 
-![image-20230611235248501](img/image-20230611235248501.png)
+![img](assets/17.png)
 
-作用：
-
-```properties
-, 每个编码器层完成一次对输入的特征提取过程, 即编码过程.
-```
+作用： **每个编码器层完成一次对输入的特征提取过程**, 即编码过程。
 
 代码实现：
 
-```properties
-
+```python
 class EncoderLayer(nn.Module):
-    def __init__(self, size, self_atten, feed_forward, dropout):
+    """
+    Transformer 编码器中的一个层，包含：
+      1. 多头自注意力子层
+      2. 前馈全连接子层
+    两个子层均通过 SublayerConnection 做残差 + LayerNorm + Dropout。
+    """
 
+    def __init__(self, d_model, self_attn, feed_forward, dropout):
+        """
+        参数
+        ----
+        d_model : int
+            词嵌入/隐藏层维度（默认 512）。
+        self_attn : nn.Module
+            已实例化的多头自注意力层。
+        feed_forward : nn.Module
+            已实例化的逐位置前馈网络。
+        dropout : float
+            子层连接中的 dropout 比率。
+        """
         super(EncoderLayer, self).__init__()
-        # 实例化多头注意力层对象
-        self.self_attn = self_atten
+        self.self_attn = self_attn      # 多头自注意力
+        self.feed_forward = feed_forward  # 前馈网络
+        # 克隆两份子层连接结构：一份给注意力，一份给前馈
+        self.sublayer = clones(SublayerConnection(d_model, dropout), 2)
+        self.size = d_model             # 记录维度，便于后续调试
 
-        # 前馈全连接层对象feed_forward
-        self.feed_forward = feed_forward
-
-        # size词嵌入维度512
-        self.size = size
-
-        # clones两个子层连接结构 self.sublayer = clones(SublayerConnection(size,dropout),2)
-        self.sublayer = clones(SublayerConnection(size, dropout) ,2)
-
+    # ----------------------------------------------------------
     def forward(self, x, mask):
+        """
+        参数
+        ----
+        x : Tensor[batch, seq_len, d_model]
+            上一层输出（或输入嵌入）。
+        mask : Tensor[batch, 1, seq_len, seq_len]
+            用于屏蔽 <pad> 的注意力掩码。
 
-        # 数据经过第1个子层连接结构
-        # 参数x：传入的数据  参数lambda x... : 子函数入口地址
-        x = self.sublayer[0](x, lambda x:self.self_attn(x, x, x, mask))
+        返回
+        ----
+        Tensor[batch, seq_len, d_model]
+            经本层处理后的特征。
+        """
+        # 子层 1：多头自注意力（Q=K=V=x）
+        x1 = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
 
-        # 数据经过第2个子层连接结构
-        # 参数x：传入的数据  self.feed_forward子函数入口地址
-        x = self.sublayer[1](x, self.feed_forward)
-        return  x
+        # 子层 2：逐位置前馈网络
+        x2 = self.sublayer[1](x1, self.feed_forward)
+
+        return x2
 ```
+
+
 
 ## 八、编码器
 
-![image-20230611235404513](img/image-20230611235404513.png)
+作用：编码器用于对输入进行指定的特征提取过程, 也称为编码, 由N个编码器层堆叠而成.
+
+结构图：
+
+![img](assets/7-1758162813715-4.png)
 
 代码实现：
 
-```properties
+```python
+# ------------------------------------------------------------------
+#  encoder.py  Transformer 编码器（N 层堆叠 + 末端 LayerNorm）
+# ------------------------------------------------------------------
 
 class Encoder(nn.Module):
+    """
+    由 N 个相同的 EncoderLayer 堆叠而成，
+    最后再过一次 LayerNorm，得到整个编码器输出。
+    """
+
     def __init__(self, layer, N):
-        # 参数layer 1个编码器层
-        # 参数 编码器层的个数
-
+        """
+        参数
+        ----
+        layer : EncoderLayer
+            已经实例化的单个编码器层。
+        N : int
+            需要堆叠的层数。
+        """
         super(Encoder, self).__init__()
-
-        # 实例化多个编码器层对象
+        # 深度拷贝 N 份编码器层
         self.layers = clones(layer, N)
+        # 末端 LayerNorm，维度与层内保持一致
+        self.norm = nn.LayerNorm(layer.size)
 
-        # 实例化规范化层
-        self.norm = LayerNorm(layer.size)
-
+    # ----------------------------------------------------------
     def forward(self, x, mask):
-        # 数据经过N个层 x = layer(x, mask)
+        """
+        参数
+        ----
+        x : Tensor[batch, seq_len, d_model]
+            输入序列嵌入或上一模块特征。
+        mask : Tensor[batch, 1, seq_len, seq_len]
+            用于屏蔽 <pad> 的自注意力掩码。
+
+        返回
+        ----
+        Tensor[batch, seq_len, d_model]
+            经 N 层编码 + 末端归一化后的最终表示。
+        """
+        # 依次通过 N 个编码器层
         for layer in self.layers:
             x = layer(x, mask)
 
-        #  返回规范化后的数据 return self.norm(x)
+        # 最后统一 LayerNorm
         return self.norm(x)
 ```
+
+
 
 ## 九、解码器部分
 
 结构图：
 
-![image-20230611235709413](img/image-20230611235709413.png)
+![img](assets/8.png)
 
 组成部分：
 
@@ -129,35 +200,49 @@ class Encoder(nn.Module):
 作用：
 
 ```properties
-作为解码器的组成单元, 每个解码器层根据给定的输入向目标方向进行特征提取操作
+作为解码器的组成单元, 每个解码器层根据给定的输入向目标方向进行特征提取操作，即解码过程。
 ```
 
 代码实现：
 
-```properties
+```python
 class DecoderLayer(nn.Module):
+    """
+    Transformer 解码器单层
+    顺序：Masked 自注意力 → 编解码交叉注意力 → 前馈网络
+    每层后均接 Add & Norm（通过 SublayerConnection 实现）
+    """
+
     def __init__(self, size, self_attn, src_attn, feed_forward, dropout):
         super(DecoderLayer, self).__init__()
-        # 词嵌入维度尺寸大小
-        self.size = size
-        # 自注意力机制层对象 q=k=v
-        self.self_attn = self_attn
-        # 一遍注意力机制对象 q!=k=v
-        self.src_attn = src_attn
-        # 前馈全连接层对象
-        self.feed_forward = feed_forward
-        # clones3子层连接结构
+        self.size = size               # 模型维度 d_model（也用于残差维度校验）
+        self.self_attn = self_attn     # 自注意力机制层对象 q=k=v
+        self.src_attn  = src_attn      # 一遍注意力机制对象 q!=k=v（Q 来自解码器，K/V 来自编码器）
+        self.feed_forward = feed_forward  # 前馈全连接层对象
+
+        # 克隆 3 个 SublayerConnection，分别对应上述三个子层
         self.sublayer = clones(SublayerConnection(size, dropout), 3)
 
-    def forward(self, x, memory, source_mask, target_mask):
-        m = memory
-        # 数据经过子层连接结构1
-        x = self.sublayer[0](x, lambda x:self.self_attn(x, x, x, target_mask))
-        # 数据经过子层连接结构2
-        x = self.sublayer[1](x, lambda x:self.src_attn (x, m, m, source_mask))
-        # 数据经过子层连接结构3
+    def forward(self, x, memory, src_mask, tgt_mask):
+        """
+        参数:
+            x       : 解码器输入  (batch, tgt_len, d_model)
+            memory  : 编码器输出  (batch, src_len, d_model)
+            src_mask: 编码器掩码，屏蔽 <pad> 等区域  (batch, src_len, src_len)
+            tgt_mask: 解码器掩码，包含后续词屏蔽   (batch, tgt_len, tgt_len)
+        返回:
+            经过单层解码后的张量，尺寸同 x
+        """
+        # 子层 1：Masked 自注意力（q=k=v 均为 x）
+        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
+
+        # 子层 2：编解码交叉注意力（q=x, k=v=memory）
+        x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, src_mask))
+
+        # 子层 3：前馈网络
         x = self.sublayer[2](x, self.feed_forward)
-        return  x
+
+        return x
 ```
 
 ## 十一、解码器
@@ -170,7 +255,7 @@ class DecoderLayer(nn.Module):
 
 代码实现：
 
-```properties
+```python
 
 class Decoder(nn.Module):
 
@@ -196,15 +281,17 @@ class Decoder(nn.Module):
         return self.norm(x)
 ```
 
+
+
 ## 十二、输出部分
 
-```pro
-作用：通过线性变化得到指定维度的输出
+```properties
+作用:通过线性变化得到指定维度的输出
 ```
 
 代码
 
-```properties
+```python
 class Generator(nn.Module):
     def __init__(self, d_model, vocab_size):
         # 参数d_model 线性层输入特征尺寸大小
@@ -225,11 +312,11 @@ class Generator(nn.Module):
 
 完整的编码器-解码器结构：
 
-![image-20230611235828839](img/image-20230611235828839.png)
+![img](assets/4.png)
 
 ### 1、编码器-解码器结构的代码：
 
-```properties
+```python
 class EncoderDecoder(nn.Module):
     def __init__(self, encoder, decoder, src_embed, tgt_embed, generator):
         super().__init__()
@@ -264,7 +351,7 @@ class EncoderDecoder(nn.Module):
 
 ### 2、Tansformer模型构建代码：
 
-```properties
+```python
 def make_model(source_vocab, target_vocab, N=6, d_model=512, d_ff=1024, head=8, dropout_p=0.1):
     # 得到深拷贝函数的对象
     c = copy.deepcopy
@@ -294,9 +381,22 @@ def make_model(source_vocab, target_vocab, N=6, d_model=512, d_ff=1024, head=8, 
     return model
 ```
 
-```properties
- nn.Sequential（）理解
- import torch
+```python
+if __name__ == '__main__':
+    model = make_model(source_vocab=1000, target_vocab=1000)
+    source = torch.tensor([[1, 2, 3, 4], [2, 4, 6, 8]])
+    target = torch.tensor([[5, 3, 3, 4], [2, 40, 6, 80]])
+    source_mask=target_mask=torch.zeros(8, 4, 4)
+    result = model(source, target, source_mask, target_mask)
+    print(f'transformer的输出结果--》{result.shape}')
+```
+
+
+
+```python
+# nn.Sequential()详解
+
+import torch
 import torch.nn as nn
 
 class My_Model(nn.Module):
@@ -322,13 +422,4 @@ class My_Model(nn.Module):
     def forward(self, x):
         x = self.sqeuen(x)
         return x
-
-
-if __name__ == '__main__':
-    x = torch.tensor([[1,2,3],[4,5,6]], dtype=torch.long)
-    my_model = My_Model(20, 4)
-    result = my_model(x)
-    print(result)
-    print(result.shape)
 ```
-
