@@ -247,53 +247,109 @@ class AiModel(nn.Module):
 
 ## 4 模型训练
 
-```properties
-注意: 1,因为使用的预训练模型，所以在训练的时候，对自定义的模型加上,model.train();2.不更新bert预训练模型的参数《requires_grad=False》3.如果要想在GPU上训练：3.1将预训练模型的对象放到GPU上，3.2自定义的模型对象放到GPU上，3.3模型的输入放到GPU上，eg：input_ids = input_ids.to('cuda');model = model.to('cuda')
-```
+在使用 **BERT 预训练模型 + 自定义分类层** 时，训练阶段需特别注意以下三点：
 
-代码实现
+**🔒 1. 冻结 BERT 参数（不参与训练）**
+
+- **目的**：仅训练自定义层，避免破坏预训练权重。
+
+- **操作**：
+
+  ```python
+  for param in my_pre_model.parameters():
+      param.requires_grad = False
+  ```
+
+
+
+**🎯 2. 设置模型模式**
+
+- **自定义模型**：
+
+  ```python
+  my_model.train()  # 启用 Dropout / BN 训练行为
+  ```
+
+- **预训练 BERT**：
+
+  ```python
+  my_pre_model.eval()  # 保持评估模式，关闭 Dropout
+  ```
+
+
+
+**🚀 3. GPU 训练必备三件套**
+
+| 步骤                 | 操作对象       | 示例代码                           |
+| :------------------- | :------------- | :--------------------------------- |
+| ① 预训练模型移至 GPU | `my_pre_model` | `my_pre_model.to('cuda')`          |
+| ② 自定义模型移至 GPU | `my_model`     | `my_model.to('cuda')`              |
+| ③ 输入数据移至 GPU   | 每个 batch     | `input_ids = input_ids.to('cuda')` |
+
+> ✅ 建议：统一使用 `device = torch.device("cuda" if torch.cuda.is_available() else "cpu")` 避免硬编码。
+
+
+
+✅代码实现
 
 ```python
 # 定义训练方法
 def train_model():
+    """完整训练流程：仅训练自定义分类头，BERT 参数冻结。"""
+    
     # 1.加载训练数据集
     train_dataset = load_dataset('csv', data_files="./data/train.csv", split="train")
-    # 2.实例化模型
+    
+    # 2.实例化模型并移至设备
     my_model = AiModel().to(device)
-    # 3. my_pre_model对预训练模型的参数requires_grad设置为False，不计算梯度
+    
+    # 3. 冻结 BERT 参数（不计算梯度）
     for param in my_pre_model.parameters():
-        # print(f'param--》{param.requires_grad}')
         param.requires_grad_(False)
-        # print(f'param--》{param.requires_grad}')
+ 
     # p.numel()计算每个参数的元素个数
     # total_params = sum(p.numel() for p in my_pre_model.parameters())
+    
     # 4.实例化损失函数对象
     # mean计算一个批次样本的平均损失，sum是损失之和，
     my_crossentropy = nn.CrossEntropyLoss(reduction='mean')
+    
     # 5.实例化优化器
     my_adamw = AdamW(my_model.parameters(), lr=5e-4)
+    
     # 6.设置模型为训练模型
-    my_model.train()
+    my_model.train()  # 训练模式（Dropout/BN 生效）
+    
     # 7.开始训练
-    for epoch_idx in range(3):
+    num_epochs = 3
+    for epoch_idx in range(num_epochs):
         start_time = time.time()
-        # 实例化dataloader
-        my_dataloader = DataLoader(dataset=train_dataset, batch_size=8,
-                                   shuffle=True, collate_fn=collate_fn1,
-                                   drop_last=True)
-        # 内部数据迭代
+        
+        # 每轮重新实例化 DataLoader（可实现不同的 shuffle）
+        my_dataloader = DataLoader(
+            dataset=train_dataset,
+            batch_size=8,
+            shuffle=True,
+            collate_fn=collate_fn1,
+            drop_last=True
+        )
+        
+        # 8. 内部数据迭代
         for i, (inputs_ids, token_type_ids, attention_mask, labels) in enumerate(tqdm(my_dataloader), start=1):
-            # print(f'labels---》{labels}')
+            
+            # 9. 数据移至 GPU/CPU
             inputs_ids = inputs_ids.to(device)
             token_type_ids = token_type_ids.to(device)
             attention_mask = attention_mask.to(device)
             labels = labels.to(device)
+            
+            # 10. 前向传播
             output = my_model(inputs_ids, token_type_ids, attention_mask,)
-            # print(f'output--》{output.shape}')
-            # print(f'output--》{output}')
-            # 计算损失
+
+            # 11. 计算损失
             loss = my_crossentropy(output, labels)
-            # print(f'loss--》{loss}')
+            
+            # 12. 反向传播 & 参数更新
             # 梯度清零
             my_adamw.zero_grad()
             # 反向传播
@@ -301,62 +357,109 @@ def train_model():
             # 梯度更新
             my_adamw.step()
 
-            # 打印日志：每隔5步计算平均准确率
+            # 13. 打印日志：每隔5步计算平均准确率
             if i % 5 == 0:
                 tem = torch.argmax(output, dim=-1)
-                # print(f'tem--》{tem}')
                 acc = (tem == labels).sum().item() / len(labels)
                 use_time = time.time() - start_time
                 print("当前训练的轮次%d,迭代的步数%d,当前的损失%.2f, 当前的准确率%.2f, 时间%d"%(epoch_idx+1, i,
                                                                                        loss, acc, use_time))
 
-        # 保存模型
+        # 14. 每轮保存一次权重
         torch.save(my_model.state_dict(), "./AI19_model/classify_%d.bin"%(epoch_idx+1))
-
-
 ```
 
 ## 5 模型预测
 
-```properties
-注意: model.eavl()和with torch.no_grad()
-#如果在GPU上训练的模型，想在CPU上使用， model.load_state_dict(torch.load(path, map_location="cpu")) #将模型放到cpu上
+在进行模型预测时，为确保结果正确且高效，需特别注意以下两点：
+
+**🔒 1. 设置评估模式**
+
+- **目的**：关闭 Dropout 和 BatchNorm 的训练行为，确保推理结果稳定。
+
+- **操作**：
+
+  ```python
+  model.eval()
+  ```
+
+  
+
+**🚫 2. 关闭梯度计算**
+
+- **目的**：减少内存消耗，加速推理。
+
+- **操作**：
+
+  ```python
+  with torch.no_grad():
+      outputs = model(inputs)
+  ```
+
+  
+
+**🔄 3. 跨设备加载模型（GPU → CPU）**
+
+若模型在 **GPU** 上训练，但希望在 **CPU** 上进行预测，需使用 `map_location` 参数：
+
+```python
+model.load_state_dict(torch.load(path, map_location="cpu"))
 ```
 
-代码实现
+> ✅ 作用：将模型参数映射到 CPU，避免设备不匹配错误。
+
+
+
+✅代码实现
 
 ```python
 # 定义模型评估方法
 def test_model():
-    # 1.加载训练数据集
+    """在测试集上评估模型性能，输出平均准确率并打印部分预测样例。"""
+    
+    # 1. 加载测试集（CSV 格式）
     test_dataset = load_dataset('csv', data_files="./data/test.csv", split="train")
-    # 2.实例化dataloader
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8, shuffle=True,
-                                 collate_fn=collate_fn1, drop_last=True)
-    # 3.加载训练好的模型
+    
+    # 2. 构建测试 DataLoader
+    test_dataloader = DataLoader(
+        dataset=test_dataset,
+        batch_size=8,
+        shuffle=True,               # 可设为 False，保持顺序
+        collate_fn=collate_fn1,     # 需提前定义
+        drop_last=True
+    )
+    
+    # 3. 加载训练好的模型（CPU）
     path = './AI19_model/classify_3.bin'
     my_model = AiModel()
     my_model.load_state_dict(torch.load(path, map_location="cpu")) #将模型放到cpu上
-    # my_model = my_model.to("cpu")
-    # 4.定义测试的参数
+    # my_model = my_model.to("cpu")  # 若已 map_location，可省略
+    
+    # 4. 初始化评估指标
     correct = 0
     total = 0
-    # 5.设定模型为eval
+    
+    # 5.设置模型为评估模式（关闭 Dropout/BN）
     my_model.eval()
+    
     # 6.迭代数据送入模型
     for i, (inputs_ids, token_type_ids, attention_mask, labels )in enumerate(tqdm(test_dataloader), start=1):
-        with torch.no_grad():
+        with torch.no_grad():  # 关闭梯度，节省内存
             output = my_model(inputs_ids, token_type_ids, attention_mask,)
 
         # 得到预测的最大概率值的索引
         temp = torch.argmax(output, dim=-1)
+        
         # 得到预测正确的个数
         correct += (temp == labels).sum().item()
+        
         # 当前训练的样本个数
         total += len(labels)
+        
         # 每隔5步打印测试的结果
         if i % 5 == 0:
             print(f'平均准确率-->{correct/total}')
+            
             # 取出一个批次的第一个样本来查验是否预测正确
             text_list = my_pre_tokenizer.decode(inputs_ids[0],skip_special_tokens=True)
             print(f'原始的文本是--》{text_list}', end='    ')
