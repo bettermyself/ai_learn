@@ -2,7 +2,7 @@
 
 ### 1.1 word2vec之skipgram方式：
 
-skipgram模式：给定一段用于训练的文本语料, 再选定某段长度(窗口，**一般为奇数**)作为研究对象, 使用目标词汇预测上下文词汇。
+**skipgram**模式：给定一段用于训练的文本语料, 再选定某段长度(窗口，**一般为奇数**)作为研究对象, 使用目标词汇预测上下文词汇。
 
 ![avatar](assets/skip.png)
 
@@ -73,7 +73,7 @@ def dm_fasttext_train_save_load():
     print('训练词向量 ok')
 
     # 2 save_model()保存已经训练好词向量 
-    # 注意，该行代码执行耗时很长 
+    # 注意，该行代码执行耗时很长（假设词汇表 50 万词，300 维 → 1.5 亿个浮点数 → 约 600 MB） 
     mymodel.save_model("./data/fil9.bin")
     print('保存词向量 ok')
 
@@ -108,6 +108,18 @@ model.get_nearest_neighbors('music')
 model.get_nearest_neighbors('dog')
 # [(0.845, 'catdog'), (0.748, 'dogcow'), ...]
 ```
+
+> **✅ `shape = (100,)` 的含义：**
+>
+> - 这是一个 **1 维张量（向量）**
+> - 它有 **100 个元素**，排成一行（或一列）
+> - 括号里的逗号 `,` 是 Python 元组语法：单元素元组必须加逗号，否则会被当作普通值
+>
+> > 📌 对比： 
+> >
+> > - `(100,)` → 一维数组，100个元素
+> > - `(100, 1)` → 二维数组，100行 × 1列（列向量）
+> > - `(1, 100)` → 二维数组，1行 × 100列（行向量）
 
 
 
@@ -162,7 +174,7 @@ word_list = [jieba.lcut(s) for s in sentences]
 tok = Tokenizer()
 tok.fit_on_texts(word_list)
 vocab = list(tok.index_word.values())          # 词汇表
-ids     = tok.texts_to_sequences(word_list)    # 句子转 id
+ids   = tok.texts_to_sequences(word_list)      # 句子转 id
 
 # 3. 创建 Embedding 层
 EMB_DIM = 8
@@ -256,7 +268,7 @@ def dm_label_sns_countplot():
 
 > 若正负比例明显偏离 1:1，可考虑
 >
-> - 数据增强（回译、EDA）
+> - 数据增强（回译、EDA同义词替换、随机插入、随机交换、随机删除）
 > - 过采样 / 欠采样
 > - 调整类别权重
 
@@ -314,6 +326,12 @@ def dm_len_sns_countplot_distplot():
     plt.show()
 ```
 
+训练集句子长度分布：
+
+![avatar](assets/train_length.png)
+
+![avatar](assets/train_length2.png)
+
 **典型结论**
 
 - **训练集**：长度集中在 20–60 字符
@@ -353,6 +371,8 @@ def dm03_sns_stripplot():
 ```
 
 **结果速览：**
+
+![avatar](assets/train_length3.png)
 
 | 数据集    | 发现                                        |
 | --------- | ------------------------------------------- |
