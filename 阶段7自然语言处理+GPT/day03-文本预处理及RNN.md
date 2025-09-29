@@ -42,7 +42,7 @@ def  get_word_cloud(keywords_list):
 
     # 画图
     plt.figure()
-    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.imshow(wordcloud, interpolation="bilinear")  # 如果图像被拉伸或缩放（比如窗口大小变化），interpolation="bilinear" 会让边缘和文字过渡更平滑，避免出现“马赛克”或“锯齿”效果。
     plt.axis('off')
     plt.show()
 
@@ -705,10 +705,3 @@ $$
 - **梯度爆炸**：  
   
   参数更新幅度过大，导致网络不稳定，甚至产生NaN溢出值，训练崩溃。
-
-
-
-
-
-
-
