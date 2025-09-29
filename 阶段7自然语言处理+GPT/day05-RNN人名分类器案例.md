@@ -199,7 +199,7 @@ class MyRNN(nn.Module):
         # RNN层数
         self.num_layers = num_layers
         
-        # 定义RNN层，batch_first=True 表示输入形状为 [batch_size, seq_len, input_size]
+        # 定义RNN层，batch_first=True 表示接收输入形状为 [batch_size, seq_len, input_size]
         self.rnn = nn.RNN(self.input_size, 
                           self.hidden_size,
                           num_layers=self.num_layers, 
@@ -757,7 +757,7 @@ def rnn_predict(x):
     :param x: 待预测人名字符串
     :return: None（直接打印 Top-3 结果）
     """
-    # 2.1 数据转换 → [seq_len, n_letters]
+    # 2.1 数据转换 → [1, seq_len, n_letters]
     tensor_x = line2tensor(x).unsqueeze(0)
     
     # 2.2 加载已训练模型
