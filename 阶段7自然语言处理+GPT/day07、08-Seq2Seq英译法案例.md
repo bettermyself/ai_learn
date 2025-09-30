@@ -1,4 +1,4 @@
-# SeqSeq英译法案例
+# Seq2Seq英译法案例
 
 ### 1 任务目的：
 
@@ -294,7 +294,7 @@ class Seq2SeqDataset(Dataset):
 目的：
 
 ```properties
-为了将Dataset我们上一步构建的数据源，进行再次封装，变成一个迭代器，可以进行for循环，而且，可以自动为我们dataset里面的数据进行增维（bath_size）,也可以随机打乱我们的取值顺序
+为了将我们上一步构建的Dataset数据源，进行再次封装，变成一个迭代器，可以进行for循环，而且，可以自动为我们dataset里面的数据进行增维（bath_size）,也可以随机打乱我们的取值顺序
 ```
 
 代码实现：
@@ -991,7 +991,7 @@ def test_Seq2Seq_Evaluate():
     print('my_samplepairs--->', len(my_samplepairs))
 
     # 4. 将样本输入模型得到结果
-    for index, pair in enumerate(my_samplepairs[2:]):
+    for index, pair in enumerate(my_samplepairs):
         x = pair[0]
         y = pair[1]
         # 需要对x英文文本进行处理

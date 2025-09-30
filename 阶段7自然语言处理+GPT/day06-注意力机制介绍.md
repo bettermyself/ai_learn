@@ -453,7 +453,7 @@ torch.Size([10, 3, 5])
 
 **代码实现：**
 
-```properties
+```python
 # coding:utf-8
 import torch
 import torch.nn as nn
@@ -471,6 +471,7 @@ class MyAtten(nn.Module):
         self.value_size1 = value_size1
         self.value_size2 = value_size2
         self.output_size = output_size
+        
         # 定义第一个全连接层作用：得到注意力计算的权重分数
         # 因为Q和K需要拼接才送入Linear层，因此该Linear层的输入维度：query_size+key_size
         # 该Linear输出维度是value_size1的原因是为了和value进行矩阵相乘
@@ -507,6 +508,7 @@ class MyAtten2(nn.Module):
         self.value_size1 = value_size1
         self.value_size2 = value_size2
         self.output_size = output_size
+        
         # 定义第一个全连接层作用：得到注意力计算的权重分数
         # 因为Q和K需要拼接才送入Linear层，因此该Linear层的输入维度：query_size+key_size
         # 该Linear输出维度是value_size1的原因是为了和value进行矩阵相乘
