@@ -27,12 +27,11 @@ class SublayerConnection(nn.Module):
         d_model : 词嵌入/隐藏层维度。
         dropout : 置零比率。
         """
-        super(SublayerConnection, self).__init__()
+        super().__init__()
         self.norm = nn.LayerNorm(d_model)   # 1. 层归一化
         self.dropout = nn.Dropout(dropout)  # 2. Dropout
 
     def forward(self, x, sublayer):
-<<<<<<< HEAD
         """
         前向传播：残差连接 + 层归一化 + Dropout
 
@@ -55,48 +54,6 @@ class SublayerConnection(nn.Module):
         # 方式 2：Post-Norm（注释掉，按需启用）
         # 数据sublayer() -> self.norm() ->self.dropout() + x
         # return self.norm(x + self.dropout(sublayer(x)))
-=======
-        # 参数x 代表数据
-        # sublayer 函数入口地址 子层函数(前馈全连接层 或者 注意力机制层函数的入口地址)
-        # 方式1 # 数据self.norm() -> sublayer()->self.dropout() + x
-        myres = x + self.dropout(sublayer(self.norm(x)))
-        # 方式2 # 数据sublayer() -> self.norm() ->self.dropout() + x
-        # myres = x + self.dropout(self.norm(sublayer(x)))
-        return myres
-        
-class SublayerConnection(nn.Module):
-    """
-    子层连接结构（残差 + LayerNorm + Dropout）
-    参数
-    ----
-    size : 词嵌入维度尺寸大小。
-    dropout : Dropout 置零比率，默认 0.1。
-    """
-    def __init__(self, size, dropout=0.1):
-        super(SublayerConnection, self).__init__()
-        self.norm   = nn.LayerNorm(size)
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x, sublayer):
-        """
-        参数
-        ----
-        x : Tensor
-            上一层输出。
-        sublayer : Callable
-            子层函数（多头注意力或前馈全连接）的入口地址。
-
-        返回
-        ----
-        Tensor
-            经过子层连接结构处理后的输出。
-        """
-        # 方式 1：Pre-Norm（Transformer 原始论文采用）
-        return x + self.dropout(sublayer(self.norm(x)))
-
-        # 方式 2：Post-Norm（注释掉）
-        # return x + self.dropout(self.norm(sublayer(x)))
->>>>>>> 8d1e49ffd6b878ff3766978ddf45544181e8c778
 ```
 
 
@@ -133,9 +90,10 @@ class EncoderLayer(nn.Module):
         dropout : float
             子层连接中的 dropout 比率。
         """
-        super(EncoderLayer, self).__init__()
+        super().__init__()
         self.self_attn = self_attn      # 多头自注意力
         self.feed_forward = feed_forward  # 前馈网络
+        
         # 克隆两份子层连接结构：一份给注意力，一份给前馈
         self.sublayer = clones(SublayerConnection(d_model, dropout), 2)
         self.size = d_model             # 记录维度，便于后续调试

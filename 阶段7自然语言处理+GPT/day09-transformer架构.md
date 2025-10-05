@@ -132,45 +132,66 @@ class Embeddings(nn.Module):
         return self.lut(x) * math.sqrt(self.d_model)    
 ```
 
-> **注意：为什么`embedding`之后要乘以$\sqrt{d_{\text{model}}}$ ？**
+> **为什么`embedding`之后要乘以$\sqrt{d_{\text{model}}}$ ？**
 >
-> 这是一个非常经典的 Transformer 实现细节，embedding 后乘以 $\sqrt{d_{\text{model}}}$ 的核心原因是：
+> ✅ **核心原因：**
 >
-> **让 embedding 的尺度与后续 positional encoding 的尺度相匹配，避免 positional 信息被“淹没”。**
+> "为了使词嵌入（`word embedding`）的尺度与位置编码（`positional encoding`）的尺度相匹配，避免在相加时词义信息被位置信息淹没。
+>
+> **🔍 详细解释**
+>
+> **1. 词嵌入的初始化尺度**
+>
+> - 在深度学习框架（如 PyTorch）中，`nn.Embedding` 通常使用方差为 $$ \frac{1}{d_{\text{model}}} $$ 的分布初始化（例如 Xavier/Uniform 初始化）。
+>
+> - 这样设计是为了让每个 embedding 向量的期望 L2 范数接近 1，与维度 $$ d_{\text{model}} $$ 无关。
+>   $$
+>   E[||\text{embedding}||^2] \approx d_{\text{model}} \cdot \frac{1}{d_{\text{model}}} = 1
+>   $$
+>
+> **2. 位置编码（PE）的尺度**
+>
+> - Transformer 使用固定的正弦/余弦函数作为位置编码：
+>
+> $$
+> PE_{(pos, 2i)} = \sin \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right), \quad PE_{(pos, 2i+1)} = \cos \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right)
+> $$
+>
+> - 每个维度的值在 $[-1, 1]$ 之间，且 $\sin$ 和 $\cos$ 的均方值约为 0.5。
+>
+> - 因此，整个 PE 向量的期望 L2 范数约为：
+>
+> $$
+> \mathbb{E}[\|PE\|^2] \approx d_{\text{model}} \cdot 0.5 \implies \|PE\| \approx \sqrt{\frac{d_{\text{model}}}{2}} \propto \sqrt{d_{\text{model}}}
+> $$
+>
+> **3. 尺度不匹配的问题**
+>
+> - 若直接将 embedding 与 PE 相加：
+>   - embedding 范数 ≈ 1（固定）
+>   - PE 范数 ≈ $\sqrt{d_{\text{model}}}$ （例如 $d_{\text{model}} = 512$ 时 ≈ 16）
+>
+> - 结果：位置编码的幅度远大于词嵌入，导致模型在早期训练中几乎忽略词义，只关注位置！
+>
+> **4. 解决方案：缩放 embedding**
+>
+> - 将 embedding 乘以 $\sqrt{d_{\text{model}}}$：
+>   $$
+>   \text{scaled\_embedding} = \text{embedding} \times \sqrt{d_{\text{model}}}
+>   $$
+>
+> - 此时：
+>   $$
+>   \|\text{scaled\_embedding}\| \approx \sqrt{d_{\text{model}}}
+>   $$
+>
+> - 
+>
+> - 与 PE 的尺度（$\propto \sqrt{d_{\text{model}}}$）相当，两者在相加时都能有效保留信息。
 >
 > 
 >
-> **1. Embedding 的初始化尺度**
->
-> 在 PyTorch 中，`nn.Embedding` 默认使用 $\mathcal{N}(0, 1)$ 初始化权重，即每个维度的方差是 1。
->
-> 所以，embedding 向量每个维度的**标准差**是 1，与维度无关。
->
-> **2. Positional Encoding 的尺度**
->
-> Transformer 中的 positional encoding 使用的是**正弦/余弦函数**：
->
-> $$PE_{(pos,2i)} = \sin\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)\quad\quad PE_{(pos,2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)$$
-> 
->
-> 这些值的范围在 $[-1, 1]$ 之间，与维度无关，尺度大致稳定。
->
-> **3. 问题：维度越大，embedding 的 L2 范数越大**
->
-> 虽然每个维度的方差是 1，但 $d_{\text{model}}$ 越大，embedding 向量的 L2 范数越大（因为维度多了）。
->
-> - 例如：$d_{\text{model}} = 512$ 时，embedding 向量的 L2 范数期望是 $\sqrt{512} \approx 22.6$
-> - 而 positional encoding 的 L2 范数与维度无关，始终在一个较小范围
->
-> **4. 结果：positional encoding 被“淹没”**
->
-> 如果不做缩放，embedding 的尺度远大于 positional encoding，模型会几乎忽略掉位置信息。
->
-> 
->
-> **解决方案：乘以 $\sqrt{d_{\text{model}}}$**
->
-> 通过乘以 $\sqrt{d_{\text{model}}}$，embedding 的每个维度尺度被放大，但整体向量的 L2 范数变得与 $d_{\text{model}}$ 无关，从而与 positional encoding 的尺度匹配。
+> ✅ 一句话总结：缩放 embedding 是为了让词嵌入的幅度随模型维度增长，从而与同样随维度增长的位置编码保持尺度一致，确保两者在相加时贡献均衡。
 
 
 
@@ -187,6 +208,11 @@ class Embeddings(nn.Module):
 1、保证同一词汇随着所在位置不同它对应位置嵌入向量会发生变化
 2、正弦波和余弦波的值域范围都是1到-1这又很好的控制了嵌入数值的大小, 有助于梯度的快速计算
 ```
+
+**Transformer** 使用固定的正弦/余弦函数作为位置编码：
+$$
+PE_{(pos, 2i)} = \sin \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right), \quad PE_{(pos, 2i+1)} = \cos \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right)
+$$
 
 ```python
 class PositionalEncoding(nn.Module):
@@ -207,7 +233,7 @@ class PositionalEncoding(nn.Module):
         dropout : Dropout 概率
         max_len : 预编码的最大序列长度，可根据任务调大/调小
         """
-        super(PositionalEncoding, self).__init__()
+        super().__init__()
 
         # ---------- 1. 预计算位置编码 ----------
         pe = torch.zeros(max_len, d_model)              # [max_len, d_model]
@@ -290,8 +316,9 @@ class PositionalEncoding(nn.Module):
 > **性质四：不同维度对应不同波长，提供了丰富的结构性信息**
 >
 > 公式设计得非常巧妙：
-> `PE(pos, 2i) = sin(pos / 10000^(2i/d_model))`
-> `PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))`
+> $$
+> PE_{(pos, 2i)} = \sin \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right), \quad PE_{(pos, 2i+1)} = \cos \left( \frac{pos}{10000^{2i/d_{\text{model}}}} \right)
+> $$
 >
 > - `i` 是维度索引（从 0 到 `d_model/2 - 1`）。
 > - 随着维度 `i` 的增大，`10000^(2i/d_model)` 的值会越来越大，频率会越来越低（波长越来越长）。
@@ -379,7 +406,7 @@ def dm_draw_PE_feature():
     print('my_positionalencoding.shape--->', my_pe.pe.shape)
 
     # 2 创建数据x[1,100,20], 给数据x添加位置特征  [1,100,20] ---> [1,100,20]
-    y = my_pe(Variable(torch.zeros(1, 100, 20)))
+    y = my_pe(torch.zeros(1, 100, 20))
     print('y--->', y.shape)
 
     # 3 画图 绘制pe位置矩阵的第4-7列特征曲线
@@ -418,6 +445,8 @@ def dm_draw_PE_feature():
 2、第一个子层连接结构：多头自注意力机制层+残差连接层+规范化层
 3、第二个子层连接结构：前馈全连接层+残差连接层+规范层
 ```
+
+
 
 ### 2.2 掩码张量
 
@@ -503,7 +532,7 @@ $$
 
 ### 3.2 注意力机制的代码实现
 
-```properties
+```python
 def attention(query, key, value, mask=None, dropout=None):
     # query, key, value：代表注意力的三个输入张量
     # mask：代表掩码张量
@@ -630,7 +659,8 @@ class MultiHeadedAttention(nn.Module):
         head: 头数
         embedding_dim: 模型维度（必须能被 head 整除）
         """
-        super(MultiHeadedAttention, self).__init__()
+        super().__init__()
+        
         # 确认数据特征能否被被整除 eg 特征尺寸512 % 头数8
         assert embedding_dim % head == 0
         # 计算每个头特征尺寸 特征尺寸512 // 头数8 = 64
@@ -661,9 +691,7 @@ class MultiHeadedAttention(nn.Module):
 
         # 数据形状变化[2,4,512] ---> [2,4,8,64] ---> [2,8,4,64]
         # 4代表4个单词 8代表8个头 让句子长度4和句子特征64靠在一起 更有利捕捉句子特征
-        query, key, value = [model(x).view(batch_size, -1, self.head, self.d_k).transpose(1,2)
-            for model, x in zip(self.linears, (query, key, value) ) ]
-
+        query, key, value = [model(x).view(batch_size, -1, self.head, self.d_k).transpose(1,2) for model, x in zip(self.linears, (query, key, value) ) ]
 
         # 注意力结果表示x形状 [2,8,4,64] 注意力权重attn形状：[2,8,4,4]
         # attention([2,8,4,64],[2,8,4,64],[2,8,4,64],[1,8,4,4]) ==> x[2,8,4,64], self.attn[2,8,4,4]]
@@ -706,7 +734,7 @@ class PositionwiseFeedForward(nn.Module):
     """
 
     def __init__(self, d_model, d_ff, dropout=0.1):
-        super(PositionwiseFeedForward, self).__init__()
+        super).__init__()
         # 第一层：升维 ⬅️
         self.w1 = nn.Linear(d_model, d_ff)
         # 第二层：降维 ⬅️
@@ -770,7 +798,7 @@ class LayerNorm(nn.Module):
         eps      : 防止分母为 0 的小常数
         """
 
-        super(LayerNorm, self).__init__()
+        super().__init__()
         
         # 可学习参数：缩放 γ 与偏移 β
         # 定义a2 规范化层的系数 y=kx+b中的k
