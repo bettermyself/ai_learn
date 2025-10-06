@@ -271,7 +271,7 @@ _label_sauce _label_cheese How much does potato starch affect a cheese sauce rec
 
 ```bash
 $ wc cooking.stackexchange.txt
-# 输出：12404 行，约 17M 数据
+# 输出：15404 行，约 17M 数据
 ```
 
 
