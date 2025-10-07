@@ -64,7 +64,7 @@ def  dm_file2dataset():
     # 1.1第二种加载方式
     # train_dataset = load_dataset(path='./data', data_files="train.csv", split="train")
     
-    #print(f'训练数-->{train_dataset[0]}')
+    # print(f'训练数据-->{train_dataset}')
     # print(f'训练数据取出前三行数据---》{train_dataset[:3]}')
     
     # 2.加载测试数据集
@@ -112,7 +112,7 @@ def collate_fn1(data):
     labels = [item["label"] for item in data]
     
      # 2. 使用 tokenizer 批量编码文本
-    inputs = my_pre_tokenizer.batch_encode_plus(
+    encoded = my_pre_tokenizer.batch_encode_plus(
         texts,
         truncation=True,          # 超长截断
         padding="max_length",     # 填充到统一长度
@@ -155,7 +155,7 @@ def get_dataloader():
         dataset=train_dataset,      # 数据集对象
         batch_size=8,               # 每批样本数
         shuffle=True,               # 是否打乱顺序
-        collate_fn=collate_fn,      # 自定义样本拼接函数（需提前定义）
+        collate_fn=collate_fn1,     # 自定义样本拼接函数（需提前定义）
         drop_last=True              # 舍弃最后一个不足 batch_size 的批次
     )
     #  print(f'my_dataloader-->{len(my_dataloader)}')
@@ -208,7 +208,7 @@ class AiModel(nn.Module):
         # 冻结 BERT 参数，不参与梯度更新
         # my_pre_model代表bert预训练模型的对象
         with torch.no_grad():
-            bert_output = my_pre_model(input_ids=input_ids, attention_mask=attention_mask,token_type_ids=token_type_ids)
+            bert_output = my_pre_model(input_ids=input_ids, 				  									  attention_mask=attention_mask,token_type_ids=token_type_ids)
         
         # print(f'bert模型的输出结果-->{bert_output}')
         # print(f'bert模型的last_hidden_state-->{bert_output.last_hidden_state.shape}')
@@ -295,7 +295,7 @@ class AiModel(nn.Module):
 ```python
 # 定义训练方法
 def train_model():
-    """完整训练流程：仅训练自定义分类头，BERT 参数冻结。"""
+    """完整训练流程：仅训练自定义分类层，BERT 参数冻结。"""
     
     # 1.加载训练数据集
     train_dataset = load_dataset('csv', data_files="./data/train.csv", split="train")
@@ -362,11 +362,10 @@ def train_model():
                 tem = torch.argmax(output, dim=-1)
                 acc = (tem == labels).sum().item() / len(labels)
                 use_time = time.time() - start_time
-                print("当前训练的轮次%d,迭代的步数%d,当前的损失%.2f, 当前的准确率%.2f, 时间%d"%(epoch_idx+1, i,
-                                                                                       loss, acc, use_time))
+                print("当前训练的轮次%d,迭代的步数%d,当前的损失%.2f, 当前的准确率%.2f, 时间%d"%(epoch_idx+1, i, loss, acc, use_time))
 
         # 14. 每轮保存一次权重
-        torch.save(my_model.state_dict(), "./AI19_model/classify_%d.bin"%(epoch_idx+1))
+        torch.save(my_model.state_dict(), "./AI20_model/classify_%d.bin"%(epoch_idx+1))
 ```
 
 ## 5 模型预测
@@ -430,7 +429,7 @@ def test_model():
     )
     
     # 3. 加载训练好的模型（CPU）
-    path = './AI19_model/classify_3.bin'
+    path = './AI20_model/classify_3.bin'
     my_model = AiModel()
     my_model.load_state_dict(torch.load(path, map_location="cpu")) #将模型放到cpu上
     # my_model = my_model.to("cpu")  # 若已 map_location，可省略
@@ -465,4 +464,3 @@ def test_model():
             print(f'原始的文本是--》{text_list}', end='    ')
             print(f'模型预测的结果是：{temp[0]}, 真实的结果是:{labels[0]}')
 ```
-
