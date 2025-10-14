@@ -1,40 +1,88 @@
-# BERT系列模型
-
 ## 1 BERT模型介绍
 
-### 1.1 BERT简洁
+### 1.1 BERT简介
 
-BERT是2018年10月由Google AI研究院提出的一种预训练模型.
+- **全称**：Bidirectional Encoder Representations from Transformers
+- **发布时间**：2018 年 10 月，由 Google AI 研究院提出
+- **突破性表现**：
+  - 在机器阅读理解测试 **SQuAD 1.1** 中全面超越人类表现
+  - 在 **11 项 NLP 任务**中取得 SOTA（State of the Art）成绩
+    - GLUE 基准提升至 **80.4%**（绝对提升 7.6%）
+    - MultiNLI 准确度达到 **86.7%**（绝对提升 5.6%）
 
-- BERT的全称是Bidirectional Encoder Representation from Transformers.
-- BERT在机器阅读理解顶级水平测试SQuAD1.1中表现出惊人的成绩: 全部两个衡量指标上全面超越人类, 并且在11种不同NLP测试中创出SOTA表现. 包括将GLUE基准推高至80.4% (绝对改进7.6%), MultiNLI准确度达到86.7% (绝对改进5.6%). 成为NLP发展史上的里程碑式的模型成就.
+> ✅ BERT 被认为是 NLP 发展史上的**里程碑式模型**
+
+
 
 ### 1.2 BERT架构
 
-总体架构: 如下图所示, 最左边的就是BERT的架构图, 可以很清楚的看到BERT采用了Transformer Encoder block进行连接, 因为是一个典型的双向编码模型.
+#### 1.2.1 总体架构
 
-![601](assets\601.png)
+BERT 采用 **Transformer Encoder** 结构，是一个典型的**双向编码模型**。与 OpenAI GPT（单向）和 ELMo（拼接双向 LSTM）不同，BERT 在所有层中同时考虑**左右上下文信息**。
 
-从上面的架构图中可以看到, 宏观上BERT分三个主要模块.
+![image-20251014102538148](assets/image-20251014102538148.png)
 
-- 最底层黄色标记的Embedding模块.
-- 中间层蓝色标记的Transformer模块.
-- 最上层绿色标记的预微调模块.
+**宏观结构三大模块**
 
-#### Embedding模块[¶](#21-embedding)
+| 模块名称             | 颜色标记 | 功能说明                 |
+| :------------------- | :------- | :----------------------- |
+| **Embedding 模块**   | 🟡 黄色   | 将输入文本转化为向量表示 |
+| **Transformer 模块** | 🔵 蓝色   | 实现双向编码与特征提取   |
+| **预微调模块**       | 🟢 绿色   | 根据不同下游任务进行微调 |
 
-BERT中的该模块是由三种Embedding共同组成而成, 如下图
 
-![602](assets\602.png)
 
-> - Token Embeddings 是词嵌入张量, 第一个单词是CLS标志, 可以用于之后的分类任务.
-> - Segment Embeddings 是句子分段嵌入张量, 是为了服务后续的两个句子为输入的预训练任务.
-> - Position Embeddings 是位置编码张量, 此处注意和传统的Transformer不同, 不是三角函数计算的固定位置编码, 而是通过学习得出来的.
-> - 整个Embedding模块的输出张量就是这3个张量的直接加和结果.
+#### 1.2.2 Embedding 模块详解
 
-#### 双向Transformer模块[¶](#22-transformer)
+BERT 的输入嵌入由以下三种 Embedding **相加**组成：
 
-BERT中只使用了经典Transformer架构中的Encoder部分, 完全舍弃了Decoder部分. 而两大预训练任务也集中体现在训练Transformer模块中.
+![img](assets/BERT2.png)
+
+| 类型                    | 说明                                                         |
+| :---------------------- | :----------------------------------------------------------- |
+| **Token Embeddings**    | 词向量，首个 token 为 `[CLS]`，用于分类任务                  |
+| **Segment Embeddings**  | 区分句子 A 和句子 B， 是为了服务后续的两个句子为输入的预训练任务 |
+| **Position Embeddings** | 学习得到的位置编码（非 Transformer 的三角函数方式）          |
+
+> 🔍 示例输入：`[CLS] my dog is cute [SEP] he likes play##ing [SEP]`
+
+
+
+#### 1.2.3 双向 Transformer 模块
+
+- 只使用 Transformer 的 **Encoder 部分**，不使用 Decoder
+- 所有层均为**双向上下文建模**
+- 两大预训练任务体现在该模块的训练过程中
+
+
+
+## 5️⃣ 预微调模块（Fine-tuning）
+
+- 根据任务类型对输出层进行微调
+- 常见任务类型包括：
+
+| 任务类型       | 示例            | 处理方式                   |
+| :------------- | :-------------- | :------------------------- |
+| **句子对分类** | MNLI, QQP, QNLI | 取 `[CLS]` 向量 + 全连接层 |
+| **单句分类**   | SST-2, CoLA     | 同上                       |
+| **问答任务**   | SQuAD           | 预测答案起止位置           |
+| **序列标注**   | NER             | 对每个 token 进行分类      |
+
+------
+
+## 🔧 微调建议超参数
+
+表格
+
+复制
+
+| 参数                  | 建议值           |
+| :-------------------- | :--------------- |
+| Batch Size            | 16 或 32         |
+| Learning Rate（Adam） | 5e-5, 3e-5, 2e-5 |
+| Epochs                | 3 或 4           |
+
+
 
 #### 预微调模块[¶](#23)
 
@@ -53,6 +101,14 @@ Batch size: 16, 32
 Learning rate (Adam): 5e-5, 3e-5, 2e-5
 Epochs: 3, 4
 ```
+
+
+
+
+
+
+
+
 
 ### 1.3 BERT的预训练任务[¶](#3-bert)
 
