@@ -373,15 +373,178 @@ def build_iterator(dataset, config):
     )
 ```
 
+> 拓展，变量的生存周期
+>
+> 在Python中，变量的生存周期（lifetime）指的是变量从创建到销毁的整个过程。生存周期主要取决于变量的作用域和引用计数。以下是详细说明：
+>
+> ------
+>
+> 1. **局部变量（Local Variables）**
+>
+> - **创建**：在函数内部定义时创建。
+>
+> - **销毁**：函数执行结束后自动销毁。
+>
+> - **示例**：
+>
+>   ```
+>   def my_function():
+>       x = 10  # 局部变量 x 被创建
+>       print(x)
+>   
+>   my_function()
+>   # print(x)  # 这里会报错，因为 x 已被销毁
+>   ```
+>
+> ------
+>
+> 2. **全局变量（Global Variables）**
+>
+> - **创建**：在模块级别（函数外部）定义时创建。
+>
+> - **销毁**：程序运行结束或模块被卸载时销毁。
+>
+> - **示例**：
+>
+>   ```
+>   global_var = 20  # 全局变量，生存周期直到程序结束
+>   
+>   def func():
+>       print(global_var)  # 可访问全局变量
+>   
+>   func()
+>   print(global_var)  # 仍然可访问
+>   ```
+>
+> ------
+>
+> 3. **类变量（Class Variables）**
+>
+> - **创建**：在类中定义时创建。
+>
+> - **销毁**：程序运行结束或类被垃圾回收时销毁。
+>
+> - **示例**：
+>
+>   ```
+>   class MyClass:
+>       class_var = 30  # 类变量，所有实例共享
+>   
+>   obj = MyClass()
+>   print(obj.class_var)  # 通过实例访问
+>   print(MyClass.class_var)  # 通过类访问
+>   ```
+>
+> ------
+>
+> 4. **实例变量（Instance Variables）**
+>
+> - **创建**：在 `__init__` 方法或实例方法中通过 `self.` 定义。
+>
+> - **销毁**：实例被垃圾回收时销毁。
+>
+> - **示例**：
+>
+>   ```
+>   class MyClass:
+>       def __init__(self):
+>           self.instance_var = 40  # 实例变量
+>   
+>   obj = MyClass()
+>   print(obj.instance_var)
+>   del obj  # 实例被销毁，instance_var 也随之销毁
+>   ```
+>
+> ------
+>
+> 5. **闭包中的变量**
+>
+> - **创建**：在外部函数中定义，被内部函数引用。
+>
+> - **销毁**：当内部函数不再被引用时，闭包变量销毁。
+>
+> - **示例**：
+>
+>   ```
+>   def outer():
+>       closure_var = 50
+>       def inner():
+>           print(closure_var)  # 引用外部函数的变量
+>       return inner
+>   
+>   closure_func = outer()
+>   closure_func()  # 输出 50
+>   # closure_var 会持续存在，直到 closure_func 被销毁
+>   ```
+>
+> ------
+>
+> 6. **动态生成的变量**
+>
+> - 使用 `globals()`、`locals()` 或 `exec()` 动态创建的变量遵循相同的作用域规则。
+>
+> - **示例**：
+>
+>   python
+>
+>   ```
+>   def dynamic_var():
+>       exec('x = 100')  # 在局部作用域创建 x
+>       print(locals()['x'])
+>   
+>   dynamic_var()
+>   # x 在函数结束后销毁
+>   ```
+>
+> ------
+>
+> 关键机制：引用计数与垃圾回收
+>
+> - **引用计数**：Python通过引用计数管理内存。当变量的引用计数降为0时，内存被释放。
+> - **垃圾回收**：循环引用等场景下，垃圾回收器（GC）会介入销毁对象。
+>
+> ------
+>
+> 总结
+>
+> | 变量类型 | 创建时机       | 销毁时机           |
+> | :------- | :------------- | :----------------- |
+> | 局部变量 | 函数执行时     | 函数执行结束       |
+> | 全局变量 | 模块加载时     | 程序结束或模块卸载 |
+> | 类变量   | 类定义时       | 程序结束或类被回收 |
+> | 实例变量 | 实例化对象时   | 实例被垃圾回收时   |
+> | 闭包变量 | 外部函数执行时 | 内部函数被销毁时   |
 
 
 
+### 3.3 工具类函数 `get_time_dif`
+
+该函数接收一个“开始时间戳”作为参数，计算当前时间与开始时间的差值，并将差值转换为 `timedelta` 对象，表示已使用的时间。这种计算时间差的方式常用于测量程序运行耗时。
+
+```python
+import time
+from datetime import timedelta
 
 
+def get_time_dif(start_time):
+    """
+    计算已使用的时间差。
 
+    参数:
+        start_time (float): 起始时间戳（通常由 time.time() 获得）。
 
+    返回:
+        timedelta: 两个时间点之间的时间差，精确到秒。
+    """
+    # 获取当前时间
+    end_time = time.time()
 
+    # 计算时间差（单位：秒）
+    time_dif = end_time - start_time
 
+    # 将时间差四舍五入为整数秒，并封装为 timedelta 对象返回
+    return timedelta(seconds=int(round(time_dif)))
+```
 
 
 
@@ -458,5 +621,72 @@ class Config(object):
 
         # BERT 隐藏层维度
         self.hidden_size = 768
+```
+
+
+
+### 4.3 实现 Model 类代码
+
+模型类 `Model` 继承自 `torch.nn.Module`，实现了一个基于 **BERT** 的文本分类网络。
+主要功能如下：
+
+- 在 `__init__` 中加载预训练 **BERT** 模型，并额外定义一个全连接层用于分类。
+- 在 `forward` 中，将输入送入 **BERT** 得到句向量，再经全连接层输出分类 logits。
+
+```python
+import torch.nn as nn
+from transformers import BertModel
+
+
+class Model(nn.Module):
+    """
+    基于 BERT 的文本分类模型。
+    """
+
+    def __init__(self, config):
+        """
+        初始化模型。
+
+        参数:
+            config: 配置对象，必须包含以下属性：
+                - bert_path (str): 预训练 BERT 模型路径或名称。
+                - hidden_size (int): BERT 隐层维度。
+                - num_classes (int): 分类类别数。
+        """
+        super(Model, self).__init__()
+
+        # 加载预训练 BERT 模型
+        self.bert = BertModel.from_pretrained(config.bert_path, config=config.bert_config)
+
+        # 全连接层：将 BERT 输出的句向量映射到类别空间
+        self.fc = nn.Linear(config.hidden_size, config.num_classes)
+
+    def forward(self, x):
+        """
+        前向传播。
+
+        参数:
+            x (list/tuple): 长度为 3 的列表或元组，依次包含：
+                x[0] —— input_ids:  句子 token id 序列，shape: (batch_size, seq_len)
+                     —— token_type_ids: 句子类型 id（可选，此处未使用，因为这是单句子任务，系统会会自动创建全0的tensor）
+                x[2] —— attention_mask: 填充掩码，1 表示有效 token，0 表示 padding
+
+        返回:
+            logits: 分类 logits，shape: (batch_size, num_classes)
+        """
+        input_ids = x[0]          # 输入句子
+        attention_mask = x[2]     # 填充掩码
+
+        # 通过 BERT 获取句向量（pooled_output 对应 [CLS] 经线性层+Tanh 后的表示）
+        _, pooled = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            return_dict=False
+        )
+
+        # 全连接层输出分类 logits
+        logits = self.fc(pooled)
+
+        return logits
 ```
 
