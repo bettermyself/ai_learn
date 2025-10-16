@@ -313,12 +313,14 @@ content.to_csv('./data/data/train_new.csv', index=False)
 #### 3.1.1 导入工具包
 
 ```python
-from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier  
-import pandas as pd
-from icecream import ic
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score
+
+from icecream import ic
 ```
 
 
@@ -330,7 +332,7 @@ from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_sc
 TRAIN_CORPUS = './data/data/train_new.csv'
 
 # 停用词路径
-STOP_WORDS = './data/data/stopwords.txt'
+STOP_WORDS = './data/data/stopwords.txt'  # 转化为向量的时候忽略无意义词
 
 # 分词结果所在列名
 WORDS_COLUMN = 'words'
@@ -398,7 +400,7 @@ stop_words = open(STOP_WORDS, encoding='utf-8').read().split()
 
 # 初始化 TF-IDF 向量化器
 tfidf = TfidfVectorizer(
-    stop_words=stop_words,  # 过滤无意义词
+    stop_words=stop_words  # 过滤无意义词
 )
 
 # 将语料库（已分词文本）转为 TF-IDF 特征矩阵（稀疏矩阵）
@@ -426,7 +428,7 @@ print("TF-IDF 特征矩阵形状：", text_vectors.shape)
 
 🎯 目标
 
-- 将 TF-IDF 特征向量划分为训练集与测试集；
+- 将 **TF-IDF** 特征向量划分为训练集与测试集；
 - 训练随机森林分类器；
 - 评估模型准确率，建立基线模型（Baseline）。
 
