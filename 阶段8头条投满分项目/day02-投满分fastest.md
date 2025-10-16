@@ -24,7 +24,7 @@
 
 ### 2.1 数据格式要求（FastText）
 
-FastText 要求输入数据满足以下格式：
+**FastText** 要求输入数据满足以下格式：
 
 - 每行一个文档
 - 标签以 `__label__<标签名>` 开头，放在文档前面
@@ -107,7 +107,7 @@ with open('train.txt', 'r', encoding='utf-8') as f:
 
 # 写入 FastText 格式训练文件
 with open('train_fast.txt', 'w', encoding='utf-8') as f:
-    for data in train_data:
+    for data in train_data:  # 列表不能直接写入txt，只能遍历，逐行写入
         f.write(data + '\n')
 
 print('FastText 训练数据预处理完成！')
@@ -201,7 +201,7 @@ Progress: 100.0% words/sec/thread: 1745187  lr: 0.000000  avg.loss: 0.284760  ET
 
 > 不依赖人工调参，使用 **自动超参数搜索** 提升模型性能，并尝试 **不同粒度（字 vs 词）** 的输入表示。
 
-------
+
 
 ### 4.1 优化方式一：自动超参数调优（基于字）
 
@@ -372,7 +372,7 @@ model.save_model(model_save_path)
 
 ## 5 模型部署
 
-工业界中的AI是指"能落地的AI", 即指在生产环境中可以部署并提供在线, 或离线作业的模型。
+工业界中的AI是指"**能落地的AI**", 即指在生产环境中可以部署并提供在线, 或离线作业的模型。
 
 - 第一步: 编写主服务逻辑代码。
 - 第二步: 启动Flask服务。
