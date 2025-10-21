@@ -387,7 +387,7 @@ def build_iterator(dataset, config):
 >   def my_function():
 >       x = 10  # 局部变量 x 被创建
 >       print(x)
->           
+>             
 >   my_function()
 >   # print(x)  # 这里会报错，因为 x 已被销毁
 >   ```
@@ -404,10 +404,10 @@ def build_iterator(dataset, config):
 >
 >   ```
 >   global_var = 20  # 全局变量，生存周期直到程序结束
->           
+>             
 >   def func():
 >       print(global_var)  # 可访问全局变量
->           
+>             
 >   func()
 >   print(global_var)  # 仍然可访问
 >   ```
@@ -425,7 +425,7 @@ def build_iterator(dataset, config):
 >   ```
 >   class MyClass:
 >       class_var = 30  # 类变量，所有实例共享
->           
+>             
 >   obj = MyClass()
 >   print(obj.class_var)  # 通过实例访问
 >   print(MyClass.class_var)  # 通过类访问
@@ -445,7 +445,7 @@ def build_iterator(dataset, config):
 >   class MyClass:
 >       def __init__(self):
 >           self.instance_var = 40  # 实例变量
->           
+>             
 >   obj = MyClass()
 >   print(obj.instance_var)
 >   del obj  # 实例被销毁，instance_var 也随之销毁
@@ -467,7 +467,7 @@ def build_iterator(dataset, config):
 >       def inner():
 >           print(closure_var)  # 引用外部函数的变量
 >       return inner
->           
+>             
 >   closure_func = outer()
 >   closure_func()  # 输出 50
 >   # closure_var 会持续存在，直到 closure_func 被销毁
@@ -487,7 +487,7 @@ def build_iterator(dataset, config):
 >   def dynamic_var():
 >       exec('x = 100')  # 在局部作用域创建 x
 >       print(locals()['x'])
->           
+>             
 >   dynamic_var()
 >   # x 在函数结束后销毁
 >   ```
@@ -1403,20 +1403,3 @@ print('单条样本耗时：%.2f ms' % cost)
 文本类别：education
 单条样本耗时：181.69 ms
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
