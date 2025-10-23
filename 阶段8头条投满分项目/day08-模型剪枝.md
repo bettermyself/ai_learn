@@ -24,10 +24,6 @@
 
 
 
-
-
-
-
 ## 2 对特定网络模块的剪枝（Pruning Model）
 
 ### 2.1 导入必要的库
@@ -43,7 +39,7 @@ import torch.nn.functional as F
 
 ### 2.2 定义 LeNet 网络结构
 
-创建一个网络, 我们以经典的LeNet来示例：
+创建一个网络, 我们以经典的**LeNet**来示例：
 
 ```python
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,7 +48,7 @@ class LeNet(nn.Module):
     def __init__(self):
         super(LeNet, self).__init__()
         # 第一个卷积层：输入通道1（灰度图），输出通道6，卷积核3x3
-        self.conv1 = nn.Conv2d(1, 6, 3)
+        self.conv1 = nn.Conv2d(1, 6, 3)  
         # 第二个卷积层：输入通道6，输出通道16，卷积核3x3
         self.conv2 = nn.Conv2d(6, 16, 3)
         # 全连接层：输入维度16*5*5，输出维度120
@@ -74,6 +70,21 @@ class LeNet(nn.Module):
 # 实例化模型并移动到设备（CPU/GPU）
 model = LeNet().to(device=device)
 ```
+
+> **拓展：nn.Conv2d和nn.Conv3d的区别**
+>
+> `nn.Conv2d` 和 `nn.Conv3d` 是PyTorch中用于不同维度数据的卷积层，它们的主要区别在于处理的**数据维度**和**卷积核的维度**。
+>
+> **维度对比**
+>
+> | 特性           | `nn.Conv2d`          | `nn.Conv3d`                |
+> | :------------- | :------------------- | :------------------------- |
+> | **输入维度**   | 4D: `(N, C, H, W)`   | 5D: `(N, C, D, H, W)`      |
+> | **卷积核维度** | 2D kernel            | 3D kernel                  |
+> | **适用数据**   | 图像、2D特征图       | 视频、3D体积数据、医学影像 |
+> | **滑动方向**   | 在2个方向滑动 (H, W) | 在3个方向滑动 (D, H, W)    |
+>
+> ---
 
 
 
@@ -275,9 +286,6 @@ tensor([[[[-0.1544, -0.0000,  0.1339],
 
 ```python
 # 对 conv1 层的 bias 参数执行剪枝，剪掉绝对值最小的 3 个参数
-# 第一个参数: module, 代表剪枝的对象, 此处代表LeNet中的conv1
-# 第二个参数: name, 代表剪枝对象中的具体参数, 此处代表偏置量
-# 第三个参数: amount, 代表剪枝的数量, 可以设置为0.0-1.0之间表示比例, 也可以用正整数表示剪枝的参数绝对数量
 prune.l1_unstructured(module, name="bias", amount=3)
 
 # 查看剪枝后的参数和 buffer
@@ -371,7 +379,6 @@ tensor([-0.1924, -0.1420, -0.0000,  0.0325,  0.0000,  0.0000], device='cuda:0',
 
 ```python
 # 打印原始模型的 state_dict 键名
-print("原始模型 state_dict 键名：")
 print(model.state_dict().keys())
 
 # 对 conv1 的 weight 和 bias 都进行剪枝
@@ -399,7 +406,7 @@ odict_keys(['conv1.weight_orig', 'conv1.bias_orig', 'conv1.weight_mask', 'conv1.
 
 ### 2.10 永久化剪枝（`remove` 操作）
 
-通过module中的参数weight_orig和weight_mask进行剪枝，本质上属于置零遮掩，让权重连接失效。这个remove是无法undo的, 也就是说一旦执行就是对模型参数的永久改变。
+通过`module`中的参数`weight_orig`和`weight_mask`进行剪枝，本质上属于置零遮掩，让权重连接失效。这个`remove`是无法`undo的`, 也就是说一旦执行就是对模型参数的永久改变。
 
 ```python
 # 打印 remove 前的参数和 buffer
@@ -425,7 +432,7 @@ print(list(module.named_buffers()))
 
 **永久化后的变化总结:** 
 
-对模型的`weight`执行`remove`操作后，模型参数集合中只剩下`bias_orig`了，`weight_orig`消失， 变成了`weight`， 说明针对`weight`的剪枝已经永久化生效。 对于named_buffers张量打印可以看出，只剩下bias_mask了，因为针对weight做掩码的weight_mask已经生效完毕，不再需要保留了。
+对模型的`weight`执行`remove`操作后，模型参数集合中只剩下`bias_orig`了，`weight_orig`消失， 变成了`weight`， 说明针对`weight`的剪枝已经永久化生效。 对于named_buffers张量打印可以看出，只剩下`bias_mask`了，因为针对`weight`做掩码的`weight_mask`已经生效完毕，不再需要保留了。
 
 | 项目          | remove 前        | remove 后           |
 | :------------ | :--------------- | :------------------ |
