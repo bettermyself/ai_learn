@@ -101,7 +101,9 @@
 
 ## 2 工具介绍
 
-### 2.1 Doccano数据标注平台
+### 2.1 项目应用工具概览
+
+#### 2.1.1 Doccano数据标注平台
 
 **Doccano** 是一款开源的文本标注工具，旨在简化和加速文本标注任务，支持构建高质量的训练数据集，广泛应用于机器学习与自然语言处理项目。
 
@@ -114,6 +116,110 @@
 - **多种标注类型**：支持命名实体识别（NER）、文本分类、关系抽取等常见任务，按需选择标注类型。
 - **协作标注**：支持多人协同标注，标注人员可独立标注同一数据，并进行交互与讨论，提升一致性与准确性。
 - **快速导入导出**：支持 CSV、JSON、TXT 等格式导入原始数据，标注完成后可导出为标准格式，便于后续建模与分析。
+
+
+
+#### 2.1.2 Flask web服务框架
+
+<img src="assets/2-1-2.png" alt="img" style="zoom:67%;" />
+
+**Flask** 是一个轻量级的 Python Web 框架，因其简洁灵活而广受欢迎，也是 PyTorch 官方推荐的部署框架之一。**Flask**的基本模式为在程序里将一个视图函数分配给一个URL，每当用户访问这个URL时，系统就会执行给该URL分配好的视图函数，获取函数的返回值，其工作过程见图：
+
+![img](assets/2-1-3.png)
+
+
+
+**项目中的作用：**
+
+- 封装模型逻辑
+- 提供 API 接口服务
+
+
+
+**安装命令：**
+
+```bash
+pip install flask
+```
+
+
+
+**Flask 基本使用方法**
+
+示例代码：
+
+```python
+# 导入Flask类
+from flask import Flask
+
+# 创建一个该类的实例app, 参数为__name__, 这个参数是必需的，这样Flask才能知道在哪里可找到模板和静态文件等东西。
+app = Flask(__name__)
+
+# 使用route()装饰器来告诉Flask触发函数的URL
+@app.route('/')
+def hello_world():
+    """请求指定的url后，执行的主要逻辑函数"""
+    return 'Hello, World!'  # 在用户浏览器中显示信息：'Hello, World!'
+
+# 启动服务
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
+```
+
+**启动方式：**
+
+```bash
+python app.py
+```
+
+**访问效果：**在浏览器中访问 `http://0.0.0.0:5000`，页面将显示：
+
+```
+Hello, World!
+```
+
+
+
+#### 2.1.3 Gunicorn服务组件
+
+**Gunicorn** 是一个高性能的 Python WSGI UNIX HTTP 服务组件，源自 Ruby 的 Unicorn 项目，具有轻量、高效、易用的特点。
+
+**项目中的作用：**
+
+- 与 Flask 配合使用，提供稳定、高性能的服务支持
+- 有效降低请求丢包率，提升并发处理能力
+
+<img src="assets/2-1-4.png" alt="img" style="zoom:67%;" />
+
+**安装命令：**
+
+```bash
+pip install gunicorn
+```
+
+**启动 Flask 服务（单进程示例）：**
+
+```bash
+gunicorn -w 1 -b 0.0.0.0:5000 app:app
+```
+
+- `-w 1`：启动 1 个 worker 进程
+- `-b`：指定绑定的 IP 和端口
+- `app:app`：指定 Flask 应用对象（位于 `app.py` 中的 `app`）
+
+**后台运行（可选）：**
+
+```bash
+nohup gunicorn -w 1 -b 0.0.0.0:5000 app:app 2>&1 &
+```
+
+
+
+#### 2.1.4 Neo4j图数据库
+
+**Neo4j** 是一款高性能的图数据库，采用图结构存储数据，擅长处理复杂关系查询，是知识图谱项目的核心存储与查询引擎。
+
+> 后续章节将对其安装、配置与使用进行详细介绍。
 
 
 
@@ -273,139 +379,9 @@ doccano task
 
 
 
+### 2.3 知识查询语言介绍
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### 2.3 Flask web服务框架
-
-<img src="assets/2-1-2.png" alt="img" style="zoom:67%;" />
-
-**Flask** 是一个轻量级的 Python Web 框架，因其简洁灵活而广受欢迎，也是 PyTorch 官方推荐的部署框架之一。**Flask**的基本模式为在程序里将一个视图函数分配给一个URL，每当用户访问这个URL时，系统就会执行给该URL分配好的视图函数，获取函数的返回值，其工作过程见图：
-
-![img](assets/2-1-3.png)
-
-
-
-**项目中的作用：**
-
-- 封装模型逻辑
-- 提供 API 接口服务
-
-
-
-**安装命令：**
-
-```bash
-pip install flask
-```
-
-
-
-**Flask 基本使用方法**
-
-示例代码：
-
-```python
-# 导入Flask类
-from flask import Flask
-
-# 创建一个该类的实例app, 参数为__name__, 这个参数是必需的，这样Flask才能知道在哪里可找到模板和静态文件等东西。
-app = Flask(__name__)
-
-# 使用route()装饰器来告诉Flask触发函数的URL
-@app.route('/')
-def hello_world():
-    """请求指定的url后，执行的主要逻辑函数"""
-    return 'Hello, World!'  # 在用户浏览器中显示信息：'Hello, World!'
-
-# 启动服务
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
-```
-
-**启动方式：**
-
-```bash
-python app.py
-```
-
-**访问效果：**在浏览器中访问 `http://0.0.0.0:5000`，页面将显示：
-
-```
-Hello, World!
-```
-
-
-
-### 2.4 Gunicorn服务组件
-
-**Gunicorn** 是一个高性能的 Python WSGI UNIX HTTP 服务组件，源自 Ruby 的 Unicorn 项目，具有轻量、高效、易用的特点。
-
-**项目中的作用：**
-
-- 与 Flask 配合使用，提供稳定、高性能的服务支持
-- 有效降低请求丢包率，提升并发处理能力
-
-<img src="assets/2-1-4.png" alt="img" style="zoom:67%;" />
-
-**安装命令：**
-
-```bash
-pip install gunicorn
-```
-
-**启动 Flask 服务（单进程示例）：**
-
-```bash
-gunicorn -w 1 -b 0.0.0.0:5000 app:app
-```
-
-- `-w 1`：启动 1 个 worker 进程
-- `-b`：指定绑定的 IP 和端口
-- `app:app`：指定 Flask 应用对象（位于 `app.py` 中的 `app`）
-
-**后台运行（可选）：**
-
-```bash
-nohup gunicorn -w 1 -b 0.0.0.0:5000 app:app 2>&1 &
-```
-
-
-
-### 2.5 Neo4j图数据库
-
-**Neo4j** 是一款高性能的图数据库，采用图结构存储数据，擅长处理复杂关系查询，是知识图谱项目的核心存储与查询引擎。
-
-> 后续章节将对其安装、配置与使用进行详细介绍。
-
-
-
-
-
-### 2.6 知识查询语言介绍
-
-#### 2.6.1 知识图谱查询语言概览
+#### 2.3.1 知识图谱查询语言概览
 
 > 查询与检索是知识图谱的核心能力之一，选择合适的查询语言至关重要。
 
@@ -418,7 +394,7 @@ nohup gunicorn -w 1 -b 0.0.0.0:5000 app:app 2>&1 &
 
 
 
-#### 2.6.2 各语言详细介绍
+#### 2.3.2 各语言详细介绍
 
 **SQL（结构化查询语言）**
 
@@ -495,3 +471,7 @@ g.V().has("name", "gremlin").out("knows").out("knows").values("name")
 | 多跳查询  | ❌ 低效     | ✅            | ✅          | ✅                 |
 | 学习难度  | 低         | 中           | 高         | 低~中             |
 | 应用场景  | 传统数据库 | RDF 知识图谱 | 图遍历分析 | 图数据库（Neo4j） |
+
+
+
+### 2.4 Neo4j图数据库
