@@ -475,3 +475,412 @@ g.V().has("name", "gremlin").out("knows").out("knows").values("name")
 
 
 ### 2.4 Neo4j图数据库
+
+#### 2.4.1 Neo4j 介绍
+
+**Neo4j** 是由 **Java** 实现的开源 **NoSQL 图数据库**，自 **2003 年**开始研发，于 **2007 年**发布首个版本。如今，Neo4j 已被全球数十万家公司和组织广泛采用。
+
+<img src="assets/2-4-1.png" alt="img" style="zoom:50%;" />
+
+**核心特点：**
+
+- 实现了**专业数据库级别的图数据模型存储**。
+- 与普通的图处理框架或内存级数据库不同，Neo4j 提供了**完整的数据库特性**，包括：
+  - **ACID 事务支持**
+  - **集群支持**
+  - **备份与故障转移**
+
+> 适用于**企业级生产环境**下的各类应用场景。
+
+
+
+**版本说明：**
+
+| 版本类型   | 特点说明                                                   |
+| :--------- | :--------------------------------------------------------- |
+| **企业版** | 需付费授权，提供**高可用性**、**热备份**等企业级性能支持。 |
+| **社区版** | 免费使用，但**仅支持单点部署**，适合开发测试或小型项目。   |
+
+
+
+**Neo4j 图数据库核心概念**
+
+<img src="assets/2-4-2.png" alt="img" style="zoom:50%;" />
+
+Neo4j 使用图模型来表示和存储数据，核心概念包括：
+
+**1. 节点（Node）**
+
+- **定义**：图中的基本数据单元。
+- **特点**：
+  - 可包含一个或多个 **属性**（键值对）。
+  - 可有一个或多个 **标签**（用于分类）。
+- **类比**：可类比为关系型数据库中的“表”，标签类似“表名”，属性类似“字段”。
+
+
+
+**2. 关系（Relationship）**
+
+- **定义**：连接两个节点的边，具有方向性。
+- **特点**：
+  - 可包含属性（键值对）。
+  - 用于表示节点之间的语义连接（如 `Is_Married_To`、`Lives_With`）。
+
+
+
+**3. 属性（Property）**
+
+- **定义**：节点或关系中存储的数据。
+- **特点**：
+  - 由键（字符串）和值组成。
+  - 可建立索引或约束，支持复合索引。
+
+
+
+**4. 标签（Label）**
+
+- **定义**：用于将节点分组。
+- **特点**：
+  - 一个节点可有多个标签。
+  - 标签可被索引，提升查询效率。
+
+
+
+#### 2.4.2 Cypher介绍与使用
+
+##### 1 create命令
+
+- 创建图数据中的节点
+- 演示:
+
+```python
+# 创建命令格式: 
+# 此处create是关键字, 创建节点名称node_name, 节点标签Node_Label, 放在小括号里面()
+# 后面把所有属于节点标签的属性放在大括号'{}'里面, 依次写出属性名称: 属性值, 不同属性用逗号','分隔
+# 例如下面命令创建一个节点e, 节点标签是Employee, 拥有id, name, salary, deptnp四个属性: 
+CREATE (e:Employee{id:222, name:'Bob', salary:6000, deptnp:12}）
+```
+
+- 效果
+
+![img](assets/2-4-10.jpeg)
+
+
+
+##### 2 match命令
+
+- 匹配(查询)已有数据
+- 演示:
+
+```python
+# match命令专门用来匹配查询, 节点名称: 节点标签, 依然放在小括号内, 然后使用return语句返回查询结果, 和SQL很相似. 
+MATCH (e:Employee) RETURN e.id, e.name, e.salary, e.deptno
+
+MATCH (n) return n # 查询所有结点
+```
+
+- 效果
+
+![img](assets/2-4-11.jpeg)
+
+
+
+##### 3 merge命令
+
+- 若节点存在, 则等效与**match**命令; 节点不存在, 则等效于**create**命令.
+- 演示:
+
+```python
+MERGE (e:Employee {id:146, name:'Lucer', salary:3500, deptno:16})
+```
+
+- 效果:
+
+![img](assets/2-4-12.jpeg)
+
+
+
+- 然后再次用merge查询, 发现数据库中的数据并没有增加, 因为已经存在相同的数据了, merge匹配成功.
+- 演示:
+
+```python
+MERGE (e:Employee {id:146, name:'Lucer', salary:3500, deptno:16})
+```
+
+- 效果:
+
+![img](assets/2-4-13.jpeg)
+
+
+
+##### 4 使用create创建关系
+
+- 总是创建新节点，同时创建有方向性的关系, 否则报错.
+- 演示:
+
+```python
+# 创建一个节点p1到p2的有方向关系, 这个关系r的标签为Buy, 代表p1购买了p2, 方向为p1指向p2
+CREATE (p1:Profile1)-[r:Buy]->(p2:Profile2)
+```
+
+- 效果:
+
+![img](assets/2-4-14.jpeg)
+
+
+
+##### 5 使用merge创建关系
+
+- 看是否有匹配的节点，然后可以创建有/无方向性的关系.
+- 演示:
+
+```python
+# 创建一个节点p1到p2的无方向关系, 这个关系r的标签为miss, 代表p1-miss-p2, 方向为相互的
+MERGE (p1:Profile1)-[r:miss]-(p2:Profile2)
+```
+
+- 效果:
+
+![img](assets/2-4-15.jpeg)
+
+
+
+##### 6 where命令
+
+- 类似于SQL中的添加查询条件.
+- 演示:
+
+```python
+# 查询节点Employee中, id值等于123的那个节点
+MATCH (e:Employee) WHERE e.id=123 RETURN e
+```
+
+- 效果:
+
+![img](assets/2-4-16.jpeg)
+
+
+
+##### 7 delete命令
+
+- 删除节点/关系及其关联的属性.
+- 演示:
+
+```python
+# 注意: 删除节点的同时, 也要删除关联的关系边
+MATCH (p1:Profile1)-[r]-(p2:Profile2) DELETE p1, r, p2
+```
+
+- 效果:
+
+![img](assets/2-4-17.png)
+
+
+
+##### 8 sort命令
+
+- Cypher命令中的排序使用的是order by.
+- 演示:
+
+```python
+# 匹配查询标签Employee, 将所有匹配结果按照id值升序排列后返回结果
+MATCH (e:Employee) RETURN e.id, e.name, e.salary, e.deptno ORDER BY e.id
+
+# 如果要按照降序排序, 只需要将ORDER BY e.salary改写为ORDER BY e.salary DESC
+MATCH (e:Employee) RETURN e.id, e.name, e.salary, e.deptno ORDER BY e.salary DESC
+```
+
+- 效果:
+
+![img](assets/2-4-18.jpeg)
+
+
+
+##### 9 字符串函数:
+
+**1 toUpper()函数**
+
+- 将一个输入字符串转换为大写字母.
+- 演示:
+
+```python
+MATCH (e:Employee) RETURN e.id, toUpper(e.name), e.salary, e.deptno
+```
+
+- 效果:
+
+![img](assets/2-4-21.jpeg)
+
+
+
+**2 toLower()函数**
+
+- 将一个输入字符串转换为小写字母.
+- 演示:
+
+```python
+MATCH (e:Employee) RETURN e.id, toLower(e.name), e.salary, e.deptno
+```
+
+- 效果:
+
+![img](assets/2-4-22.jpeg)
+
+
+
+**3 substring()函数**
+
+- 返回一个子字符串.
+- 演示:
+
+```python
+# 输入字符串为input_str, 返回从索引start_index开始, 到要提取的字符数量，如果省略则提取到字符串末尾
+substring(input_str, start_index, length)
+
+# 示例代码, 返回员工名字的前两个字母
+MATCH (e:Employee) RETURN e.id, substring(e.name,0,2), e.salary, e.deptno
+```
+
+- 效果:
+
+![img](assets/2-4-23.jpeg)
+
+
+
+**4 replace()函数**
+
+- 替换掉子字符串.
+- 演示:
+
+```python
+# 输入字符串为input_str, 将输入字符串中符合origin_str的部分, 替换成new_str
+replace(input_str, origin_str, new_str)
+
+# 示例代码, 将员工名字替换为添加后缀_HelloWorld
+MATCH (e:Employee) RETURN e.id, replace(e.name,e.name,e.name + "_HelloWorld"), e.salary, e.deptno
+# 还原
+MATCH (e:Employee) RETURN e.id, replace(e.name, "_HelloWorld", ""), e.salary, e.deptno
+```
+
+- 效果:
+
+![img](assets/2-4-24.jpeg)
+
+
+
+##### 10 聚合函数
+
+**1 count()函数**
+
+- 返回由match命令匹配成功的条数.
+- 演示:
+
+```python
+# 返回匹配标签Employee成功的记录个数
+MATCH (e:Employee) RETURN count( * )
+```
+
+- 效果:
+
+![img](assets/2-4-25.jpeg)
+
+
+
+**2 max()函数**
+
+- 返回由match命令匹配成功的记录中的最大值.
+- 演示:
+
+```python
+# 返回匹配标签Employee成功的记录中, 最高的工资数字
+MATCH (e:Employee) RETURN max(e.salary)
+```
+
+- 效果:
+
+![img](assets/2-4-26.jpeg)
+
+
+
+**3 min()函数**
+
+- 返回由match命令匹配成功的记录中的最小值.
+- 演示:
+
+```python
+# 返回匹配标签Employee成功的记录中, 最低的工资数字
+MATCH (e:Employee) RETURN min(e.salary)
+```
+
+- 效果:
+
+![img](assets/2-4-27.jpeg)
+
+
+
+**4 sum()函数**
+
+- 返回由match命令匹配成功的记录中某字段的全部加和值.
+- 演示:
+
+```python
+# 返回匹配标签Employee成功的记录中, 所有员工工资的和
+MATCH (e:Employee) RETURN sum(e.salary)
+```
+
+- 效果:
+
+![img](assets/2-4-28.jpeg)
+
+
+
+**5 avg()函数**
+
+- 返回由match命令匹配成功的记录中某字段的平均值.
+- 演示:
+
+```python
+# 返回匹配标签Employee成功的记录中, 所有员工工资的平均值
+MATCH (e:Employee) RETURN avg(e.salary)
+```
+
+- 效果:
+
+![img](assets/2-4-29.jpeg)
+
+
+
+##### 11 索引index
+
+- Neo4j支持在节点或关系属性上的索引, 以提高查询的性能.
+- 可以为具有相同标签名称的所有节点的属性创建索引.
+
+**1 创建索引**
+
+- 使用create index on来创建索引.
+- 演示:
+
+```python
+# 创建节点Employee上面属性id的索引
+CREATE INDEX ON:Employee(id)
+```
+
+- 效果:
+
+![img](assets/2-4-30.jpeg)
+
+
+
+**2 删除索引**
+
+- 使用drop index on来删除索引.
+- 演示:
+
+```
+# 删除节点Employee上面属性id的索引
+DROP INDEX ON:Employee(id)
+```
+
+- 效果:
+
+![img](assets/2-4-31.jpeg)
