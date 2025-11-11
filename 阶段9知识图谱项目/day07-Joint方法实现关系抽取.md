@@ -223,6 +223,8 @@ relationship_extract/
 
 ### 5.2 配置类实现
 
+- 文件路径: `/home/ec2-user/Casrel_RE/relationship_extract/codes/config.py`
+
 ```python
 # coding:utf-8
 import torch
@@ -261,15 +263,15 @@ class Config(object):
         self.tokenizer = BertTokenizer.from_pretrained(self.bert_path)
 ```
 
+
+
 ### 5.3 数据处理函数
 
-Python
-
-复制
+- 文件路径: `/home/ec2-user/Casrel_RE/relationship_extract/codes/utils/process.py`
 
 ```python
 # coding:utf-8
-from codes.config import *
+from codes.config import Config
 import torch
 from random import choice
 from collections import defaultdict
@@ -323,12 +325,12 @@ def create_label(inner_triples, inner_input_ids, seq_len):
         
         if sub_head_idx != -1 and obj_head_idx != -1:
             sub = (sub_head_idx, sub_head_idx + len(triple[0]) - 1)
-            obj = (obj_head_idx, obj_head_idx + len(triple[2]) - 1, triple[1])
-            s2ro_map[sub].append(obj)  # 构建映射
+            obj = (obj_head_idx, obj_head_idx + len(triple[2]) - 1, triple[1])  
+            s2ro_map[sub].append(obj)  # 构建映射  {(3,5):[(7,8,0)]} 0是关系
     
     # 生成标签
     if s2ro_map:
-        # 随机选择一个头实体作为当前样本的训练目标
+        # 随机选择一个头实体作为当前样本的训练目标,多轮次全部能够训练到
         sub_head_idx, sub_tail_idx = choice(list(s2ro_map.keys()))
         
         # 标记头实体位置
@@ -408,7 +410,69 @@ def collate_fn(data):
     return inputs, labels
 ```
 
+> `torch.stack` 是 PyTorch 中用于**张量堆叠**的核心函数，其作用是将一组张量沿着**新维度**进行拼接。与 `torch.cat` 在**已有维度**上连接不同，`stack` 会创建一个新的维度。
+>
+> #### 核心区别：`stack` vs `cat`
+>
+> ```python
+> import torch
+> 
+> # 准备两个形状相同的张量
+> a = torch.tensor([1, 2, 3])  # shape: (3,)
+> b = torch.tensor([4, 5, 6])  # shape: (3,)
+> 
+> # torch.stack：创建新维度
+> stacked = torch.stack([a, b], dim=0)  # shape: (2, 3)
+> print(stacked)
+> # tensor([[1, 2, 3],
+> #         [4, 5, 6]])
+> 
+> # torch.cat：在已有维度上连接
+> catenated = torch.cat([a, b], dim=0)  # shape: (6,)
+> print(catenated)
+> # tensor([1, 2, 3, 4, 5, 6])
+> ```
+>
+> #### 主要参数
+>
+> ```python
+> torch.stack(tensors, dim=0)
+> ```
+>
+> - **`tensors`**  ：要堆叠的张量序列（必须形状相同）
+> - **`dim`**  ：指定新维度插入的位置（0 ≤ dim ≤ len(tensor.shape)）
+>
+> #### 典型示例
+>
+> #### 1. 在 batch 维度上堆叠
+>
+> ```python
+> # 将多个样本堆叠成batch
+> image1 = torch.randn(3, 224, 224)  # 单张图片
+> image2 = torch.randn(3, 224, 224)
+> image3 = torch.randn(3, 224, 224)
+> 
+> batch = torch.stack([image1, image2, image3], dim=0)
+> print(batch.shape)  # torch.Size([3, 3, 224, 224])
+> ```
+>
+> #### 2. 在不同位置插入新维度
+>
+> ```python
+> tensors = [torch.randn(4, 5) for _ in range(3)]
+> 
+> # 在第0维堆叠
+> print(torch.stack(tensors, dim=0).shape)  # torch.Size([3, 4, 5])
+> 
+> # 在第1维堆叠
+> print(torch.stack(tensors, dim=1).shape)  # torch.Size([4, 3, 5])
+> ```
+>
+> ---
+
 ### 5.4 DataLoader封装
+
+- 代码路径: `/home/ec2-user/Casrel_RE/relationship_extract/codes/utils/data_loader.py`
 
 ```python
 # coding:utf-8
@@ -421,7 +485,7 @@ conf = Config()
 class MyDataset(Dataset):
     """自定义数据集类"""
     def __init__(self, data_path):
-        super(MyDataset, self).__init__()
+        super().__init__()
         # 读取JSON文件，每行一个样本
         self.dataset = [json.loads(line) for line in open(data_path, encoding='utf8')]
     
@@ -472,3 +536,52 @@ def get_data():
     
     return train_dataloader, dev_dataloader, test_dataloader
 ```
+
+> `json.load()` 和 `json.loads()` 是 Python 标准库 `json` 模块中两个用于解析 JSON 数据的核心函数，主要区别在于**数据来源不同**。
+>
+> #### **1. `json.loads()` — 解析字符串**
+>
+> - **作用**：将 **JSON 格式的字符串** 转换为 Python 对象（字典、列表等）
+> - **全称**："load string"
+> - **签名**：`json.loads(s, *, ...)`
+> - **参数**：第一个参数是 JSON 字符串
+>
+> **示例**：
+>
+> ```python
+> import json
+> 
+> json_string = '{"name": "Alice", "age": 30}'
+> python_obj = json.loads(json_string)
+> print(python_obj)  # {'name': 'Alice', 'age': 30}
+> print(type(python_obj))  # <class 'dict'>
+> ```
+>
+> #### **2. `json.load()` — 解析文件**
+>
+> - **作用**：从 **文件对象**（已打开的文件）中读取 JSON 数据并转换为 Python 对象
+> - **全称**："load"（从文件加载）
+> - **签名**：`json.load(fp, *, ...)`
+> - **参数**：第一个参数是支持 `.read()` 方法的文件对象
+>
+> **示例**：
+>
+> ```python
+> import json
+> 
+> # 从文件读取
+> with open('data.json', 'r', encoding='utf-8') as f:
+>     python_obj = json.load(f)
+>     print(python_obj)
+> ```
+>
+> #### **核心对比**
+>
+> | 特性         | `json.loads()`                   | `json.load()`                  |
+> | :----------- | :------------------------------- | :----------------------------- |
+> | **数据来源** | JSON 字符串 (`str`)              | 文件对象 (`file object`)       |
+> | **参数类型** | `s: str`                         | `fp: file object`              |
+> | **使用场景** | 处理 API 响应、字符串变量        | 处理本地 JSON 文件             |
+> | **示例**     | `json.loads('{"key": "value"}')` | `json.load(open('file.json'))` |
+>
+> **简单总结**：API 返回的字符串用 `loads()`，本地文件用 `load()`。
