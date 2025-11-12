@@ -585,3 +585,617 @@ def get_data():
 > | **示例**     | `json.loads('{"key": "value"}')` | `json.load(open('file.json'))` |
 >
 > **简单总结**：API 返回的字符串用 `loads()`，本地文件用 `load()`。
+
+
+
+## 6. Casrel模型实现
+
+### 6.1 模型类实现
+
+**文件路径**：`codes/model/CasrelModel.py`
+
+```python
+# coding:utf-8
+import torch
+import torch.nn as nn
+from transformers import BertModel, AdamW
+from codes.config import Config
+
+class CasRel(nn.Module):
+    """
+    Casrel模型实现
+    基于BERT编码，采用级联式解码器分别识别主实体和客实体+关系
+    """
+    def __init__(self, conf):
+        super().__init__()
+        # 加载预训练的BERT模型作为编码器
+        self.bert = BertModel.from_pretrained(conf.bert_path)
+        
+        # 主实体识别层（开始/结束位置二分类）
+        self.sub_heads_linear = nn.Linear(conf.bert_dim, 1)  # 预测主实体开始位置
+        self.sub_tails_linear = nn.Linear(conf.bert_dim, 1)  # 预测主实体结束位置
+        
+        # 客实体+关系识别层（多分类，每个关系一个二分类）
+        self.obj_heads_linear = nn.Linear(conf.bert_dim, conf.num_rel)  # 预测客实体开始+关系
+        self.obj_tails_linear = nn.Linear(conf.bert_dim, conf.num_rel)  # 预测客实体结束+关系
+    
+    def get_encoded_text(self, token_ids, mask):
+        """
+        使用BERT编码输入文本
+        
+        Args:
+            token_ids: token id序列 [batch_size, seq_len]
+            mask: 注意力掩码 [batch_size, seq_len]
+        
+        Returns:
+            encoded_text: 编码后的特征 [batch_size, seq_len, bert_dim]
+        """
+        encoded_text = self.bert(token_ids, attention_mask=mask)[0]
+        return encoded_text
+    
+    def get_subs(self, encoded_text):
+        """
+        识别文本中的所有主实体位置
+        
+        Args:
+            encoded_text: BERT编码特征 [batch_size, seq_len, bert_dim]
+        
+        Returns:
+            pre_sub_heads: 主实体开始位置概率 [batch_size, seq_len, 1]
+            pre_sub_tails: 主实体结束位置概率 [batch_size, seq_len, 1]
+        """
+        # 通过线性层+sigmoid得到开始/结束位置的概率
+        pre_sub_heads = torch.sigmoid(self.sub_heads_linear(encoded_text))
+        pre_sub_tails = torch.sigmoid(self.sub_tails_linear(encoded_text))
+        return pre_sub_heads, pre_sub_tails
+    
+    def get_objs_for_specific_sub(self, sub_head2tail, sub_len, encoded_text):
+        """
+        针对特定主实体，识别客实体和关系
+        
+        Args:
+            sub_head2tail: 主实体span标记 [batch_size, seq_len]
+            sub_len: 主实体长度 [batch_size, 1]
+            encoded_text: BERT编码特征 [batch_size, seq_len, bert_dim]
+        
+        Returns:
+            pred_obj_heads: 客实体开始+关系概率 [batch_size, seq_len, num_rel]
+            pre_obj_tails: 客实体结束+关系概率 [batch_size, seq_len, num_rel]
+        """
+        # 将主实体特征与编码文本融合
+        # torch.matmul实现加权求和，提取主实体部分的特征
+        sub = torch.matmul(sub_head2tail, encoded_text)  # [batch_size, 1, bert_dim]
+        
+        sub_len = sub_len.unsqueeze(1)  # 扩展维度 [batch_size, 1, 1]
+        sub = sub / sub_len  # 对主实体特征求平均
+        
+        # 将主实体特征加到每个token上（条件LayerNorm的简化实现）
+        encoded_text = encoded_text + sub
+        
+        # 预测客实体的开始和结束位置（针对每种关系）
+        pred_obj_heads = torch.sigmoid(self.obj_heads_linear(encoded_text))
+        pre_obj_tails = torch.sigmoid(self.obj_tails_linear(encoded_text))
+        return pred_obj_heads, pre_obj_tails
+    
+    def forward(self, input_ids, mask, sub_head2tail, sub_len):
+        """
+        模型前向传播
+        
+        Args:
+            input_ids: token ids [batch_size, seq_len]
+            mask: 注意力掩码 [batch_size, seq_len]
+            sub_head2tail: 主实体span标记 [batch_size, seq_len]
+            sub_len: 主实体长度 [batch_size, 1]
+        
+        Returns:
+            result_dict: 包含所有预测结果的字典
+        """
+        # 1. 编码文本
+        encoded_text = self.get_encoded_text(input_ids, mask)
+        
+        # 2. 识别主实体
+        pred_sub_heads, pred_sub_tails = self.get_subs(encoded_text)
+        
+        # 3. 识别客实体和关系（基于主实体特征）
+        sub_head2tail = sub_head2tail.unsqueeze(1)  # 扩展维度 [batch_size, 1, seq_len]
+        pred_obj_heads, pred_obj_tails = self.get_objs_for_specific_sub(
+            sub_head2tail, sub_len, encoded_text
+        )
+        
+        return {
+            'pred_sub_heads': pred_sub_heads,
+            'pred_sub_tails': pred_sub_tails,
+            'pred_obj_heads': pred_obj_heads,
+            'pred_obj_tails': pred_obj_tails,
+            'mask': mask
+        }
+    
+    def compute_loss(self, pred_sub_heads, pred_sub_tails, pred_obj_heads, pred_obj_tails,
+                     mask, sub_heads, sub_tails, obj_heads, obj_tails):
+        """
+        计算总损失（主实体损失 + 客实体损失）
+        
+        四个部分：
+        - 主实体开始位置损失
+        - 主实体结束位置损失
+        - 客实体开始位置+关系损失
+        - 客实体结束位置+关系损失
+        """
+        rel_count = obj_heads.shape[-1]  # 关系数量
+        rel_mask = mask.unsqueeze(-1).repeat(1, 1, rel_count)  # 扩展掩码到关系维度
+        
+        # 分别计算四个部分的损失并求和
+        loss_1 = self.loss(pred_sub_heads, sub_heads, mask)
+        loss_2 = self.loss(pred_sub_tails, sub_tails, mask)
+        loss_3 = self.loss(pred_obj_heads, obj_heads, rel_mask)
+        loss_4 = self.loss(pred_obj_tails, obj_tails, rel_mask)
+        
+        return loss_1 + loss_2 + loss_3 + loss_4
+    
+    def loss(self, pred, gold, mask):
+        """
+        计算带掩码的二分类交叉熵损失
+        
+        Args:
+            pred: 预测值
+            gold: 真实标签
+            mask: 有效位置掩码
+        
+        Returns:
+            float: 平均损失
+        """
+        pred = pred.squeeze(-1)  # 移除最后一个维度
+        # 使用BCELoss计算二分类损失（忽略填充位置）
+        los = nn.BCELoss(reduction='none')(pred, gold)
+        
+        if los.shape != mask.shape:
+            mask = mask.unsqueeze(-1)  # 维度不匹配时进行扩展
+        
+        # 只计算有效位置的损失并求平均
+        los = torch.sum(los * mask) / torch.sum(mask)
+        return los
+
+
+def load_model(conf):
+    """
+    加载模型并配置优化器
+    
+    Args:
+        conf: 配置对象
+    
+    Returns:
+        model: 模型实例
+        optimizer: 优化器
+        scheduler: 学习率调度器（可选）
+        device: 计算设备
+    """
+    device = conf.device
+    model = CasRel(conf)
+    model.to(device)
+    
+    # 获取模型所有参数
+    param_optimizer = list(model.named_parameters())
+    
+    # BERT中不需要权重衰减的参数（官方推荐）
+    no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+    
+    # 分组设置优化器参数
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+            "weight_decay": 0.01  # 非指定参数使用权重衰减（防止过拟合）
+        },
+        {
+            "params": [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
+            "weight_decay": 0.0   # 指定参数不使用权重衰减
+        }
+    ]
+    
+    # AdamW优化器（BERT官方推荐）
+    optimizer = AdamW(optimizer_grouped_parameters, lr=conf.learning_rate, eps=10e-8)
+    scheduler = None  # 可添加学习率预热
+    
+    return model, optimizer, scheduler, device
+```
+
+### 6.2 训练与评估工具函数
+
+**文件路径**：`codes/utils/process.py`
+
+Python
+
+复制
+
+```python
+def extract_sub(pred_sub_heads, pred_sub_tails):
+    """
+    从预测结果中提取主实体span
+    
+    Args:
+        pred_sub_heads: 主实体开始位置预测 [seq_len]
+        pred_sub_tails: 主实体结束位置预测 [seq_len]
+    
+    Returns:
+        list: 主实体位置列表，元素为(head, tail)元组
+    """
+    subs = []
+    # 找出预测为1的位置索引
+    heads = torch.arange(0, len(pred_sub_heads), device=conf.device)[pred_sub_heads == 1]
+    tails = torch.arange(0, len(pred_sub_tails), device=conf.device)[pred_sub_tails == 1]
+    
+    # 配对开始和结束位置（确保end >= start）
+    for head, tail in zip(heads, tails):
+        if tail >= head:
+            subs.append((head.item(), tail.item()))
+    
+    return subs
+
+
+def extract_obj_and_rel(obj_heads, obj_tails):
+    """
+    提取客实体和关系
+    
+    Args:
+        obj_heads: 客实体开始+关系预测 [seq_len, num_rel]
+        obj_tails: 客实体结束+关系预测 [seq_len, num_rel]
+    
+    Returns:
+        list: (关系索引, 开始位置, 结束位置) 元组列表
+    """
+    # 转置为 [num_rel, seq_len] 方便按关系处理
+    obj_heads = obj_heads.T
+    obj_tails = obj_tails.T
+    rel_count = obj_heads.shape[0]
+    obj_and_rels = []
+    
+    for rel_index in range(rel_count):
+        # 对每种关系提取客实体位置
+        objs = extract_sub(obj_heads[rel_index], obj_tails[rel_index])
+        if objs:
+            for obj in objs:
+                start_index, end_index = obj
+                obj_and_rels.append((rel_index, start_index, end_index))
+    
+    return obj_and_rels
+
+
+def convert_score_to_zero_one(tensor):
+    """
+    将预测概率转换为0/1标签（0.5为阈值）
+    
+    Args:
+        tensor: 预测概率张量
+    
+    Returns:
+        tensor: 二值化张量
+    """
+    tensor[tensor >= 0.5] = 1  # 大于等于0.5设为1
+    tensor[tensor < 0.5] = 0   # 小于0.5设为0
+    return tensor
+```
+
+### 6.3 训练与验证
+
+**文件路径**：`codes/train.py`
+
+Python
+
+复制
+
+```python
+def model2train(model, train_iter, dev_iter, optimizer, conf):
+    """
+    模型训练主函数
+    
+    Args:
+        model: 模型实例
+        train_iter: 训练数据迭代器
+        dev_iter: 验证数据迭代器
+        optimizer: 优化器
+        conf: 配置对象
+    """
+    epochs = conf.epochs
+    best_triple_f1 = 0  # 记录最佳F1值
+    
+    for epoch in range(epochs):
+        # 训练一个epoch
+        best_triple_f1 = train_epoch(model, train_iter, dev_iter, optimizer, best_triple_f1, epoch)
+    
+    # 保存最终模型
+    torch.save(model.state_dict(), '../save_model/last_model.pth')
+
+
+def train_epoch(model, train_iter, dev_iter, optimizer, best_triple_f1, epoch):
+    """
+    单个epoch的训练过程
+    
+    Args:
+        epoch: 当前轮次
+    
+    Returns:
+        float: 更新后的最佳F1值
+    """
+    for step, (inputs, labels) in enumerate(tqdm(train_iter)):
+        model.train()  # 设置为训练模式
+        optimizer.zero_grad()  # 清空梯度
+        
+        # 前向传播
+        logist = model(**inputs)
+        
+        # 计算损失
+        loss = model.compute_loss(**logist, **labels)
+        
+        # 反向传播与优化
+        loss.backward()
+        optimizer.step()
+        
+        # 每1500步验证一次并保存模型
+        if step % 1500 == 0:
+            torch.save(model.state_dict(), 
+                      f'../save_model/epoch_{epoch}_model_{step}.pth')
+            
+            # 验证模型
+            results = model2dev(model, dev_iter)
+            print(results[-1])  # 打印验证结果表
+            
+            # 保存F1值最高的模型
+            if results[-2] > best_triple_f1:
+                best_triple_f1 = results[-2]
+                torch.save(model.state_dict(), '../save_model/best_f1.pth')
+                
+                print(f'epoch:{epoch}, step:{step}, '
+                      f'triple_precision:{results[3]:.4f}, '
+                      f'triple_recall:{results[4]:.4f}, '
+                      f'triple_f1:{results[5]:.4f}, '
+                      f'train loss:{loss.item():.4f}')
+    
+    return best_triple_f1
+
+
+def model2dev(model, dev_iter):
+    """
+    验证模型效果
+    
+    Returns:
+        tuple: (sub_precision, sub_recall, sub_f1, 
+                triple_precision, triple_recall, triple_f1, df)
+    """
+    model.eval()  # 设置为评估模式
+    
+    # 创建评估指标DataFrame
+    df = pd.DataFrame(
+        columns=['TP', 'PRED', 'REAL', 'p', 'r', 'f1'],
+        index=['sub', 'triple']
+    )
+    df.fillna(0, inplace=True)
+    
+    with torch.no_grad():  # 关闭梯度计算
+        for inputs, labels in tqdm(dev_iter):
+            logist = model(**inputs)
+            
+            # 将预测概率转换为0/1标签
+            pred_sub_heads = convert_score_to_zero_one(logist['pred_sub_heads'])
+            pred_sub_tails = convert_score_to_zero_one(logist['pred_sub_tails'])
+            pred_obj_heads = convert_score_to_zero_one(logist['pred_obj_heads'])
+            pred_obj_tails = convert_score_to_zero_one(logist['pred_obj_tails'])
+            
+            # 真实标签也转换为0/1（确保格式一致）
+            sub_heads = convert_score_to_zero_one(labels['sub_heads'])
+            sub_tails = convert_score_to_zero_one(labels['sub_tails'])
+            obj_heads = convert_score_to_zero_one(labels['obj_heads'])
+            obj_tails = convert_score_to_zero_one(labels['obj_tails'])
+            
+            batch_size = inputs['input_ids'].shape[0]
+            
+            # 评估每个样本
+            for batch_index in range(batch_size):
+                # 提取预测和真实的主实体
+                pred_subs = extract_sub(pred_sub_heads[batch_index].squeeze(),
+                                      pred_sub_tails[batch_index].squeeze())
+                true_subs = extract_sub(sub_heads[batch_index].squeeze(),
+                                      sub_tails[batch_index].squeeze())
+                
+                # 提取预测和真实的客实体+关系
+                pred_objs = extract_obj_and_rel(pred_obj_heads[batch_index],
+                                              pred_obj_tails[batch_index])
+                true_objs = extract_obj_and_rel(obj_heads[batch_index],
+                                              obj_tails[batch_index])
+                
+                # 更新主实体统计
+                df['PRED']['sub'] += len(pred_subs)
+                df['REAL']['sub'] += len(true_subs)
+                for true_sub in true_subs:
+                    if true_sub in pred_subs:
+                        df['TP']['sub'] += 1
+                
+                # 更新三元组统计
+                df['PRED']['triple'] += len(pred_objs)
+                df['REAL']['triple'] += len(true_objs)
+                for true_obj in true_objs:
+                    if true_obj in pred_objs:
+                        df['TP']['triple'] += 1
+    
+    # 计算主实体指标
+    sub_precision = df['TP']['sub'] / (df['PRED']['sub'] + 1e-9)
+    sub_recall = df['TP']['sub'] / (df['REAL']['sub'] + 1e-9)
+    sub_f1 = 2 * sub_precision * sub_recall / (sub_precision + sub_recall + 1e-9)
+    
+    # 计算三元组指标
+    triple_precision = df['TP']['triple'] / (df['PRED']['triple'] + 1e-9)
+    triple_recall = df['TP']['triple'] / (df['REAL']['triple'] + 1e-9)
+    triple_f1 = 2 * triple_precision * triple_recall / \
+                (triple_precision + triple_recall + 1e-9)
+    
+    return sub_precision, sub_recall, sub_f1, \
+           triple_precision, triple_recall, triple_f1, df
+```
+
+### 6.4 模型测试
+
+**文件路径**：`codes/test.py`
+
+Python
+
+复制
+
+```python
+def model2test(model, test_iter):
+    """
+    测试模型效果（与验证函数逻辑相同，用于最终评估）
+    """
+    model.eval()
+    df = pd.DataFrame(columns=['TP', 'PRED', 'REAL', 'p', 'r', 'f1'], 
+                     index=['sub', 'triple'])
+    df.fillna(0, inplace=True)
+    
+    with torch.no_grad():
+        for inputs, labels in tqdm(test_iter):
+            logist = model(**inputs)
+            # ...（同验证函数）
+    
+    return df
+```
+
+### 6.5 模型预测
+
+**文件路径**：`codes/predict.py`
+
+Python
+
+复制
+
+```python
+def load_model(model_path):
+    """加载训练好的模型"""
+    mymodel = CasRel(conf).to(conf.device)
+    mymodel.load_state_dict(torch.load(model_path))
+    return mymodel
+
+
+def get_inputs(sample, model):
+    """
+    将文本转换为模型输入格式
+    
+    Args:
+        sample: 输入文本字符串
+        model: 模型实例
+    
+    Returns:
+        tuple: (inputs, model)
+    """
+    # 分词并转换为token id
+    text = conf.tokenizer(sample)
+    input_ids = torch.tensor([text['input_ids']]).to(conf.device)
+    mask = torch.tensor([text['attention_mask']]).to(conf.device)
+    
+    seq_len = len(text['input_ids'])
+    # 初始化主实体相关张量（预测时动态填充）
+    inner_sub_head2tail = torch.zeros(seq_len)
+    inner_sub_len = torch.tensor([1], dtype=torch.float)
+    
+    # 预测主实体位置
+    model.eval()
+    with torch.no_grad():
+        encoded_text = model.get_encoded_text(input_ids, mask)
+        sub_heads, sub_tails = model.get_subs(encoded_text)
+        pred_sub_heads = convert_score_to_zero_one(sub_heads)
+        pred_sub_tails = convert_score_to_zero_one(sub_tails)
+        pred_subs = extract_sub(pred_sub_heads.squeeze(), pred_sub_tails.squeeze())
+        
+        # 如果有预测到主实体，使用第一个主实体
+        if len(pred_subs) != 0:
+            sub_head_idx = pred_subs[0][0]
+            sub_tail_idx = pred_subs[0][1]
+            inner_sub_head2tail[sub_head_idx:sub_tail_idx + 1] = 1
+            inner_sub_len = torch.tensor([sub_tail_idx + 1 - sub_head_idx], dtype=torch.float)
+    
+    # 构建最终输入
+    sub_len = inner_sub_len.unsqueeze(0).to(conf.device)
+    sub_head2tail = inner_sub_head2tail.unsqueeze(0).to(conf.device)
+    
+    inputs = {
+        'input_ids': input_ids,
+        'mask': mask,
+        'sub_head2tail': sub_head2tail,
+        'sub_len': sub_len
+    }
+    return inputs, model
+
+
+def model2predict(sample, model):
+    """
+    使用模型预测文本中的spo三元组
+    
+    Args:
+        sample: 输入文本
+        model: 加载的模型
+    
+    Returns:
+        dict: 包含文本和spo_list的字典
+    """
+    # 加载关系id到文本的映射
+    with open(conf.rel_dict_path, 'r', encoding='utf-8') as fr:
+        rel_id2word = json.load(fr)
+    
+    # 获取模型输入
+    inputs, model = get_inputs(sample, model)
+    
+    # 模型预测
+    logist = model(**inputs)
+    
+    # 将预测概率转换为0/1标签
+    pred_sub_heads = convert_score_to_zero_one(logist['pred_sub_heads'])
+    pred_sub_tails = convert_score_to_zero_one(logist['pred_sub_tails'])
+    pred_obj_heads = convert_score_to_zero_one(logist['pred_obj_heads'])
+    pred_obj_tails = convert_score_to_zero_one(logist['pred_obj_tails'])
+    
+    # 将token id转换回文本
+    ids = inputs['input_ids'][0]
+    text_list = conf.tokenizer.convert_ids_to_tokens(ids)
+    sentence = ''.join(text_list[1:-1])  # 移除[CLS]和[SEP]
+    
+    # 提取主实体
+    pred_subs = extract_sub(pred_sub_heads[0].squeeze(), pred_sub_tails[0].squeeze())
+    # 提取客实体和关系
+    pred_objs = extract_obj_and_rel(pred_obj_heads[0], pred_obj_tails[0])
+    
+    # 后处理：过滤无效结果
+    if len(pred_subs) == 0 or len(pred_objs) == 0:
+        print('⚠️ 没有识别出有效结果')
+        return {}
+    
+    # 如果客实体多于主实体，扩展主实体列表（理论上应一一对应）
+    if len(pred_objs) > len(pred_subs):
+        pred_subs = pred_subs * len(pred_objs)
+    
+    # 构建spo列表
+    spo_list = []
+    for sub, rel_obj in zip(pred_subs, pred_objs):
+        sub_spo = {}
+        
+        # 提取主实体文本
+        sub_head, sub_tail = sub
+        sub = ''.join(text_list[sub_head: sub_tail + 1])
+        if '[PAD]' in sub:  # 跳过填充部分
+            continue
+        
+        sub_spo['subject'] = sub
+        
+        # 提取关系和客实体
+        relation = rel_id2word[str(rel_obj[0])]  # 关系索引转文本
+        obj_head, obj_tail = rel_obj[1], rel_obj[2]
+        obj = ''.join(text_list[obj_head: obj_tail + 1])
+        if '[PAD]' in obj:
+            continue
+        
+        sub_spo['predicate'] = relation
+        sub_spo['object'] = obj
+        spo_list.append(sub_spo)
+    
+    return {
+        'text': sentence,
+        'spo_list': spo_list
+    }
+```
+
+------
