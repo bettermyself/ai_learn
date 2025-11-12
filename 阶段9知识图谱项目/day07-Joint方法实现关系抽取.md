@@ -654,7 +654,7 @@ class CasRel(nn.Module):
         针对特定主实体，识别客实体和关系
         
         Args:
-            sub_head2tail: 主实体span标记 [batch_size, seq_len]
+            sub_head2tail: 主实体span标记 [batch_size, 1, seq_len]
             sub_len: 主实体长度 [batch_size, 1]
             encoded_text: BERT编码特征 [batch_size, seq_len, bert_dim]
         
@@ -673,7 +673,7 @@ class CasRel(nn.Module):
         encoded_text = encoded_text + sub
         
         # 预测客实体的开始和结束位置（针对每种关系）
-        pred_obj_heads = torch.sigmoid(self.obj_heads_linear(encoded_text))
+        pred_obj_heads = torch.sigmoid(self.obj_heads_linear(encoded_text))  # [batch_size, seq_len, num_rel]
         pre_obj_tails = torch.sigmoid(self.obj_tails_linear(encoded_text))
         return pred_obj_heads, pre_obj_tails
     
@@ -747,9 +747,6 @@ class CasRel(nn.Module):
         pred = pred.squeeze(-1)  # 移除最后一个维度
         # 使用BCELoss计算二分类损失（忽略填充位置）
         los = nn.BCELoss(reduction='none')(pred, gold)
-        
-        if los.shape != mask.shape:
-            mask = mask.unsqueeze(-1)  # 维度不匹配时进行扩展
         
         # 只计算有效位置的损失并求平均
         los = torch.sum(los * mask) / torch.sum(mask)

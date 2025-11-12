@@ -4,6 +4,8 @@
 
 ### 一、Conda安装
 
+大坑，mac电脑不能安装x86的anaconda，因为这里面包含的python为x86的python，不能很好的兼容mps训练加速，会存在依赖包冲突的情况，所以anaconda最好从官网下载。
+
 #### 1. 下载
 
 **Conda 网站：**
