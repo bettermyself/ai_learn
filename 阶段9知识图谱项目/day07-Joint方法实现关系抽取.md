@@ -795,13 +795,11 @@ def load_model(conf):
     return model, optimizer, scheduler, device
 ```
 
+
+
 ### 6.2 训练与评估工具函数
 
 **文件路径**：`codes/utils/process.py`
-
-Python
-
-复制
 
 ```python
 def extract_sub(pred_sub_heads, pred_sub_tails):
@@ -875,10 +873,6 @@ def convert_score_to_zero_one(tensor):
 
 **文件路径**：`codes/train.py`
 
-Python
-
-复制
-
 ```python
 def model2train(model, train_iter, dev_iter, optimizer, conf):
     """
@@ -896,7 +890,7 @@ def model2train(model, train_iter, dev_iter, optimizer, conf):
     
     for epoch in range(epochs):
         # 训练一个epoch
-        best_triple_f1 = train_epoch(model, train_iter, dev_iter, optimizer, best_triple_f1, epoch)
+        best_triple_f1 = train_epoch(model, train_iter, dev_iter, optimizer, best_triple_f1, epoch)  
     
     # 保存最终模型
     torch.save(model.state_dict(), '../save_model/last_model.pth')
@@ -914,13 +908,15 @@ def train_epoch(model, train_iter, dev_iter, optimizer, best_triple_f1, epoch):
     """
     for step, (inputs, labels) in enumerate(tqdm(train_iter)):
         model.train()  # 设置为训练模式
-        optimizer.zero_grad()  # 清空梯度
         
         # 前向传播
         logist = model(**inputs)
         
         # 计算损失
         loss = model.compute_loss(**logist, **labels)
+        
+        # 清空梯度
+        optimizer.zero_grad()  
         
         # 反向传播与优化
         loss.backward()
@@ -1023,17 +1019,48 @@ def model2dev(model, dev_iter):
     triple_f1 = 2 * triple_precision * triple_recall / \
                 (triple_precision + triple_recall + 1e-9)
     
-    return sub_precision, sub_recall, sub_f1, \
-           triple_precision, triple_recall, triple_f1, df
+    return sub_precision, sub_recall, sub_f1, triple_precision, triple_recall, triple_f1, df
 ```
+
+> **为什么需要返回`best_triple_f1`？**
+>
+> 这涉及到 **Python 中不可变对象的参数传递机制**。虽然 `best_triple_f1` 是通过参数传递给 `train_epoch` 的，但 **在函数内部更新它并不会自动影响外部变量**。原因如下：
+>
+> #### 📌 核心原因：**Python 的不可变对象特性**
+>
+> 1. **`best_triple_f1` 是整数（不可变对象）**
+>
+>    - 你在 `model2train` 中初始化了 `best_triple_f1 = 0`（整数是 **不可变对象**）。
+>
+>    - 当通过参数传递给 `train_epoch` 时，Python 实际上传递的是 **对象引用的副本**（不是变量本身）。
+>
+>    - 在 `train_epoch` 内部：
+>
+>      ```python
+>      def train_epoch(..., best_triple_f1, ...):
+>          # 假设这里更新了 best_triple_f1
+>          best_triple_f1 = new_value  # 这只是重新绑定了局部变量
+>      ```
+>
+>      - 这行代码 **不会修改原始对象**（因为整数不可变），而是让 **局部变量 `best_triple_f1` 指向一个新的整数对象**。
+>      - 外部的 `best_triple_f1` 仍然指向原来的对象（值不变）。
+>
+> 2. **为什么需要返回并重新赋值？**
+>
+>    ```python
+>    best_triple_f1 = train_epoch(..., best_triple_f1, ...)
+>    ```
+>
+>    - `train_epoch` 内部更新后，**必须通过 return 返回新值**，才能让外部的 `best_triple_f1` 指向新对象。
+>    - 如果不返回，外部变量永远无法感知内部的更新。
+>
+> ---
+
+
 
 ### 6.4 模型测试
 
 **文件路径**：`codes/test.py`
-
-Python
-
-复制
 
 ```python
 def model2test(model, test_iter):
@@ -1053,13 +1080,11 @@ def model2test(model, test_iter):
     return df
 ```
 
+
+
 ### 6.5 模型预测
 
 **文件路径**：`codes/predict.py`
-
-Python
-
-复制
 
 ```python
 def load_model(model_path):
