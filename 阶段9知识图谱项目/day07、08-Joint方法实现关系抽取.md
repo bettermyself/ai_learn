@@ -1218,6 +1218,20 @@ def model2predict(sample, model):
         'text': sentence,
         'spo_list': spo_list
     }
+    
+if __name__ == '__main__':
+    sample = "《人间》是王菲演唱歌曲"
+    model_path = '../save_model/last_model.pth'
+    mymodel = load_model(model_path)
+    model2predict(sample, mymodel)
 ```
 
-------
+
+
+## 7. Joint方法优缺点
+
+| 维度     | 优点                               | 缺点                         |
+| :------- | :--------------------------------- | :--------------------------- |
+| **性能** | ✅ 任务间特征交互，相互辅助提升效果 | ❌ 更复杂的模型结构           |
+| **效率** | ✅ 单模型解决，训练和预测gap小      | ❌ 特征可能冲突，导致学习混乱 |
+| **实现** | ✅ 避免多模型维护成本               | ❌ 调试和优化难度较高         |
