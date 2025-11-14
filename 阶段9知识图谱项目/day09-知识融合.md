@@ -478,10 +478,6 @@ print(f'共处理{len(results)}条句子，识别{len(keyword_list)}个多义词
 
 ##### **1. 多义词识别策略**
 
-Python
-
-复制
-
 ```python
 # 只有出现在多个实体名称中的词才需要消歧
 # 如"小米"出现在公司、植物、角色三个实体中 → 需要消歧
@@ -492,10 +488,6 @@ if count > 1:
 
 **2. 上下文窗口提取**
 
-Python
-
-复制
-
 ```python
 # 为什么选择±10个字符？
 # - 过短：无法捕捉足够语义信息（如"小米公司" vs "小米粥"）
@@ -505,10 +497,6 @@ context = sentence[char_idx-10:char_idx+keyword_len+9]
 ```
 
 **3. TF-IDF优势**
-
-Python
-
-复制
 
 ```python
 # 自动权衡词的重要性
