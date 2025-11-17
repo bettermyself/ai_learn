@@ -223,7 +223,7 @@ if predicate2 in relation_synonyms.get(predicate1, set()):
 # - 1002: 苹果 → "水果，温带地区特产"
 # 
 # 相似度计算：
-# S1 = si+m("今天发布新手机", "iPhone手机制造商") = 0.85  # 科技语境
+# S1 = sim("今天发布新手机", "iPhone手机制造商") = 0.85  # 科技语境
 # S2 = sim("今天发布新手机", "温带地区特产") = 0.12      # 植物语境
 # 
 # 决策：S1 > S2 → 实体ID=1001（苹果公司）
@@ -365,7 +365,7 @@ print(f'\n识别出的多义词列表: {keyword_list}')
 train_sentences = []
 for desc in entity_data['desc'].values:
     # jieba.cut返回生成器，用空格连接成字符串
-    segmented = ' '.join(jieba.cut(desc))
+    segmented = ' '.join(jieba.lcut(desc))
     train_sentences.append(segmented)
 
 print(f'\nTF-IDF训练语料构建完成，共{len(train_sentences)}条')
@@ -456,10 +456,10 @@ for row_idx, sentence in enumerate(valid_data['sentence']):
                     # 拼接位置:实体ID对
                     match_results += f'{position}:{matched_entity_id}|'
             
-            # 去掉最后的'|'，添加到当前行结果
-            if match_results:
-                current_result.append(match_results[:-1])
-                break  # 每句只处理一个关键词
+    # 去掉最后的'|'，添加到当前行结果
+    if match_results:
+        current_result.append(match_results[:-1])
+
     
     results.append(current_result)
 
