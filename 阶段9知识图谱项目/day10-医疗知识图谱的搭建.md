@@ -157,7 +157,7 @@ class MedicalExtractor:
         - 密码: 12345678
         """
         # 初始化Neo4j连接，auth参数为用户名密码认证
-        self.graph = Graph("http://localhost:7474", auth=("neo4j", "12345"))
+        self.graph = Graph("neo4j://localhost:7687", auth=("neo4j", "12345678"))
         
         # 初始化实体容器（使用列表存储，后续会去重）
         self.drugs = []      # 药品实体池
@@ -218,15 +218,15 @@ class MedicalExtractor:
                 # 4. 处理饮食关系（忌吃+宜吃）
                 if 'not_eat' in data_json:
                     not_eat = data_json['not_eat']
-                    for _not in not_eat:
-                        self.rels_noteat.append([disease, 'not_eat', _not])
                     self.foods += not_eat  # 禁忌食物加入食物实体池
+                    for _not in not_eat:
+                        self.rels_noteat.append([disease, 'not_eat', _not])             
                 
                 if 'do_eat' in data_json:
                     do_eat = data_json['do_eat']
+                    self.foods += do_eat  # 推荐食物加入食物实体池
                     for _do in do_eat:
                         self.rels_doeat.append([disease, 'do_eat', _do])
-                    self.foods += do_eat  # 推荐食物加入食物实体池
                 
                 # 5. 处理药品详情（解析括号格式）
                 if 'drug_detail' in data_json:
@@ -243,7 +243,7 @@ class MedicalExtractor:
                             self.drugs.append(d)
 ```
 
-------
+
 
 ### 2.3 实体插入Neo4j
 
@@ -256,10 +256,6 @@ class MedicalExtractor:
 - **异常捕获**：单条失败不影响整体流程，打印日志便于排查
 
 #### 2.3.2 核心实现代码
-
-Python
-
-复制
 
 ```python
     def write_nodes(self, entitys, entity_type):
@@ -307,7 +303,7 @@ Python
         self.write_nodes(self.diseases, '疾病')
 ```
 
-------
+
 
 ### 2.4 关系插入Neo4j
 
@@ -320,10 +316,6 @@ Python
 - **方向性**：统一采用`疾病→目标`的有向关系（符合业务逻辑）
 
 #### 2.4.2 核心实现代码
-
-Python
-
-复制
 
 ```python
     def write_edges(self, triples, head_type, tail_type):
@@ -390,36 +382,9 @@ Python
 
 > **💡 推荐执行顺序**：
 >
-> Python
->
-> 复制
->
 > ```python
 > extractor = MedicalExtractor()          # Step 1: 初始化连接
 > extractor.extract_triples(data_path)    # Step 2: 抽取三元组（耗时较长）
 > extractor.create_entitys()              # Step 3: 写入实体（约2-5分钟）
 > extractor.create_relations()            # Step 4: 写入关系（约5-10分钟）
 > ```
-
-------
-
-## 3. 图谱可视化展示
-
-### 3.1 Neo4j Browser效果图
-
-下图展示导入后的图谱局部结构（以"苯中毒"为中心节点）：
-
-<div align="center">     <img src="./img/6-2-1.png" alt="医疗知识图谱可视化示例" style="zoom:40%; border: 1px solid #ddd; border-radius: 4px;"/>     <p><em>图1：疾病-症状-食物-药品关联网络（蓝色：疾病，绿色：药品，黄色：食物，红色：症状）</em></p> </div>
-
-### 3.2 验证查询示例
-
-cypher
-
-复制
-
-```cypher
-// 查询某疾病的所有关联信息
-MATCH (d:疾病 {name: '苯中毒'})-[r]->(target)
-RETURN type(r) as 关系, labels(target)[0] as 目标类型, target.name as 名称
-LIMIT 20
-```
