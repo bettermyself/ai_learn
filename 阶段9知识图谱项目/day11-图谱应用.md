@@ -364,3 +364,246 @@ class IntentClassifier(nn.Module):
 # 其中: dept = departure(出发地), arr = arrival(目的地)
 # 优势: 精确表达业务语义，避免后续处理混淆
 ```
+
+
+
+## 3 医疗知识图谱问答系统（KBQA）架构设计
+
+### 1. 系统架构总览
+
+系统采用经典的三层架构设计，包含**NLU（自然语言理解）**、**DM（对话管理）** 和 **NLG（自然语言生成）** 三大核心模块。
+
+<img src="assets/03-3469140.png" alt="img" style="zoom:50%;" />
+
+
+
+**模块职责划分**
+
+| 模块名称 | 核心功能           | 输入                | 输出                       | 技术组件           |
+| :------- | :----------------- | :------------------ | :------------------------- | :----------------- |
+| **NLU**  | 意图识别与实体抽取 | 用户Query           | 意图标签 + 实体列表        | 分类模型 + NER模型 |
+| **DST**  | 对话状态跟踪       | 当前实体 + 历史状态 | 填充后的语义槽             | 槽位匹配算法       |
+| **PL**   | 策略决策           | 意图置信度          | 执行动作（查询/澄清/兜底） | 规则引擎           |
+| **NLG**  | 答案生成           | 查询结果            | 自然语言回复               | 模板引擎           |
+
+
+
+### 2. NLU模块详解
+
+NLU模块采用**两级分类架构**，先分流闲聊与医疗意图，再深入识别具体医疗意图。
+
+#### 第一阶段：闲聊意图检测
+
+```python
+# 闲聊意图分类器输出示例
+{
+    "confidence": 0.95,
+    "intent": "greet"  # 闲聊意图类型
+}
+
+# 闲聊意图类别及处理策略
+chitchat_intents = {
+    "greet":     "从问候语料随机抽取回复",      # 如"您好"、"早上好"
+    "goodbye":   "从告别语料随机抽取回复",      # 如"再见"、"慢走"
+    "deny":      "用户否认，需重新理解需求",
+    "isbot":     "回答机器人身份相关问题",
+    "accept":    "用户确认，用于问题澄清场景",
+    "diagnosis": "进入Medical_bot医疗意图处理"
+}
+```
+
+**处理逻辑**：
+
+- ⚠️ 若命中前四类（greet/goodbye/deny/isbot），直接由 `Chitchat_bot` 处理并结束对话
+- 💡 若命中 `accept`，说明处于问题澄清状态，需结合上下文处理
+- ✅ 若命中 `diagnosis`，则流转至 `Medical_bot` 进行深度医疗意图识别
+
+
+
+#### 第二阶段：医疗意图识别与实体抽取
+
+以用户输入 **"请问得了糖尿病该怎么办"** 为例：
+
+#### 2.1 医疗意图分类
+
+```python
+# 医疗意图分类器输出
+{
+    "confidence": 0.8997645974159241,  # 意图置信度
+    "intent": "治疗方法"                # 13种医疗意图之一
+}
+
+# 医疗意图完整列表（共13类）
+medical_intents = [
+    "病因", "预防", "临床表现", "治疗方法", 
+    "用药", "治愈率", "禁忌", "化验/体检方案",
+    "并发症", "所属科室", "传染性", "治愈率",
+    "饮食建议"
+]
+```
+
+#### 2.2 命名实体识别(NER)
+
+```python
+# NER模型输出结果
+{
+    "entities": [
+        {
+            "type": "disease",  # 实体类型：疾病
+            "word": "糖尿病"     # 实体文本
+        }
+    ],
+    "string": "请问得了糖尿病怎么办呢"
+}
+```
+
+
+
+### 3. DM模块详解
+
+DM模块由 **DST（对话状态跟踪）** 和 **PL（策略学习）** 两个子模块组成，负责维护对话上下文并决策系统行为。
+
+
+
+#### **DST模块：槽位填充**
+
+DST模块的核心任务是基于对话历史，为每个意图对应的语义槽找到**确切的槽位值**。
+
+**NLU与DST的职责边界**
+
+| 功能     | NLU模块                                 | DST模块                 |
+| :------- | :-------------------------------------- | :---------------------- |
+| **输入** | 当前用户Query                           | 实体识别结果 + 对话历史 |
+| **处理** | 识别实体类型和意图的分类                | 将实体映射到具体槽位    |
+| **输出** | `{"type": "disease", "word": "糖尿病"}` | `{"Disease": "糖尿病"}` |
+
+**槽位结构定义示例**
+
+```python
+# "治疗方法"意图的槽位配置
+"治疗方法": {
+    # 槽位列表：该意图需要填充的槽位
+    "slot_list": ["Disease"],  # 仅需疾病名称一个槽位
+    
+    # 槽位值：初始为空，由DST填充
+    "slot_values": None,
+    
+    # Cypher查询模板：使用填槽后的值生成图谱查询语句
+    "cql_template": [
+        # 查询疾病治疗方式
+        "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.cure_way",
+        
+        # 查询推荐药物
+        "MATCH(p:疾病)-[r:recommand_drug]->(q) WHERE p.name='{Disease}' RETURN q.name",
+        
+        # 查询推荐食谱
+        "MATCH(p:疾病)-[r:recommand_recipes]->(q) WHERE p.name='{Disease}' RETURN q.name"
+    ],
+    
+    # 回复模板：用于组织最终答案
+    "reply_template": "'{Disease}' 疾病的治疗方式、可用的药物、推荐菜肴有：\n",
+    
+    # 澄清话术：当置信度不足时反问用户
+    "ask_template": "您问的是疾病 '{Disease}' 的治疗方法吗？",
+    
+    # 兜底回复
+    "deny_response": "没有理解您说的意思哦~"
+}
+```
+
+**DST实现逻辑**：
+
+1. 遍历当前识别出的所有实体
+2. 将实体 `type` 与 `slot_list` 中的槽位名称进行匹配
+3. 若匹配成功，将 `word` 填充到 `slot_values`
+4. ⚠️ **追踪机制**：DST会持续维护多轮对话中的槽位值，支持用户补充和修改
+
+
+
+#### PL模块：策略学习
+
+PL模块根据意图置信度决定系统应采取的**行动策略**，本项目采用简明有效的三档阈值策略：
+
+```python
+def policy_learning(intent_confidence, filled_slots):
+    """
+    策略学习函数：根据置信度和槽位填充情况决定系统行为
+    
+    参数:
+        intent_confidence: 意图分类的置信度分数 (0-1)
+        filled_slots: 已填充的槽位字典
+    
+    返回:
+        action: 执行动作类型 ('query'|'clarify'|'fallback')
+        response: 系统回复内容
+    """
+    
+    # 策略1：高置信度直接查询（置信度 ≥ 0.8）
+    if intent_confidence >= 0.8:
+        # 检查必需槽位是否已填充
+        if all_slots_filled(filled_slots):
+            return "query", generate_cql_and_search(filled_slots)
+        else:
+            # 槽位缺失但置信度高，直接追问缺失槽位
+            return "clarify", ask_for_missing_slot(filled_slots)
+    
+    # 策略2：中等置信度进行问题澄清（0.4 ≤ 置信度 < 0.8）
+    elif 0.4 <= intent_confidence < 0.8:
+        # 使用ask_template反问用户确认意图
+        clarify_text = intent_config["ask_template"].format(**filled_slots)
+        return "clarify", clarify_text
+    
+    # 策略3：低置信度返回兜底话术（置信度 < 0.4）
+    else:
+        return "fallback", intent_config["deny_response"]
+
+# 应用示例
+# 输入: confidence=0.899, slots={"Disease": "糖尿病"}
+# 判定: confidence >= 0.8 → 执行query策略
+# 结果: 生成Cypher查询并返回知识图谱结果
+```
+
+**策略决策表**
+
+| 置信度范围    | 系统策略     | 交互方式                 | 目的               |
+| :------------ | :----------- | :----------------------- | :----------------- |
+| **≥ 0.8**     | **直接查询** | 执行图谱查询并返回答案   | 快速响应，提升效率 |
+| **0.4 ~ 0.8** | **问题澄清** | 使用ask_template反问确认 | 降低误判风险       |
+| **< 0.4**     | **兜底回复** | 返回deny_response        | 避免误导用户       |
+
+
+
+### 4. 完整流程示例
+
+案例：用户查询糖尿病治疗方法
+
+```Mermaid
+sequenceDiagram
+    participant User
+    participant NLU
+    participant DST
+    participant PL
+    participant Neo4j
+    participant NLG
+    
+    User->>NLU: "请问得了糖尿病该怎么办"
+    
+    Note right of NLU: 第一阶段：闲聊检测<br/>结果: diagnosis意图<br/>置信度: 0.95
+    
+    NLU->>NLU: 第二阶段：医疗意图识别
+    Note right of NLU: 结果: "治疗方法"<br/>置信度: 0.899<br/>实体: disease="糖尿病"
+    
+    NLU->>DST: 传递意图+实体
+    DST->>DST: 槽位填充<br/>slot_values={"Disease":"糖尿病"}
+    
+    DST->>PL: 传递填充后的槽位
+    PL->>PL: 策略判断<br/>置信度0.899 >= 0.8
+    
+    PL->>Neo4j: 执行Cypher查询
+    Note right of Neo4j: MATCH(p:疾病) WHERE p.name='糖尿病'<br/>RETURN p.cure_way
+    
+    Neo4j-->>PL: 返回查询结果
+    PL->>NLG: 组织答案
+    NLG-->>User: "糖尿病"疾病的治疗方式、可用药物、推荐菜肴有：...<br/>对话结束
+```
+
