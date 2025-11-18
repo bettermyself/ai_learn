@@ -388,3 +388,464 @@ class MedicalExtractor:
 > extractor.create_entitys()              # Step 3: 写入实体（约2-5分钟）
 > extractor.create_relations()            # Step 4: 写入关系（约5-10分钟）
 > ```
+
+> **拓展1：python的拆包机制**
+>
+> Python的**拆包机制（Unpacking）** 是一种将可迭代对象中的元素赋值给多个变量的简洁语法。这是Python中非常强大且常用的特性，能让代码更简洁、可读性更强。
+>
+> ### 一、基本拆包
+>
+> #### 1. 元组/列表拆包
+>
+> ```python
+> # 元组拆包
+> coordinates = (10, 20)
+> x, y = coordinates
+> print(x, y)  # 输出: 10 20
+> 
+> # 列表拆包
+> numbers = [1, 2, 3]
+> a, b, c = numbers
+> print(a, b, c)  # 输出: 1 2 3
+> ```
+>
+> #### 2. 字符串拆包
+>
+> ```python
+> word = "abc"
+> first, second, third = word
+> print(first, second, third)  # 输出: a b c
+> ```
+>
+> ### 二、高级拆包技巧
+>
+> #### 1. 扩展拆包（Python 3+）
+>
+> 使用 `*` 捕获剩余的多个元素：
+>
+> ```python
+> # 捕获开头和剩余
+> first, *rest = [1, 2, 3, 4, 5]
+> print(first)  # 1
+> print(rest)   # [2, 3, 4, 5]
+> 
+> # 捕获中间和两端
+> first, *middle, last = [1, 2, 3, 4, 5]
+> print(middle)  # [2, 3, 4]
+> 
+> # 仅捕获两端
+> first, *_, last = [1, 2, 3, 4, 5]  # _ 是惯例，表示不关心的值
+> ```
+>
+> #### 2. 嵌套拆包
+>
+> ```python
+> data = (1, (2, 3), 4)
+> a, (b, c), d = data
+> print(b, c)  # 输出: 2 3
+> ```
+>
+> ### 三、常见应用场景
+>
+> #### 1. 函数返回多个值
+>
+> ```python
+> def get_user_info():
+>  return "Alice", 25, "alice@example.com"
+> 
+> name, age, email = get_user_info()
+> ```
+>
+> #### 2. 遍历字典
+>
+> ```python
+> for key, value in {"name": "Bob", "age": 30}.items():
+>  print(f"{key}: {value}")
+> ```
+>
+> #### 3. 交换变量（Pythonic方式）
+>
+> ```python
+> a, b = 1, 2
+> a, b = b, a  # 无需临时变量
+> ```
+>
+> #### 4. 处理可迭代对象
+>
+> ```python
+> first, second, *rest, last = range(10)
+> ```
+>
+> ### 四、注意事项
+>
+> 1.**数量必须匹配**：变量数量要与元素数量一致，除非使用 `*`
+>
+> ```python
+> # 错误示例
+> # a, b = [1, 2, 3]  # ValueError: too many values to unpack
+> ```
+>
+> 
+>
+> 2.**`\*` 只能用一个**  ：在赋值表达式中只能有一个 `*` 表达式
+>
+> Python
+>
+> 复制
+>
+> ```python
+> # 错误示例
+> # a, *b, *c = [1, 2, 3, 4]  # SyntaxError
+> ```
+>
+> 3.**空的可迭代对象**：使用 `*` 时可能得到空列表
+>
+> ```python
+> first, *rest = [1]  # rest -> []
+> ```
+>
+> 4.**类型灵活**：拆包适用于任何可迭代对象（元组、列表、字符串、集合、生成器等）
+>
+> ### 五、Python 3.5+ 的扩展
+>
+> #### 拆包在函数调用中
+>
+> ```python
+> def add(a, b, c):
+>  return a + b + c
+> 
+> nums = (1, 2, 3)
+> result = add(*nums)  # 等价于 add(1, 2, 3)
+> 
+> # 字典拆包（用于关键字参数）
+> config = {"host": "localhost", "port": 8080}
+> connect(**config)  # 等价于 connect(host="localhost", port=8080)
+> ```
+>
+> 💡拆包机制是Python简洁哲学的重要体现，合理使用可以让代码更优雅、更易读。
+>
+> ---
+>
+> **拓展2：python中的不可变数据类型**
+>
+> Python中的**不可变数据类型**是指对象一旦创建，其值就不能被修改的数据类型。尝试"修改"不可变对象时，实际上会创建一个新的对象。
+>
+> ### 一、核心不可变类型
+>
+> #### 1. **数字类型**
+>
+> - `int`（整数）
+> - `float`（浮点数）
+> - `complex`（复数）
+> - `bool`（布尔值，属于`int`的子类）
+>
+> ```python
+> x = 100
+> print(id(x))  # 查看内存地址
+> x += 1        # 创建新对象，而不是修改原对象
+> print(id(x))  # 内存地址已改变
+> ```
+>
+> #### 2. **字符串（str）**
+>
+> ```python
+> s = "hello"
+> print(id(s))
+> s = s.upper()  # 返回新字符串，原字符串不变
+> print(id(s))   # 内存地址改变
+> 
+> # 字符串操作都不会修改原字符串
+> new_s = s.replace('l', 'L')  # 返回新字符串
+> ```
+>
+> #### 3. **元组（tuple）**
+>
+> ```python
+> t = (1, 2, 3)
+> # t[0] = 10  # TypeError: 'tuple' object does not support item assignment
+> 
+> # 但元组中的可变对象可以被修改
+> t2 = (1, [2, 3], 4)
+> t2[1].append(5)  # 合法！元组本身未变，但列表元素变了
+> print(t2)        # (1, [2, 3, 5], 4)
+> ```
+>
+> #### 4. **冻结集合（frozenset）**
+>
+> ```python
+> fs = frozenset([1, 2, 3])
+> # fs.add(4)  # AttributeError: 'frozenset' object has no attribute 'add'
+> ```
+>
+> #### 5. **字节（bytes）**
+>
+> ```python
+> b = b"hello"
+> # b[0] = 104  # TypeError: 'bytes' object does not support item assignment
+> ```
+>
+> ### 二、不可变性的核心特征
+>
+> #### 1. **内存地址变化**
+>
+> ```python
+> a = 1000
+> print(f"原地址: {id(a)}")
+> a = a + 1
+> print(f"新地址: {id(a)}")  # 地址不同，说明是新对象
+> ```
+>
+> #### 2. **可哈希（Hashable）**
+>
+> 不可变对象可以作为字典键和集合元素：
+>
+> ```python
+> # 合法
+> d = {1: "one", "two": 2, (3, 4): "tuple"}
+> s = {1, 2, "hello", (3, 4)}
+> 
+> # 非法（列表是可变的）
+> # d = {[1, 2]: "value"}  # TypeError: unhashable type: 'list'
+> ```
+>
+> ### 三、不可变 vs 可变类型对比
+>
+> | 不可变类型  | 可变类型    | 关键区别                 |
+> | :---------- | :---------- | :----------------------- |
+> | `int`       | -           | 赋值即创建新对象         |
+> | `float`     | -           | 数值不可修改             |
+> | `str`       | -           | 修改操作返回新字符串     |
+> | `tuple`     | `list`      | 元组不能增删改元素       |
+> | `frozenset` | `set`       | 冻结集合不能修改         |
+> | `bytes`     | `bytearray` | 字节不可变，字节数组可变 |
+>
+> ```python
+> # 对比示例
+> # 列表（可变）
+> lst = [1, 2, 3]
+> lst[0] = 100  # 原地修改，id不变
+> 
+> # 元组（不可变）
+> tup = (1, 2, 3)
+> # tup[0] = 100  # 报错！
+> ```
+>
+> ### 四、不可变性的优势
+>
+> 1. **线程安全**：多线程环境下无需加锁
+> 2. **字典键**：可作为字典的键
+> 3. **性能优化**：Python可缓存和复用不可变对象
+> 4. **逻辑清晰**：值不会被意外修改，减少bug
+>
+> ```python
+> # Python的小整数缓存
+> a = 100
+> b = 100
+> print(a is b)  # True（-5到256的整数会被缓存）
+> 
+> c = 1000
+> d = 1000
+> print(c is d)  # False（大整数不缓存）
+> ```
+>
+> ### 五、重要注意事项
+>
+> #### 1. **元组的"可变"陷阱**
+>
+> ```python
+> t = (1, 2, [3, 4])
+> print(id(t))
+> t[2].append(5)  # 合法！修改了元组内的列表
+> print(id(t))    # 元组id未变，但内容已"变"
+> print(t)        # (1, 2, [3, 4, 5])
+> ```
+>
+> #### 2. **字符串拼接的性能问题**
+>
+> ```python
+> # 低效方式（频繁创建新对象）
+> result = ""
+> for i in range(1000):
+>     result += str(i)  # 每次循环都创建新字符串
+> 
+> # 高效方式（使用列表）
+> parts = []
+> for i in range(1000):
+>     parts.append(str(i))
+> result = "".join(parts)
+> ```
+>
+> #### 3. **函数默认参数陷阱**
+>
+> ```python
+> # 错误示范（使用可变默认参数）
+> def add_item(item, lst=[]):
+>     lst.append(item)
+>     return lst
+> 
+> # 正确示范（使用不可变默认参数）
+> def add_item(item, lst=None):
+>     if lst is None:
+>         lst = []
+>     lst.append(item)
+>     return lst
+> ```
+>
+> ---
+>
+> **拓展3：魔法方法与私有化方法**
+>
+> Python中**魔法方法**和**私有化方法**是两种完全不同的概念，虽然它们都使用下划线命名，但目的、机制和使用场景截然不同。
+>
+> ### 一、魔法方法 (Magic Methods)
+>
+> #### 核心特征
+>
+> - **命名格式**：`__名字__`（双下划线开头**和结尾**）
+> - **调用机制**：由Python解释器**自动调用**，而非手动调用
+> - **设计目的**：实现Python的**协议和运算符重载**
+>
+> #### 常见魔法方法
+>
+> ```python
+> class MagicDemo:
+>     def __init__(self, name):      # 构造方法，创建对象时自动调用
+>         self.name = name
+>     
+>     def __str__(self):             # str(obj)时自动调用
+>         return f"Magic: {self.name}"
+>     
+>     def __len__(self):             # len(obj)时自动调用
+>         return len(self.name)
+>     
+>     def __add__(self, other):      # obj + other时自动调用
+>         return MagicDemo(self.name + other.name)
+>     
+>     def __getitem__(self, index):  # obj[index]时自动调用
+>         return self.name[index]
+> 
+> # 使用示例
+> obj1 = MagicDemo("Hello")   # 自动调用 __init__
+> print(obj1)                 # 自动调用 __str__
+> print(len(obj1))            # 自动调用 __len__
+> obj2 = obj1 + MagicDemo(" World")  # 自动调用 __add__
+> print(obj2[0])              # 自动调用 __getitem__
+> ```
+>
+> #### 本质
+>
+> 魔法方法是Python的**钩子函数**（hook），让你能自定义对象的行为，使其"像内置类型一样工作"。
+>
+> 
+>
+> ### 二、私有化方法 (Private Methods)
+>
+> #### 核心特征
+>
+> - **命名格式**：`_名字` 或 `__名字`（双下划线开头，**单下划线结尾或没有**）
+> - **调用机制**：需要**手动调用**
+> - **设计目的**：**隐藏实现细节**，防止外部直接访问
+>
+> #### 1. 单下划线（"保护"方法）
+>
+> ```python
+> class PrivateDemo:
+>     def _internal_helper(self):  # 约定为内部使用，但可以被外部访问
+>         return "内部方法"
+> 
+> obj = PrivateDemo()
+> obj._internal_helper()  # 可以调用，但IDE会警告
+> ```
+>
+> #### 2. 双下划线（真正私有化）
+>
+> ```python
+> class PrivateDemo:
+>     def __private_method(self):  # 触发名称改写
+>         return "真正的私有方法"
+>     
+>     def public_method(self):
+>         return self.__private_method()  # 类内部可以正常调用
+> 
+> obj = PrivateDemo()
+> # obj.__private_method()  # AttributeError: 'PrivateDemo' object has no attribute '__private_method'
+> 
+> # 实际上被改写为：
+> obj._PrivateDemo__private_method()  # 可以强制访问（不推荐）
+> ```
+>
+> #### 本质
+>
+> 私有化是**命名约定 + 名称改写机制**，Python没有真正的访问控制，而是通过**名称改写（name mangling）** 让外部难以访问。
+>
+> 
+>
+> ### 三、核心区别对比
+>
+> | 特性             | 魔法方法                     | 私有化方法                    |
+> | :--------------- | :--------------------------- | :---------------------------- |
+> | **命名**         | `__init__`, `__str__`        | `_private`, `__private`       |
+> | **调用方式**     | 解释器自动调用               | 手动调用                      |
+> | **目的**         | 实现协议/运算符重载          | 隐藏实现细节                  |
+> | **能否手动调用** | 可以但不推荐                 | 必须手动调用                  |
+> | **名称改写**     | 不会改写                     | `__name` → `_ClassName__name` |
+> | **访问性**       | 公开，鼓励使用               | 限制外部访问                  |
+> | **示例**         | `len(obj)` → `obj.__len__()` | `obj.__method()` → 报错       |
+>
+> 
+>
+> ### 四、实际应用示例
+>
+> #### 魔法方法：自定义列表类
+>
+> ```python
+> class MyList:
+>     def __init__(self, items):
+>         self._data = list(items)
+>     
+>     def __len__(self):
+>         return len(self._data)
+>     
+>     def __getitem__(self, index):
+>         return self._data[index]
+>     
+>     def __repr__(self):
+>         return f"MyList({self._data})"
+> 
+> ml = MyList([1, 2, 3])
+> print(len(ml))      # 3
+> print(ml[1])        # 2
+> print(ml)           # MyList([1, 2, 3])
+> ```
+>
+> #### 私有化方法：内部实现保护
+>
+> ```python
+> class BankAccount:
+>     def __init__(self, balance):
+>         self.__balance = balance  # 私有属性
+>     
+>     def __calculate_fee(self, amount):  # 私有方法
+>         """内部手续费计算逻辑，不希望外部调用"""
+>         return amount * 0.01
+>     
+>     def withdraw(self, amount):
+>         fee = self.__calculate_fee(amount)  # 内部使用
+>         if self.__balance >= amount + fee:
+>             self.__balance -= amount + fee
+>             return True
+>         return False
+> 
+> account = BankAccount(1000)
+> # account.__calculate_fee(100)  # 报错！外部无法直接访问
+> account.withdraw(100)           # 合法，通过公开方法操作
+> ```
+>
+> 
+>
+> ### 五、关键总结
+>
+> 1. **魔法方法是Python的"接口"**，定义对象如何与语言特性交互（如`+`, `len()`, `print()`）
+> 2. **私有化方法是"封装"工具**，用于隐藏内部实现，遵守"约定优于强制"的原则
+> 3. **魔法方法名是固定的**（如`__add__`），私有化方法名由开发者自定义
+> 4. **魔法方法不是真的"魔法"**，只是Python在特定场景下自动调用的普通方法
