@@ -405,11 +405,9 @@ def get_dataloader():
     return train_iter, None
 ```
 
+
+
 #### 2.4 模型构建
-
-Python
-
-复制
 
 ```python
 # model.py
@@ -444,11 +442,9 @@ class MyModel(nn.Module):
         return output
 ```
 
+
+
 #### 2.5 模型训练
-
-Python
-
-复制
 
 ```python
 # train.py
@@ -527,11 +523,9 @@ if __name__ == '__main__':
     model2train()
 ```
 
+
+
 #### 2.6 Flask API服务封装
-
-Python
-
-复制
 
 ```python
 # api_server.py
@@ -585,7 +579,7 @@ def model2predict(sample, model):
         "confidence": round(float(value.item()), 3)  # 置信度
     }
 
-@app.route("/service/api/bert_intent_recognize", methods=["POST"])
+@app.route("/service/api/bert_intent_recognize", methods=["POST", "GET"])
 def bert_intent_recognize():
     """BERT意图识别API接口
     
@@ -605,17 +599,17 @@ def bert_intent_recognize():
     except Exception as e:
         print(f'模型调用错误: {e}')
     
-    return jsonify(data)
+    return jsonify(data)  # 将处理结果封装成 JSON 格式并返回给客户端
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=6001)
 ```
 
+
+
 #### 2.7 API测试示例
 
-Python
-
-复制
+> 也可以通过Postman软件来测试，更加方便
 
 ```python
 # test_api.py
@@ -645,9 +639,9 @@ if __name__ == '__main__':
     # 预期输出: {'name': '临床表现(病症表现)', 'confidence': 0.923}
 ```
 
-------
 
-### 🔍 模型三：槽位填充（NER）
+
+### 模型三：槽位填充（NER）
 
 > ⚠️ **实践任务**：本模块需学员独立完成，基于BiLSTM+CRF架构实现7种医疗实体识别（疾病、症状、药物、科室、检查、食物、其他）
 
@@ -657,19 +651,15 @@ if __name__ == '__main__':
 - API端口：`6002`
 - 接口路径：`/service/api/medical_ner`
 
-------
 
-## DM模块：语义槽设计
 
-**配置文件位置**：`./NLP/MedicalKB/config.py`
+## 4 DM模块（对话管理）
 
-### 语义槽结构说明
+**语义槽配置**：DM模块的核心是**语义槽模板**，定义于`config.py`：
+
+### 4.1 语义槽结构说明
 
 每个意图对应一个语义槽配置，包含以下字段：
-
-表格
-
-复制
 
 | 字段              | 类型     | 作用                            |
 | :---------------- | :------- | :------------------------------ |
@@ -681,35 +671,144 @@ if __name__ == '__main__':
 | `intent_strategy` | Str      | 决策策略（accept/clarify/deny） |
 | `deny_response`   | Str      | 拒绝回复语料                    |
 
-### 配置代码示例
-
-Python
-
-复制
+### 4.2 配置代码示例
 
 ```python
 # -*- coding:utf-8 -*-
+# 语义槽配置（定义所有意图的查询模板和回复策略）
 
 semantic_slot = {
     "定义": {
-        "slot_list": ["Disease"],  # 必填槽位：疾病名称
-        "slot_values": None,
+        "slot_list": ["Disease"],  # 需要填充的槽位
+        "slot_values": None,       # 运行时填充的值
         "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.desc",
         "reply_template": "'{Disease}' 是这样的：\n",
         "ask_template": "您问的是 '{Disease}' 的定义吗？",
+        "intent_strategy": "",     # 策略由运行时决定
+        "deny_response": "很抱歉没有理解你的意思呢~"
+    },
+    "病因": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.cause",
+        "reply_template": "'{Disease}' 疾病的原因是：\n",
+        "ask_template": "您问的是疾病 '{Disease}' 的原因吗？",
+        "intent_strategy": "",
+        "deny_response": "您说的我有点不明白，您可以换个问法问我哦~"
+    },
+    "预防": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.prevent",
+        "reply_template": "关于 '{Disease}' 疾病您可以这样预防：\n",
+        "ask_template": "请问您问的是疾病 '{Disease}' 的预防措施吗？",
+        "intent_strategy": "",
+        "deny_response": "额~似乎有点不理解你说的是啥呢~"
+    },
+    "临床表现(病症表现)": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 查询症状关系
+        "cql_template": "MATCH(p:疾病)-[r:has_symptom]->(q:症状) WHERE p.name='{Disease}' RETURN q.name",
+        "reply_template": "'{Disease}' 疾病的病症表现一般是这样的：\n",
+        "ask_template": "您问的是疾病 '{Disease}' 的症状表现吗？",
+        "intent_strategy": "",
+        "deny_response": "人类的语言太难了！！"
+    },
+    "相关病症": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 查询并发症关系
+        "cql_template": "MATCH(p:疾病)-[r:accompany_with]->(q:疾病) WHERE p.name='{Disease}' RETURN q.name",
+        "reply_template": "'{Disease}' 疾病的具有以下并发疾病：\n",
+        "ask_template": "您问的是疾病 '{Disease}' 的并发疾病吗？",
+        "intent_strategy": "",
+        "deny_response": "人类的语言太难了！！~"
+    },
+    "治疗方法": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 多模板查询：治疗方式、药物、食谱
+        "cql_template": [
+            "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.cure_way",
+            "MATCH(p:疾病)-[r:recommand_drug]->(q) WHERE p.name='{Disease}' RETURN q.name",
+            "MATCH(p:疾病)-[r:recommand_recipes]->(q) WHERE p.name='{Disease}' RETURN q.name"
+        ],
+        "reply_template": "'{Disease}' 疾病的治疗方式、可用药物、推荐菜肴有：\n",
+        "ask_template": "您问的是疾病 '{Disease}' 的治疗方法吗？",
+        "intent_strategy": "",
+        "deny_response": "没有理解您说的意思哦~"
+    },
+    "所属科室": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 查询科室关系
+        "cql_template": "MATCH(p:疾病)-[r:cure_department]->(q:科室) WHERE p.name='{Disease}' RETURN q.name",
+        "reply_template": "得了 '{Disease}' 可以挂这个科室哦：\n",
+        "ask_template": "您想问的是疾病 '{Disease}' 要挂什么科室吗？",
+        "intent_strategy": "",
+        "deny_response": "您说的我有点不明白，您可以换个问法问我哦~"
+    },
+    "传染性": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.easy_get",
+        "reply_template": "'{Disease}' 较为容易感染这些人群：\n",
+        "ask_template": "您想问的是疾病 '{Disease}' 会感染哪些人吗？",
+        "intent_strategy": "",
+        "deny_response": "没有理解您说的意思哦~"
+    },
+    "治愈率": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.cured_prob",
+        "reply_template": "得了'{Disease}' 的治愈率为：",
+        "ask_template": "您想问 '{Disease}' 的治愈率吗？",
+        "intent_strategy": "",
+        "deny_response": "您说的我有点不明白，您可以换个问法问我哦~"
+    },
+    "治疗时间": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        "cql_template": "MATCH(p:疾病) WHERE p.name='{Disease}' RETURN p.cure_lasttime",
+        "reply_template": "疾病 '{Disease}' 的治疗周期为：",
+        "ask_template": "您想问 '{Disease}' 的治疗周期吗？",
         "intent_strategy": "",
         "deny_response": "很抱歉没有理解你的意思呢~"
     },
-    # ... 其他12个意图配置 ...
+    "化验/体检方案": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 查询检查项目关系
+        "cql_template": "MATCH(p:疾病)-[r:need_check]->(q:检查) WHERE p.name='{Disease}' RETURN q.name",
+        "reply_template": "得了 '{Disease}' 需要做以下检查：\n",
+        "ask_template": "您是想问 '{Disease}' 要做什么检查吗？",
+        "intent_strategy": "",
+        "deny_response": "您说的我有点不明白，您可以换个问法问我哦~"
+    },
+    "禁忌": {
+        "slot_list": ["Disease"],
+        "slot_values": None,
+        # 查询禁忌食物关系
+        "cql_template": "MATCH(p:疾病)-[r:not_eat]->(q:食物) WHERE p.name='{Disease}' RETURN q.name",
+        "reply_template": "得了 '{Disease}' 切记不要吃这些食物哦：\n",
+        "ask_template": "您是想问 '{Disease}' 不可以吃的食物是什么吗？",
+        "intent_strategy": "",
+        "deny_response": "额~似乎有点不理解你说的是啥呢~~"
+    },
+    "unrecognized": {
+        "slot_values": None,
+        "replay_answer": "非常抱歉，我还不知道如何回答您，我正在努力学习中~",
+    }
 }
 
 # 意图置信度阈值配置
 intent_threshold_config = {
-    "accept": 0.8,    # ≥0.8直接回答
-    "deny": 0.4       # <0.4拒绝回答，0.4-0.8之间澄清确认
+    "accept": 0.8,      # 高置信度：直接回答
+    "deny": 0.4         # 低置信度：拒绝回答
 }
 
-# 默认回复
+# 默认兜底回复
 default_answer = """
 很抱歉我还不知道回答你这个问题
 你可以问我一些有关疾病的
@@ -719,26 +818,39 @@ default_answer = """
 
 # 闲聊语料库
 gossip_corpus = {
-    "greet": ["hi", "你好呀", "我是智能医疗诊断机器人..."],
-    "goodbye": ["再见，很高兴为您服务", "bye"],
-    "deny": ["很抱歉没帮到您", "那您可以试着问我其他问题哟"],
-    "isbot": ["我是小康，你的智能健康顾问"]
+    "greet": [
+        "hi",
+        "你好呀",
+        "我是智能医疗诊断机器人，有什么可以帮助你吗",
+        "hi，你好，你可以叫我小康",
+        "你好，你可以问我一些关于疾病诊断的问题哦"
+    ],
+    "goodbye": [
+        "再见，很高兴为您服务",
+        "bye",
+        "再见，感谢使用我的服务",
+        "再见啦，祝你健康"
+    ],
+    "deny": [
+        "很抱歉没帮到您",
+        "I am sorry",
+        "那您可以试着问我其他问题哟"
+    ],
+    "isbot": [
+        "我是小康，你的智能健康顾问",
+        "你可以叫我小康哦~",
+        "我是医疗诊断机器人小康"
+    ],
 }
 ```
 
-------
 
-## 主逻辑模块
 
-### modules.py：核心对话管理
+## 5 主逻辑模块
 
-**文件位置**：`./NLP/MedicalKB/modules.py`
+### 5.1 modules.py：核心功能函数
 
-#### 函数汇总表
-
-表格
-
-复制
+**文件位置**：`./NLP/MedicalKB/modules.py` ，包含8个核心函数，实现完整的对话管理逻辑：
 
 | 函数名              | 输入       | 输出                 | 功能描述            |
 | :------------------ | :--------- | :------------------- | :------------------ |
@@ -751,154 +863,250 @@ gossip_corpus = {
 | `get_answer`        | 语义槽Dict | 语义槽Dict（含答案） | 知识查询与策略执行  |
 | `neo4j_searcher`    | Cypher查询 | 答案文本             | Neo4j图谱查询       |
 
-#### 关键函数详解
 
-**1. 闲聊意图识别 `classifier()`**
 
-Python
-
-复制
+**核心函数实现**
 
 ```python
+# -*- coding:utf-8 -*-
+import os
+import re
+import json
+import requests
+import random
+from py2neo import Graph
+from NLU.Chatty_intention.clf_model import CLFModel
+from config import *
+
+# ============ 全局初始化 ============
+# 连接Neo4j知识图谱（需确保服务已启动）
+graph = Graph(
+    "http://localhost:7474",
+    auth=("neo4j", "12345")  # 用户名和密码
+)
+
+# 加载闲聊分类模型
+clf_model = CLFModel('./NLU/Chatty_intention/model_file/')
+
+
+# ============ 函数1：闲聊意图识别 ============
 def classifier(text):
     """
-    快速判断是否为闲聊意图
+    判断用户输入是否为闲聊意图
     
-    性能优势：本地sklearn模型，延迟极低（<10ms）
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        str: 意图标签（greet/goodbye/deny/isbot/accept/diagnosis）
     """
-    return clf_model.predict(text)  # 调用训练好的CLFModel
-```
+    return clf_model.predict(text)
 
-**2. 医疗意图识别 `intent_classifier()`**
 
-Python
-
-复制
-
-```python
+# ============ 函数2：医疗意图识别 ============
 def intent_classifier(text):
     """
-    调用BERT模型识别13类医疗意图
+    调用BERT模型进行医疗意图识别
     
-    异常处理：服务不可用时返回-1，避免系统崩溃
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        dict: 意图结果 {'name': str, 'confidence': float} 或 -1（失败）
     """
     url = 'http://127.0.0.1:6001/service/api/bert_intent_recognize'
     data = {"text": text}
     headers = {'Content-Type': 'application/json; charset=utf8'}
     
-    # 发送HTTP POST请求到意图识别服务
-    response = requests.post(url, data=json.dumps(data), headers=headers)
+    try:
+        reponse = requests.post(
+            url,
+            data=json.dumps(data),
+            headers=headers
+        )
+        
+        if reponse.status_code == 200:
+            reponse = json.loads(reponse.text)
+            return reponse['result']
+        else:
+            return -1
+    except:
+        return -1
+
+
+# ============ 函数3：槽位填充 ============
+def slot_recognizer(sample):
+    """
+    调用NER模型进行实体识别（槽位填充）
     
-    if response.status_code == 200:
-        response = json.loads(response.text)
-        return response['result']  # 返回{"name": "病因", "confidence": 0.95}
-    else:
-        return -1  # 服务异常标志位
-```
+    Args:
+        sample: 用户输入文本
+        
+    Returns:
+        dict: 识别出的实体 {实体名: 实体类型} 或 -1（失败）
+    """
+    url = 'http://127.0.0.1:6002/service/api/medical_ner'
+    data = {"text": sample}
+    headers = {'Content-Type': 'application/json;charset=utf8'}
+    
+    try:
+        reponse = requests.post(
+            url,
+            data=json.dumps(data),
+            headers=headers
+        )
+        
+        if reponse.status_code == 200:
+            reponse = json.loads(reponse.text)
+            return reponse['result']
+        else:
+            return -1
+    except:
+        return -1
 
-**3. 语义解析 `semantic_parser()`**
 
-Python
+# ============ 函数4：闲聊回复生成 ============
+def gossip_robot(intent):
+    """
+    根据闲聊意图随机选择回复
+    
+    Args:
+        intent: 闲聊意图类型
+        
+    Returns:
+        str: 随机选择的回复语
+    """
+    return random.choice(gossip_corpus.get(intent))
 
-复制
 
-```python
+# ============ 函数5：医疗诊断主流程 ============
+def medical_robot(text):
+    """
+    医疗意图主处理流程
+    
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        dict: 包含答案的语义槽信息
+    """
+    # 语义解析（填槽+策略决策）
+    semantic_slot = semantic_parser(text)
+    
+    # 根据语义槽生成答案
+    answer = get_answer(semantic_slot)
+    
+    return answer
+
+
+# ============ 函数6：语义解析与策略决策 ============
 def semantic_parser(text):
     """
-    核心函数：文本解析与语义槽填充
+    核心函数：完成语义理解全流程
+    1. 医疗意图识别
+    2. 槽位填充
+    3. 根据置信度选择回复策略
     
-    决策逻辑：
-    1. 调用意图识别和NER服务
-    2. 检查服务可用性和数据完整性
-    3. 根据意图强度选择策略（accept/clarify/deny）
-    4. 填充语义槽并返回结构化信息
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        dict: 完整的语义槽信息（含策略）
     """
-    # 1. 并行调用两个模型服务
+    # Step 1: 医疗意图识别
     intent_rst = intent_classifier(text)
+    
+    # Step 2: 槽位填充（NER）
     slot_rst = slot_recognizer(text)
     
-    # 2. 异常处理：任一服务失败或无法识别意图
-    if (intent_rst == -1 or slot_rst == -1 or 
+    # 异常处理：任一模块失败或识别为空
+    if (intent_rst == -1 or 
+        slot_rst == -1 or 
         len(slot_rst) == 0 or 
         intent_rst.get("name") == "其他"):
         return semantic_slot.get("unrecognized")
     
-    # 3. 加载意图对应的语义槽模板
+    # 获取意图对应的语义槽模板
     slot_info = semantic_slot.get(intent_rst.get("name"))
-    slots = slot_info.get("slot_list")
     
-    # 4. 槽位填充：将NER结果映射到语义槽
+    # Step 3: 填槽操作
+    slots = slot_info.get("slot_list")  # 需要的槽位列表
     slot_values = {}
+    
+    # 将NER结果填入对应槽位
     for key, value in slot_rst.items():
-        # key是实体文本，value是实体类型
         if value.lower() == slots[0].lower():
             slot_values[slots[0]] = key
     
     slot_info["slot_values"] = slot_values
     
-    # 5. 基于置信度选择对话策略
+    # Step 4: 策略决策（基于置信度）
     conf = intent_rst.get("confidence")
-    if conf >= intent_threshold_config["accept"]:      # ≥0.8 直接回答
+    
+    if conf >= intent_threshold_config["accept"]:
+        # 高置信度：直接回答
         slot_info["intent_strategy"] = "accept"
-    elif conf >= intent_threshold_config["deny"]:      # 0.4-0.8 澄清确认
+    elif conf >= intent_threshold_config["deny"]:
+        # 中等置信度：澄清确认
         slot_info["intent_strategy"] = "clarify"
-    else:                                              # <0.4 拒绝回答
+    else:
+        # 低置信度：拒绝回答
         slot_info["intent_strategy"] = "deny"
     
     return slot_info
-```
 
-**4. 答案生成 `get_answer()`**
 
-Python
-
-复制
-
-```python
+# ============ 函数7：生成最终答案 ============
 def get_answer(slot_info):
     """
-    根据语义槽和策略生成最终答案
+    根据语义槽信息查询知识图谱并生成答案
     
-    策略分支：
-    - accept: 直接查询Neo4j并返回答案
-    - clarify: 返回确认问题，并预存答案供后续调用
-    - deny: 返回礼貌拒绝语
+    Args:
+        slot_info: 语义槽信息（含填槽结果和策略）
+        
+    Returns:
+        dict: 更新答案后的语义槽
     """
+    # 提取模板和槽位值
     cql_template = slot_info.get("cql_template")
     reply_template = slot_info.get("reply_template")
     ask_template = slot_info.get("ask_template")
     slot_values = slot_info.get("slot_values")
     strategy = slot_info.get("intent_strategy")
     
-    # 无槽值，直接返回默认回复
+    # 无槽位值，直接返回
     if not slot_values:
         return slot_info
-
+    
+    # ============ 策略：直接回答 ============
     if strategy == "accept":
         # 生成Cypher查询语句
         cql = []
         if isinstance(cql_template, list):
+            # 多模板查询（如治疗方法包含多种信息）
             for cqlt in cql_template:
                 cql.append(cqlt.format(**slot_values))
         else:
+            # 单模板查询
             cql = cql_template.format(**slot_values)
         
         # 查询知识图谱
         answer = neo4j_searcher(cql)
         
+        # 生成回复
         if not answer:
             slot_info["replay_answer"] = "唔~我装满知识的大脑此刻很贫瘠"
         else:
-            # 拼接回复模板和查询结果
             pattern = reply_template.format(**slot_values)
             slot_info["replay_answer"] = pattern + answer
     
+    # ============ 策略：澄清确认 ============
     elif strategy == "clarify":
         # 生成澄清问题
         pattern = ask_template.format(**slot_values)
         slot_info["replay_answer"] = pattern
         
-        # 预查询并存储结果，供用户确认后直接使用
+        # 同时准备确认后的答案（存储供后续使用）
         cql = []
         if isinstance(cql_template, list):
             for cqlt in cql_template:
@@ -911,50 +1119,50 @@ def get_answer(slot_info):
             pattern = reply_template.format(**slot_values)
             slot_info["choice_answer"] = pattern + answer
     
+    # ============ 策略：拒绝回答 ============
     elif strategy == "deny":
         slot_info["replay_answer"] = slot_info.get("deny_response")
     
     return slot_info
-```
 
-**5. 知识图谱查询 `neo4j_searcher()`**
 
-Python
-
-复制
-
-```python
+# ============ 函数8：Neo4j查询引擎 ============
 def neo4j_searcher(cql_list):
     """
-    执行Cypher查询并格式化结果
+    执行Cypher查询并处理结果
     
-    支持：
-    - 单条Cypher查询
-    - 多条Cypher查询（List）
-    - 自动处理返回的数据结构（列表/单值）
+    Args:
+        cql_list: Cypher语句（str或list）
+        
+    Returns:
+        str: 格式化后的查询结果
     """
     result = ""
+    
+    # 处理多查询情况
     if isinstance(cql_list, list):
-        # 多条查询：合并所有结果
         for cql in cql_list:
             rst = []
-            data = graph.run(cql).data()  # 执行查询
+            # 执行查询并获取数据
+            data = graph.run(cql).data()
+            
             if not data:
                 continue
             
-            # 提取结果值（适配不同返回结构）
+            # 提取结果（处理可能的嵌套结构）
             for d in data:
                 d = list(d.values())
                 if isinstance(d[0], list):
-                    rst.extend(d[0])  # 列表类型展开
+                    rst.extend(d[0])
                 else:
-                    rst.extend(d)     # 单值类型直接添加
+                    rst.extend(d)
             
             # 用顿号连接结果
             data = "、".join([str(i) for i in rst])
             result += data + "\n"
+    
+    # 处理单查询情况
     else:
-        # 单条查询逻辑同上
         data = graph.run(cql_list).data()
         if not data:
             return result
@@ -972,6 +1180,8 @@ def neo4j_searcher(cql_list):
     
     return result
 ```
+
+
 
 ------
 
