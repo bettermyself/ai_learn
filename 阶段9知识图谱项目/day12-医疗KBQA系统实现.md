@@ -4,21 +4,32 @@
 
 <img src="assets/03-3472733.png" alt="img" style="zoom: 67%;" />
 
-<svg id="mermaid-5" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 265.75px;" viewBox="0 0 265.75 874" role="graphics-document document" aria-roledescription="flowchart-v2"><g><marker id="mermaid-5_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-5_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-5_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-5_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-5_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-5_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M109.125,60L109.125,85L109.125,106" id="L_A_B_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MTA5LjEyNSwieSI6NjB9LHsieCI6MTA5LjEyNSwieSI6ODV9LHsieCI6MTA5LjEyNSwieSI6MTEwfV0=" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M109.125,162L109.125,187L109.125,208" id="L_B_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6MTA5LjEyNSwieSI6MTYyfSx7IngiOjEwOS4xMjUsInkiOjE4N30seyJ4IjoxMDkuMTI1LCJ5IjoyMTJ9XQ==" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M84.575,305.45L40,368L40,432L40,483L40,534L40,585L40,636L40,687L70.666,709.625" id="L_C_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_D_0" data-points="W3sieCI6ODQuNTc0OTYyMzc3NzI3NjIsInkiOjMwNS40NDk5NjIzNzc3Mjc2fSx7IngiOjQwLCJ5IjozNjh9LHsieCI6NDAsInkiOjQzMn0seyJ4Ijo0MCwieSI6NDgzfSx7IngiOjQwLCJ5Ijo1MzR9LHsieCI6NDAsInkiOjU4NX0seyJ4Ijo0MCwieSI6NjM2fSx7IngiOjQwLCJ5Ijo2ODd9LHsieCI6NzMuODg0ODAzOTIxNTY4NjIsInkiOjcxMn1d" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M133.675,305.45L178.25,368L178.25,402" id="L_C_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_E_0" data-points="W3sieCI6MTMzLjY3NTAzNzYyMjI3MjM4LCJ5IjozMDUuNDQ5OTYyMzc3NzI3Nn0seyJ4IjoxNzguMjUsInkiOjM2OH0seyJ4IjoxNzguMjUsInkiOjQwNn1d" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M178.25,458L178.25,483L178.25,504" id="L_E_F_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_F_0" data-points="W3sieCI6MTc4LjI1LCJ5Ijo0NTh9LHsieCI6MTc4LjI1LCJ5Ijo0ODN9LHsieCI6MTc4LjI1LCJ5Ijo1MDh9XQ==" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M178.25,560L178.25,585L178.25,606" id="L_F_G_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_F_G_0" data-points="W3sieCI6MTc4LjI1LCJ5Ijo1NjB9LHsieCI6MTc4LjI1LCJ5Ijo1ODV9LHsieCI6MTc4LjI1LCJ5Ijo2MTB9XQ==" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M178.25,662L178.25,687L147.584,709.625" id="L_G_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_G_D_0" data-points="W3sieCI6MTc4LjI1LCJ5Ijo2NjJ9LHsieCI6MTc4LjI1LCJ5Ijo2ODd9LHsieCI6MTQ0LjM2NTE5NjA3ODQzMTM4LCJ5Ijo3MTJ9XQ==" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path><path d="M109.125,764L109.125,789L109.125,810" id="L_D_H_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_D_H_0" data-points="W3sieCI6MTA5LjEyNSwieSI6NzY0fSx7IngiOjEwOS4xMjUsInkiOjc4OX0seyJ4IjoxMDkuMTI1LCJ5Ijo4MTR9XQ==" marker-end="url(#mermaid-5_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_A_B_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_B_C_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(40, 534)"><g class="label" data-id="L_C_D_0" transform="translate(-32, -13)"><foreignObject width="64" height="26"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"><p style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: 400; font-stretch: inherit; font-size: 16px; line-height: 26px; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; letter-spacing: 0px; max-width: 100%; white-space: pre-wrap; word-break: break-word; text-shadow: none; background-color: rgb(233, 233, 255);">闲聊意图</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(178.25, 368)"><g class="label" data-id="L_C_E_0" transform="translate(-32, -13)"><foreignObject width="64" height="26"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"><p style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: 400; font-stretch: inherit; font-size: 16px; line-height: 26px; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; letter-spacing: 0px; max-width: 100%; white-space: pre-wrap; word-break: break-word; text-shadow: none; background-color: rgb(233, 233, 255);">医疗意图</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_E_F_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_F_G_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_G_D_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_D_H_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="font-family: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: inherit; line-height: 1.5; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; vertical-align: baseline; background-color: rgba(233, 233, 255, 0.5); display: table-cell; white-space: nowrap; max-width: 200px; text-align: center;"><span class="edgeLabel" style="font: inherit; scrollbar-color: transparent transparent; margin: 0px; padding: 0px; border: 0px; vertical-align: baseline; fill: rgb(46, 47, 51); color: rgb(46, 47, 51); background-color: rgb(233, 233, 255); text-align: center;"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="flowchart-A-0" transform="translate(109.125, 34)"><rect class="basic label-container" style="" x="-63" y="-26" width="126" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">用户输入</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-B-1" transform="translate(109.125, 136)"><rect class="basic label-container" style="" x="-96.421875" y="-26" width="192.84375" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">NLU自然语言理解</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-C-3" transform="translate(109.125, 271)"><polygon points="59,0 118,-59 59,-118 0,-59" class="label-container" transform="translate(-58.5, 59)"></polygon><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">意图分类</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-D-5" transform="translate(109.125, 738)"><rect class="basic label-container" style="" x="-80.1953125" y="-26" width="160.390625" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">NLG回复生成</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-E-7" transform="translate(178.25, 432)"><rect class="basic label-container" style="" x="-76.2109375" y="-26" width="152.421875" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">DM对话管理</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-F-9" transform="translate(178.25, 534)"><rect class="basic label-container" style="" x="-71.25" y="-26" width="142.5" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">语义槽填充</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-G-11" transform="translate(178.25, 636)"><rect class="basic label-container" style="" x="-79.5" y="-26" width="159" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">知识图谱查询</tspan></tspan></text></g></g></g><g class="node default" id="flowchart-H-15" transform="translate(109.125, 840)"><rect class="basic label-container" style="" x="-46.5" y="-26" width="93" height="52"></rect><g class="label" style="" transform="translate(0, -11)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">用户</tspan></tspan></text></g></g></g></g></g></g></svg>
+**架构说明**：
 
-## 2 实现步骤概览
+- **NLU模块**：负责意图识别和实体抽取
+- **DM模块**：管理对话状态，执行对话策略
+- **NLG模块**：生成自然语言回复
 
-| 模块       | 核心任务            | 技术方案                         |
-| :--------- | :------------------ | :------------------------------- |
-| **NLU**    | 意图识别 + 槽位填充 | BiLSTM-CRF + BERT + 传统机器学习 |
-| **DM**     | 对话状态管理        | 语义槽配置文件 + 策略决策        |
-| **主逻辑** | 对话流程控制        | Streamlit Web界面                |
+> 💡 **架构优势**：模块化设计便于维护扩展，支持多轮对话和意图澄清
 
 
 
-## 3 NLU模块详解
+## 2 整体实现步骤
 
-### 模型一：闲聊意图识别
+| 模块        | 子任务       | 技术方案         | 输出结果            |
+| :---------- | :----------- | :--------------- | :------------------ |
+| **NLU模块** | 闲聊意图识别 | sklearn分类模型  | 6类意图预测         |
+|             | 医疗意图识别 | BERT fine-tuning | 13类意图预测        |
+|             | 槽位填充     | BiLSTM+CRF       | 7种实体识别         |
+| **DM模块**  | 语义槽定义   | JSON配置文件     | 意图-槽位映射       |
+|             | 对话策略     | 阈值判断         | accept/clarify/deny |
+| **主逻辑**  | 对话流程控制 | Streamlit界面    | 交互式问答          |
+
+
+
+## 3 NLU模块实现
+
+### 模型一：闲聊意图识别模型
 
 **功能定位**：快速判断用户是否为闲聊意图，避免进入复杂医疗推理流程
 
@@ -185,7 +196,7 @@ class CLFModel(object):
     功能：加载训练好的双模型，提供统一的预测接口
     """
     def __init__(self, model_save_path):
-        super(CLFModel, self).__init__()
+        super().__init__()
         self.model_save_path = model_save_path
         
         # 加载标签映射和向量化器
@@ -240,10 +251,6 @@ if __name__ == '__main__':
 
 #### 2.1 支持的医疗意图
 
-表格
-
-复制
-
 | ID   | 意图名称      | 查询类型     | 示例问题             |
 | :--- | :------------ | :----------- | :------------------- |
 | 0    | 定义          | 疾病基本概念 | "糖尿病是什么"       |
@@ -260,11 +267,39 @@ if __name__ == '__main__':
 | 11   | 治疗时间      | 疗程周期     | "骨折多久能好"       |
 | 12   | 其他          | 未分类问题   | "婴儿会有痔疮吗"     |
 
+
+
+医疗意图识别模型的数据集位于项目以下路径：
+
+```bash
+./NLP/MedicalKB/NLU/Medical_intention/data
+```
+
+该目录包含 **3个核心文件**，构成完整的训练和推理数据体系：
+
+| 文件名称        | 作用         | 数据量   | 格式 |
+| :-------------- | :----------- | :------- | :--- |
+| **`train.csv`** | 训练数据集   | 7,273条  | CSV  |
+| **`test.csv`**  | 测试数据集   | 1,500+条 | CSV  |
+| **`label.txt`** | 意图标签定义 | 13个类别 | 文本 |
+
+
+
+**📊 数据格式规范**
+
+所有CSV文件均采用 **UTF-8编码**，使用逗号`,`作为分隔符，包含以下三列：
+
+| 列名              | 数据类型 | 说明                   | 示例                       |
+| :---------------- | :------- | :--------------------- | :------------------------- |
+| **`text`**        | 字符串   | 用户原始提问（已脱敏） | "肾结石用什么药效果较好？" |
+| **`label_class`** | 字符串   | 意图类别中文名称       | "治疗方法"                 |
+| **`label_id`**    | 整数     | 意图类别ID（0-12）     | `5`                        |
+
+> ⚠️ **注意**：数据已做预处理，文本中的英文标点已统一，确保格式一致性
+
+
+
 #### 2.2 配置文件
-
-Python
-
-复制
 
 ```python
 # intent_config.py
@@ -273,7 +308,7 @@ import torch
 class Config():
     def __init__(self):
         # 自动选择计算设备（GPU > CPU）
-        self.device = "mps" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         # 数据文件路径
         self.train_path = './data/train.csv'
@@ -291,11 +326,9 @@ class Config():
         self.bert_path = './bert-base-chinese'
 ```
 
+
+
 #### 2.3 数据加载与预处理
-
-Python
-
-复制
 
 ```python
 # utils/data_loader.py
