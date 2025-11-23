@@ -395,6 +395,7 @@ def collate_fn(datas):
 def get_dataloader():
     """创建训练和验证数据加载器"""
     train_dataset = MyDataset(conf.train_path)
+    test_dataset = MyDataset(conf.test_path)
     train_iter = DataLoader(
         train_dataset,
         batch_size=conf.batch_size,
@@ -402,14 +403,19 @@ def get_dataloader():
         drop_last=True,           # 丢弃不足batch_size的最后一个批次
         shuffle=True              # 打乱顺序
     )
-    return train_iter, None
+    test_iter = DataLoader(
+        test_dataset,
+        batch_size=conf.batch_size,
+        collate_fn=collate_fn,    # 自定义批处理函数
+        drop_last=True,           # 丢弃不足batch_size的最后一个批次
+        shuffle=True              # 打乱顺序
+    )
+    return train_iter, test_iter
 ```
 
+
+
 #### 2.4 模型构建
-
-Python
-
-复制
 
 ```python
 # model.py
@@ -444,11 +450,9 @@ class MyModel(nn.Module):
         return output
 ```
 
+
+
 #### 2.5 模型训练
-
-Python
-
-复制
 
 ```python
 # train.py
@@ -527,11 +531,9 @@ if __name__ == '__main__':
     model2train()
 ```
 
+
+
 #### 2.6 Flask API服务封装
-
-Python
-
-复制
 
 ```python
 # api_server.py
