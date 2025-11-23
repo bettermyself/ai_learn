@@ -1191,15 +1191,9 @@ def neo4j_searcher(cql_list):
 
 
 
-------
-
-### chat_app.py：Web交互界面
+### 5.2 chat_app.py：Web交互界面
 
 **技术栈**：Streamlit - 快速构建数据应用
-
-Python
-
-复制
 
 ```python
 # -*- coding:utf-8 -*-
@@ -1275,15 +1269,55 @@ if __name__ == "__main__":
     main()
 ```
 
-------
 
-## 上线部署
 
-### 启动服务清单
+**澄清意图时，临时保存查询结果**
 
-表格
+本模块提供**用户对话上下文数据的持久化存储与加载功能**，是医疗知识库系统中会话管理的核心组件。通过JSON文件实现对话状态的本地缓存，确保在系统重启或会话中断后能够恢复用户的历史交互信息。
 
-复制
+**核心特性**
+
+| 特性           | 说明                               |
+| :------------- | :--------------------------------- |
+| **数据持久化** | 将对话上下文自动保存至本地JSON文件 |
+| **状态恢复**   | 支持从磁盘加载历史对话状态         |
+| **默认兜底**   | 文件不存在时返回标准初始化数据     |
+| **编码安全**   | 强制UTF-8编码，支持中文字符        |
+| **格式美化**   | 自动格式化JSON输出，提升可读性     |
+
+```python
+# -*- coding:utf-8 -*-
+import os
+import re
+import json
+
+LOGS_DIR = "./logs"
+
+
+def dump_user_dialogue_context(data):
+    path = os.path.join(LOGS_DIR,'{}.json'.format("user"))
+    with open(path, 'w', encoding='utf8') as f:
+        f.write(json.dumps(data, sort_keys=True, indent=4, 
+                separators=(', ', ': '), ensure_ascii=False))
+
+
+def load_user_dialogue_context():
+    path = os.path.join(LOGS_DIR,'{}.json'.format("user"))
+    if not os.path.exists(path):
+        return {"choice_answer":"hi，机器人小智很高心为您服务", "slot_values":None}
+    else:
+        with open(path, 'r', encoding='utf8') as f:
+            data = f.read()
+            return json.loads(data)
+```
+
+
+
+
+
+## 6 上线部署
+
+### 6.1 启动服务清单
 
 | 服务名称         | 启动命令                    | 端口 | 说明           |
 | :--------------- | :-------------------------- | :--- | :------------- |
@@ -1292,11 +1326,11 @@ if __name__ == "__main__":
 | **知识图谱**     | `./neo4j start`             | 7474 | Neo4j数据库    |
 | **主应用**       | `streamlit run chat_app.py` | 8501 | Web界面        |
 
-### 启动顺序
+> 可以通过sh文件，实现双击启动，避免进入多个文件夹启动服务。
 
-bash
 
-复制
+
+### 6.2 启动顺序
 
 ```bash
 # 1. 启动意图识别服务（在独立终端）
@@ -1318,24 +1352,10 @@ streamlit run chat_app.py
 
 💡 **提示**：生产环境建议使用进程管理工具（如PM2、Supervisor）保持服务常驻
 
-------
 
-## 运行效果
+
+### 6.3 运行效果
 
 🖼️ **界面截图**
 
-<div align="center">     <img src="./img/05.png" width="80%" alt="系统运行截图"> </div>
-
-**功能演示**：
-
-1. **直接问答**：
-   - 用户："糖尿病怎么治疗？"
-   - 系统：识别意图`治疗方法`，提取实体`糖尿病`，查询图谱返回答案
-2. **澄清模式**：
-   - 用户："这个病能好吗？"
-   - 系统：意图置信度0.65（低于0.8），回复"您问的是'糖尿病'的治愈率吗？"
-   - 用户："是的"
-   - 系统：加载预存答案返回答案
-3. **闲聊处理**：
-   - 用户："你好"
-   - 系统：识别为`greet`，随机返回问候语
+<img src="assets/05.png" alt="img" style="zoom:50%;" />
