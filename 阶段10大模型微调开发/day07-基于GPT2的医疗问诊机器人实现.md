@@ -252,18 +252,7 @@ python preprocess.py --train_path data/train.txt --save_path data/train.pkl
 
 #### 5.1 GPT2架构解析
 
-```
-输入层
-  ├─ 词嵌入层 (WordEmbedding)
-  └─ 位置嵌入层 (PositionEmbedding)
-
-中间层
-  └─ Transformer Decoder模块 × 12层
-
-输出层
-  ├─ LayerNorm归一化
-  └─ 线性全连接层
-```
+![img](assets/04.png)
 
 #### 5.2 核心参数配置
 
@@ -433,10 +422,6 @@ def preprocess(train_txt_path, train_pkl_path):
 
 #### 8.3 DataSet封装：`dataset.py`
 
-Python
-
-复制
-
 ```python
 from torch.utils.data import Dataset  # PyTorch数据集基类
 import torch  # 张量处理库
@@ -479,10 +464,6 @@ class MyDataset(Dataset):
 ```
 
 #### 8.4 DataLoader封装：`dataloader.py`
-
-Python
-
-复制
 
 ```python
 import torch.nn.utils.rnn as rnn_utils  # 序列填充工具
@@ -575,111 +556,374 @@ def get_dataloader(train_path):
 
 #### 8.5 训练主函数：`train.py`
 
-Python
+模型训练模块负责完成以下核心任务：
 
-复制
+| 功能模块     | 主要职责                                   | 关键特性                 |
+| :----------- | :----------------------------------------- | :----------------------- |
+| **训练循环** | 执行正向传播、损失计算、反向传播和参数更新 | 支持梯度累加、学习率预热 |
+| **验证循环** | 评估模型在验证集上的性能                   | 无梯度计算，仅评估困惑度 |
+| **优化调度** | 管理优化器和学习率调度器                   | AdamW + 线性预热衰减     |
+| **性能监控** | 跟踪Loss和Token预测准确率                  | 实时日志输出与模型保存   |
 
 ```python
 import torch
 import os
 from datetime import datetime
-from transformers import GPT2LMHeadModel, GPT2Config, BertTokenizerFast
-from transformers import AdamW, get_linear_schedule_with_warmup
+import transformers
+from transformers import GPT2LMHeadModel, GPT2Config
+from transformers import BertTokenizerFast
+from functions_tools import *          # 导入辅助工具函数
+from parameter_config import *         # 导入参数配置
+from data_preprocess.dataloader import *  # 导入数据加载器
+from pytorch_tools import EarlyStopping  # 导入早停机制（当前未启用）
 
 def train_epoch(model, train_dataloader, optimizer, scheduler, epoch, args):
     """
-    单个epoch的训练过程
+    执行单个训练轮次
     
-    参数:
-        model: GPT2模型
-        train_dataloader: 训练数据加载器
-        optimizer: 优化器
+    功能说明：
+    - 遍历训练数据加载器，完成前向传播、损失计算和反向传播
+    - 支持梯度累加以模拟大batch训练
+    - 实时统计token级预测准确率
+    
+    参数：
+        model: GPT2模型实例
+        train_dataloader: 训练数据DataLoader
+        optimizer: 优化器实例
         scheduler: 学习率调度器
-        epoch: 当前epoch索引
-        args: 训练参数配置
-        
-    返回:
-        epoch_mean_loss: 本epoch平均损失
+        epoch: 当前轮次数
+        args: 全局参数配置对象
+    
+    返回：
+        epoch_mean_loss: 当前epoch的平均损失值
     """
-    model.train()  # 设置训练模式
+    # 设置模型为训练模式（启用Dropout等）
+    model.train()
     device = args.device
+    # 定义需要忽略的token ID（如padding部分不计算损失，GPT2LMHeadModel 在计算损失时，内部已经预设了 ignore_index硬编码为 -100，如果数据预处理的时候，填写的不是-100，那么就会计算损失）
     ignore_index = args.ignore_index
-    
     epoch_start_time = datetime.now()
-    total_loss = 0
+    total_loss = 0  # 累积整个epoch的损失值
     
-    # 统计预测准确率
+    # 初始化token级准确率统计变量
     epoch_correct_num, epoch_total_num = 0, 0
 
-    # 遍历训练数据
+    # 遍历训练数据批次
     for batch_idx, (input_ids, labels) in enumerate(train_dataloader):
-        # 数据移至GPU/CPU
+        # 将数据迁移到GPU/CPU设备
         input_ids = input_ids.to(device)
         labels = labels.to(device)
         
-        # 前向传播
+        # 前向传播：模型自动计算语言建模损失
         outputs = model.forward(input_ids, labels=labels)
         logits = outputs.logits
-        loss = outputs.loss.mean()  # 对多GPU损失取平均
+        loss = outputs.loss
+        # 多GPU情况下取平均损失（当前batch_size=4，单卡可省略）
+        loss = loss.mean()
 
-        # 计算batch准确率
+        # 统计当前batch的预测准确率
         batch_correct_num, batch_total_num = calculate_acc(
             logits, labels, ignore_index=ignore_index
         )
         
-        # 累加epoch统计
+        # 累积epoch级别的统计量
         epoch_correct_num += batch_correct_num
         epoch_total_num += batch_total_num
-        batch_acc = batch_correct_num / batch_total_num
         
-        total_loss += loss.item()
+        # 计算batch准确率用于日志输出
+        batch_acc = batch_correct_num / batch_total_num
 
-        # 梯度累积处理
+        # 累积总损失（用于后续计算epoch平均损失）
+        total_loss += loss.item()
+        
+        # 梯度累加：若设置gradient_accumulation_steps > 1，则模拟大batch训练
         if args.gradient_accumulation_steps > 1:
             loss = loss / args.gradient_accumulation_steps
-        
-        # 反向传播
+
+        # 反向传播计算梯度
         loss.backward()
         
-        # 梯度裁剪，防止梯度爆炸 (max_norm=configurable)
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), 
-            args.max_grad_norm
-        )
+        # 梯度裁剪：防止梯度爆炸，将梯度范数限制在max_grad_norm内
+        torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
-        # 更新参数 (每gradient_accumulation_steps步)
+        # 参数更新：达到梯度累加步数后执行优化器步骤
         if (batch_idx + 1) % args.gradient_accumulation_steps == 0:
-            optimizer.step()      # 更新权重
-            scheduler.step()      # 更新学习率
-            optimizer.zero_grad() # 清空梯度
+            optimizer.step()        # 更新模型参数
+            scheduler.step()        # 更新学习率
+            optimizer.zero_grad()   # 清空梯度缓存
 
-        # 定期打印训练信息
+        # 定期输出训练日志（每loss_step个batch）
         if (batch_idx + 1) % args.loss_step == 0:
-            print(f"batch {batch_idx+1}/{len(train_dataloader)}, "
-                  f"loss {loss.item() * args.gradient_accumulation_steps:.4f}, "
-                  f"acc {batch_acc:.4f}, "
-                  f"lr {scheduler.get_lr()[0]:.6f}")
+            print(
+                "batch {} of epoch {}, loss {}, batch_acc {}, lr {}".format(
+                    batch_idx + 1, epoch + 1, 
+                    loss.item() * args.gradient_accumulation_steps, 
+                    batch_acc, scheduler.get_lr()
+                ))
+        
+        # 释放中间变量显存
+        del input_ids, outputs
 
-    # 计算epoch平均指标
+    # 计算并输出epoch级别的平均损失和准确率
     epoch_mean_loss = total_loss / len(train_dataloader)
     epoch_mean_acc = epoch_correct_num / epoch_total_num
-    print(f"Epoch {epoch+1}: loss {epoch_mean_loss:.4f}, acc {epoch_mean_acc:.4f}")
+    print(
+        "epoch {}: loss {}, predict_acc {}".format(
+            epoch + 1, epoch_mean_loss, epoch_mean_acc
+        ))
 
-    # 保存模型 (每10个epoch或最后一个epoch)
-    if epoch % 10 == 0 or epoch == args.epochs - 1:
-        model_path = os.path.join(args.save_model_path, f'bj_epoch{epoch+1}')
-        os.makedirs(model_path, exist_ok=True)
+    # 模型保存策略：每10个epoch或最后一个epoch保存检查点
+    if epoch % 10 == 0 or epoch == args.epochs:
+        print('saving model for epoch {}'.format(epoch + 1))
+        model_path = os.path.join(args.save_model_path, 
+                                  'bj_epoch{}'.format(epoch + 1))
+        # 创建模型保存目录
+        if not os.path.exists(model_path):
+            os.mkdir(model_path)
+        # 保存完整模型文件（含config.json）
         model.save_pretrained(model_path)
-        print(f"模型已保存至: {model_path}")
+        print('epoch {} finished'.format(epoch + 1))
+        epoch_finish_time = datetime.now()
+        print('time for one epoch: {}'.format(
+            epoch_finish_time - epoch_start_time
+        ))
 
     return epoch_mean_loss
+
+
+def validate_epoch(model, validate_dataloader, epoch, args):
+    """
+    执行单个验证轮次
+    
+    功能说明：
+    - 在验证集上评估模型，不更新参数
+    - 仅计算平均损失（困惑度）
+    
+    参数：
+        model: GPT2模型实例
+        validate_dataloader: 验证数据DataLoader
+        epoch: 当前轮次数
+        args: 全局参数配置对象
+    
+    返回：
+        epoch_mean_loss: 验证集平均损失
+    """
+    print("start validating")
+    model.eval()  # 设置模型为评估模式（关闭Dropout）
+    device = args.device
+    ignore_index = args.ignore_index
+    epoch_start_time = datetime.now()
+    total_loss = 0
+
+    # 使用torch.no_grad()禁用梯度计算，减少显存占用
+    with torch.no_grad():
+        for batch_idx, (input_ids, labels) in enumerate(validate_dataloader):
+            input_ids = input_ids.to(device)
+            labels = labels.to(device)
+            outputs = model.forward(input_ids, labels=labels)
+            logits = outputs.logits
+            loss = outputs.loss
+            loss = loss.mean()
+
+            total_loss += loss.item()
+            # 释放显存
+            del input_ids, outputs
+
+        # 计算验证集平均损失
+        epoch_mean_loss = total_loss / len(validate_dataloader)
+        print("validate epoch {}: loss {}".format(epoch + 1, epoch_mean_loss))
+        epoch_finish_time = datetime.now()
+        print('time for validating one epoch: {}'.format(
+            epoch_finish_time - epoch_start_time
+        ))
+        return epoch_mean_loss
+
+
+def train(model, train_dataloader, validate_dataloader, args):
+    """
+    完整训练流程管理函数
+    
+    功能说明：
+    - 初始化优化器和学习率调度器
+    - 循环执行训练和验证
+    - 自动保存验证损失最低的模型
+    
+    参数：
+        model: GPT2模型实例
+        train_dataloader: 训练数据DataLoader
+        validate_dataloader: 验证数据DataLoader
+        args: 全局参数配置对象
+    """
+    # 计算总训练步数（用于学习率调度）
+    t_total = len(train_dataloader) // args.gradient_accumulation_steps * args.epochs
+    
+    # 初始化AdamW优化器（带权重衰减的Adam）
+    optimizer = transformers.AdamW(
+        model.parameters(), 
+        lr=args.lr, 
+        eps=args.eps
+    )
+    
+    # 初始化线性预热+衰减学习率调度器
+    # num_warmup_steps: 预热步数，初始学习率从0线性增加到设定值
+    # num_training_steps: 总训练步数（包含预热）
+    scheduler = transformers.get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=args.warmup_steps,
+        num_training_steps=t_total
+    )
+
+    print('starting training')
+    
+    # 记录每个epoch的训练/验证损失
+    train_losses, validate_losses = [], []
+    # 记录验证集最低损失（用于保存最优模型）
+    best_val_loss = 10000
+    
+    # 主训练循环
+    for epoch in range(args.epochs):
+        # ========== 训练阶段 ========== #
+        train_loss = train_epoch(
+            model=model, train_dataloader=train_dataloader,
+            optimizer=optimizer, scheduler=scheduler,
+            epoch=epoch, args=args
+        )
+        train_losses.append(train_loss)
+
+        # ========== 验证阶段 ========== #
+        validate_loss = validate_epoch(
+            model=model, validate_dataloader=validate_dataloader,
+            epoch=epoch, args=args
+        )
+        validate_losses.append(validate_loss)
+
+        # 保存困惑度最低的模型（验证损失越小，困惑度越低）
+        # ⚠️ 注意：困惑度低不代表生成效果一定更好，需结合人工评估
+        if validate_loss < best_val_loss:
+            best_val_loss = validate_loss
+            print('saving current best model for epoch {}'.format(epoch + 1))
+            model_path = os.path.join(args.save_model_path, 
+                                      'min_ppl_model_bj'.format(epoch + 1))
+            if not os.path.exists(model_path):
+                os.mkdir(model_path)
+            model.save_pretrained(model_path)
+
+
+def main():
+    """
+    主入口函数：完成训练前的所有准备工作
+    """
+    # 加载参数配置
+    params = ParameterConfig()
+    
+    # 设置GPU设备（默认使用0号卡）
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+
+    # 初始化BertTokenizer（与数据处理保持一致）
+    tokenizer = BertTokenizerFast(
+        vocab_file=params.vocab_path,
+        sep_token="[SEP]",
+        pad_token="[PAD]",
+        cls_token="[CLS]"
+    )
+
+    # 创建模型保存目录
+    if not os.path.exists(params.save_model_path):
+        os.mkdir(params.save_model_path)
+
+    # 加载预训练GPT2模型或从头初始化
+    if params.pretrained_model:
+        # 💡 推荐使用预训练模型，收敛速度更快
+        model = GPT2LMHeadModel.from_pretrained(params.pretrained_model)
+    else:
+        # 从config.json初始化新模型
+        model_config = GPT2Config.from_json_file(params.config_json)
+        model = GPT2LMHeadModel(config=model_config)
+    
+    model = model.to(params.device)
+    # 确保模型词表大小与tokenizer一致
+    assert model.config.vocab_size == tokenizer.vocab_size
+
+    # 统计并输出模型参数量
+    num_parameters = 0
+    for parameter in model.parameters():
+        num_parameters += parameter.numel()
+    print(f'模型参数总量---》{num_parameters}')
+
+    # 加载训练集和验证集
+    train_dataloader, validate_dataloader = get_dataloader(params.train_path)
+    
+    # 开始训练
+    train(model, train_dataloader, validate_dataloader, params)
+
+if __name__ == '__main__':
+    main()
 ```
 
-#### 8.6 预测交互：`interact.py`
+训练过程中的核心超参数配置如下：
 
-Python
+| 参数名称                        | 默认值 | 说明         | 调优建议                   |
+| :------------------------------ | :----- | :----------- | :------------------------- |
+| **learning_rate**               | 5e-5   | 初始学习率   | 过大易发散，过小收敛慢     |
+| **batch_size**                  | 4      | 每批次样本数 | 受显存限制，可配合梯度累加 |
+| **gradient_accumulation_steps** | 1      | 梯度累加步数 | 增大可等效增大batch_size   |
+| **max_grad_norm**               | 1.0    | 梯度裁剪阈值 | 防止梯度爆炸               |
+| **warmup_steps**                | 1000   | 预热步数     | 初期平滑提升学习率         |
+| **epochs**                      | 30     | 总训练轮次   | 根据验证损失曲线调整       |
+| **loss_step**                   | 100    | 日志输出频率 | 建议每100-500步输出一次    |
 
-复制
+
+
+#### 8.6 辅助工具函数：`functions_tools.py`
+
+```python
+import torch
+import torch.nn.functional as F
+
+def calculate_acc(logit, labels, ignore_index=-100):
+    """
+    计算token级别的预测准确率
+    
+    功能说明：
+    - 排除padding部分（ignore_index）的预测
+    - 返回正确预测的token数和总有效token数
+    
+    参数：
+        logit: 模型输出的logits张量，形状为[batch, seq_len, vocab_size]
+        labels: 真实标签张量，形状为[batch, seq_len]
+        ignore_index: 需要忽略的token ID（如padding）
+    
+    返回：
+        n_correct: 正确预测的token数量
+        n_word: 总有效token数量（非padding）
+    """
+    # 将logit和labels对齐：logit预测的是下一个token，因此去掉最后一个位置
+    logit = logit[:, :-1, :].contiguous().view(-1, logit.size(-1))
+    # labels对应的真实值是向后移一位的，因此去掉第一个位置
+    labels = labels[:, 1:].contiguous().view(-1)
+    
+    # 获取每个位置预测概率最高的token id
+    _, logit = logit.max(dim=-1)
+    
+    # 创建mask：标记非padding位置（True表示有效token）
+    # labels.ne(ignore_index) 返回一个布尔张量，不等于ignore_index的位置为True
+    non_pad_mask = labels.ne(ignore_index)
+    
+    # 计算正确预测的token数，并只统计有效位置
+    # logit.eq(labels) 找出预测正确的位置
+    # masked_select(non_pad_mask) 只保留有效token
+    # sum().item() 累加并返回Python数值
+    n_correct = logit.eq(labels).masked_select(non_pad_mask).sum().item()
+    
+    # 统计总有效token数
+    n_word = non_pad_mask.sum().item()
+    
+    return n_correct, n_word
+```
+
+
+
+#### 8.7 预测交互：`interact.py`
 
 ```python
 # 导入必要的库
@@ -854,10 +1098,6 @@ if __name__ == '__main__':
 ### 9. 关键技术要点总结
 
 #### 9.1 数据预处理要点
-
-表格
-
-复制
 
 | 技术点       | 实现方式            | 目的             |
 | :----------- | :------------------ | :--------------- |
