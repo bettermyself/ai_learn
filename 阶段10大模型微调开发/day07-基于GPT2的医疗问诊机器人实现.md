@@ -276,14 +276,7 @@ python preprocess.py --train_path data/train.txt --save_path data/train.pkl
 4. 每10个epoch或验证集困惑度最低时保存模型
 5. 记录训练/验证损失与预测准确率
 
-**关键训练参数**：
 
-- 批次大小：4
-- 最大序列长度：200
-- 梯度累积步数： configurable
-- 学习率预热步数：configurable
-
-------
 
 ### 7. 人机交互
 
@@ -293,10 +286,6 @@ python preprocess.py --train_path data/train.txt --save_path data/train.pkl
 - **Top-k/Top-p采样策略**
 - **重复惩罚机制**
 - **对话历史自动保存**
-
-bash
-
-复制
 
 ```bash
 python interact.py
@@ -952,6 +941,14 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     top_k = min(top_k, logits.size(-1))
     if top_k > 0:
         # 找到top_k阈值，低于该值的设为filter_value
+        # 这段代码的作用是找到第k大的logit值，并将其扩展为与原张量形状兼容的阈值张量，用于后续的比较和过滤操作。
+				# 例如，如果有logits=[5, 2, 8, 1, 9, 3]且top_k=3：
+        # torch.topk(logits, 3)返回(values=[9, 8, 5], indices=[4, 2, 0])
+        # [0]提取得到[9, 8, 5]
+        # [-1]取最后一个元素5
+        # ...表示保留前面的所有维度
+        # [None]增加维度变成[5]
+        # 最终结果用于标记所有小于5的logits值，这些值会被过滤掉
         indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
         logits[indices_to_remove] = filter_value
     
@@ -981,7 +978,7 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'Using device: {device}')
     
-    # 设置GPU可见性
+    # 设置GPU可见性,它告诉程序只使用编号为0的CUDA GPU设备
     os.environ["CUDA_VISIBLE_DEVICES"] = '0'
     
     # 初始化分词器
@@ -999,6 +996,7 @@ def main():
     
     # 创建聊天记录保存目录
     if pconf.save_samples_path:
+        # exist_ok=True 参数的作用是：如果目标目录已经存在，不会抛出异常；如果目录不存在，则创建该目录
         os.makedirs(pconf.save_samples_path, exist_ok=True)
         samples_file = open(pconf.save_samples_path + '/samples.txt', 'a', encoding='utf8')
         samples_file.write(f"聊天记录{datetime.now()}:\n")
@@ -1093,7 +1091,7 @@ if __name__ == '__main__':
     main()
 ```
 
-------
+
 
 ### 9. 关键技术要点总结
 
@@ -1119,13 +1117,3 @@ if __name__ == '__main__':
 - **Top-p采样**：动态调整候选词数量，提升多样性
 - **重复惩罚**：`repetition_penalty`抑制重复生成
 - **历史记忆**：`max_history_len`控制上下文长度
-
-------
-
-### 10. 扩展建议
-
-1. **模型优化**：尝试更大参数量的GPT2模型（如GPT2-large）
-2. **领域适配**：增加医疗专业术语词典
-3. **性能提升**：使用混合精度训练加速
-4. **安全增强**：添加医疗回答置信度过滤机制
-5. **部署方案**：考虑模型量化与ONNX导出
