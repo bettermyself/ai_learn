@@ -260,7 +260,7 @@ $$
 
 ### 4.1 模型概述
 
-T5（Text-to-Text Transfer Transformer）由Google于2020年提出，核心思想是 **"所有NLP任务都可视为文本到文本的转换"** 。
+T5（Text-To-Text Transfer Transformer）由Google于2020年提出，核心思想是 **"所有NLP任务都可视为文本到文本的转换"** 。
 
 **统一范式**：通过前缀提示（Prefix）将分类、问答、翻译等任务都转换为seq2seq格式，实现**单一模型、单一损失函数、统一训练流程**。
 
