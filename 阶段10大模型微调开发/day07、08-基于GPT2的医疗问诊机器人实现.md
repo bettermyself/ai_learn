@@ -632,7 +632,7 @@ def collate_fn(batch):
         input_ids: 填充后的输入序列
         labels: 填充后的标签序列 (pad=-100)
     """
-    # 对输入序列进行填充，batch_first=True表示第一个维度是batch size
+    # 对输入序列进行填充，batch_first=True表示输出结果第一个维度是batch size
     # padding_value=0表示用0填充
     input_ids = rnn_utils.pad_sequence(batch, batch_first=True, padding_value=0)
     
@@ -696,7 +696,6 @@ from transformers import BertTokenizerFast
 from functions_tools import *          # 导入辅助工具函数
 from parameter_config import *         # 导入参数配置
 from data_preprocess.dataloader import *  # 导入数据加载器
-from pytorch_tools import EarlyStopping  # 导入早停机制（当前未启用）
 
 def train_epoch(model, train_dataloader, optimizer, scheduler, epoch, args):
     """
@@ -739,7 +738,8 @@ def train_epoch(model, train_dataloader, optimizer, scheduler, epoch, args):
         outputs = model.forward(input_ids, labels=labels)
         logits = outputs.logits
         loss = outputs.loss
-        # 多GPU情况下取平均损失（当前batch_size=4，单卡可省略）
+        # 多GPU情况下取平均损失（当前batch_size=4）
+        # loss.mean() 是对当前loss张量中所有元素求平均，如果loss是per-sample loss（shape=[batch_size]），则是对batch_size平均；如果loss是各GPU的loss堆叠（shape=[num_gpus]），则是对多GPU平均；如果loss已经是标量，则.mean()无效果
         loss = loss.mean()
 
         # 统计当前batch的预测准确率
@@ -993,7 +993,129 @@ if __name__ == '__main__':
 | **epochs**                      | 30     | 总训练轮次   | 根据验证损失曲线调整       |
 | **loss_step**                   | 100    | 日志输出频率 | 建议每100-500步输出一次    |
 
-
+> 在大型语言模型训练中，是否需要同时输入 `input_ids` 和 `labels` 取决于具体场景：
+>
+> #### **1. 需要同时输入 `input_ids` 和 `labels` 的情况**
+>
+> #### **训练阶段（Training）**
+>
+> ```python
+> # 训练时通常需要同时提供输入和标签
+> outputs = model.forward(input_ids, labels=labels)
+> # 这样模型内部会自动计算损失
+> loss = outputs.loss
+> ```
+>
+> **为什么训练时需要 labels？**
+>
+> - 模型需要知道正确答案来计算损失函数
+> - 实现**teacher forcing** - 使用真实标签作为下一个token的输入
+> - 支持**因果语言建模（Causal LM）** 任务
+>
+> #### **特定任务评估**
+>
+> ```python
+> # 评估模型性能时也需要labels
+> outputs = model(input_ids, labels=labels)
+> perplexity = torch.exp(outputs.loss)  # 计算困惑度
+> ```
+>
+> 
+>
+> #### **2. 只需要输入 `input_ids` 的情况**
+>
+> #### **推理/生成阶段（Inference）**
+>
+> ```python
+> # 生成文本时不需要labels
+> outputs = model.forward(input_ids)
+> # 或者使用generate方法
+> generated_ids = model.generate(input_ids, max_length=50)
+> ```
+>
+> #### **特征提取/表示学习**
+>
+> ```python
+> # 只需要获取隐藏状态
+> outputs = model.forward(input_ids, output_hidden_states=True)
+> hidden_states = outputs.hidden_states
+> ```
+>
+> #### **零样本/小样本学习**
+>
+> ```python
+> # 测试模型在未见任务上的表现
+> outputs = model(input_ids)  # 不需要标签
+> logits = outputs.logits
+> predictions = torch.argmax(logits, dim=-1)
+> ```
+>
+> 
+>
+> #### **3. 技术细节：labels的处理方式**
+>
+> 在Hugging Face Transformers中：
+>
+> ```python
+> # 如果提供labels，模型会自动计算损失
+> # labels通常与input_ids相同，但向右偏移一位
+> # 例如，对于文本 "Hello world":
+> input_ids = [1, 2, 3]       # [BOS, "Hello", "world"]
+> labels    = [2, 3, -100]    # ["Hello", "world", EOS?]
+> 
+> # -100 是PyTorch中忽略的索引，表示不计算该位置的损失
+> ```
+>
+> 
+>
+> #### **4. 实际代码示例**
+>
+> ```python
+> import torch
+> from transformers import AutoModelForCausalLM
+> 
+> model = AutoModelForCausalLM.from_pretrained("gpt2")
+> 
+> # 场景1：训练（需要labels）
+> def training_step(batch):
+>     input_ids = batch["input_ids"]
+>     labels = batch["labels"]  # 通常将input_ids右移作为labels
+>     outputs = model(input_ids=input_ids, labels=labels)
+>     loss = outputs.loss
+>     loss.backward()
+>     return loss
+> 
+> # 场景2：推理（不需要labels）
+> def generate_text(prompt):
+>     input_ids = tokenizer.encode(prompt, return_tensors="pt")
+>     # 方法1：直接生成
+>     generated = model.generate(input_ids, max_length=100)
+>     # 方法2：获取logits后采样
+>     with torch.no_grad():
+>         outputs = model(input_ids)
+>         logits = outputs.logits
+>     return generated
+> ```
+>
+> 
+>
+> #### **5. 总结建议**
+>
+> | 场景     | 是否需要labels | 目的                   |
+> | :------- | :------------- | :--------------------- |
+> | 模型训练 | ✅ 需要         | 计算损失，更新参数     |
+> | 模型微调 | ✅ 需要         | 特定任务适应           |
+> | 文本生成 | ❌ 不需要       | 推理新文本             |
+> | 特征提取 | ❌ 不需要       | 获取向量表示           |
+> | 模型评估 | ⚠️ 可选         | 如果需要计算指标就需要 |
+>
+> **最佳实践：**
+>
+> - 训练时**总是**提供labels以便计算损失
+> - 推理时**不提供**labels，除非需要计算特定指标
+> - 评估时根据需求决定：要计算损失/困惑度就提供，只需要预测就不提供
+>
+> ---
 
 #### 8.6 辅助工具函数：`functions_tools.py`
 
@@ -1024,11 +1146,12 @@ def calculate_acc(logit, labels, ignore_index=-100):
     labels = labels[:, 1:].contiguous().view(-1)
     
     # 获取每个位置预测概率最高的token id
+    # logits.max()返回两个值：最大值 和 最大值的索引；torch.argmax()只返回 最大值的索引
     _, logit = logit.max(dim=-1)
     
     # 创建mask：标记非padding位置（True表示有效token）
     # labels.ne(ignore_index) 返回一个布尔张量，不等于ignore_index的位置为True
-    non_pad_mask = labels.ne(ignore_index)
+    non_pad_mask = labels.ne(ignore_index)  # ne 是 "not equal" 的缩写
     
     # 计算正确预测的token数，并只统计有效位置
     # logit.eq(labels) 找出预测正确的位置
@@ -1074,12 +1197,12 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     if top_k > 0:
         # 找到top_k阈值，低于该值的设为filter_value
         # 这段代码的作用是找到第k大的logit值，并将其扩展为与原张量形状兼容的阈值张量，用于后续的比较和过滤操作。
-				# 例如，如果有logits=[5, 2, 8, 1, 9, 3]且top_k=3：
+		# 例如，如果有logits=[5, 2, 8, 1, 9, 3]且top_k=3：
         # torch.topk(logits, 3)返回(values=[9, 8, 5], indices=[4, 2, 0])
         # [0]提取得到[9, 8, 5]
         # [-1]取最后一个元素5
         # ...表示保留前面的所有维度
-        # [None]增加维度变成[5]
+        # [None]增加维度变成[5]，等价于unsqueeze(-1)
         # 最终结果用于标记所有小于5的logits值，这些值会被过滤掉
         indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
         logits[indices_to_remove] = filter_value
