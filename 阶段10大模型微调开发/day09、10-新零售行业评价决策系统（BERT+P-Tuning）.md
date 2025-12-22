@@ -620,7 +620,7 @@ class Verbalizer(object):
         示例:
             str1: "abcd"
             str2: "abadbcdba"
-            返回: ("abcd", 4)
+            返回: ("bcd", 3)
         
         Returns:
             tuple: (最大公共子串, 子串长度)
@@ -643,30 +643,31 @@ class Verbalizer(object):
 
     def hard_mapping(self, sub_label: str) -> str:
         """
-        硬匹配函数：当生成的子标签不存在时，通过最大公共子串找到最相似的主标签
-        
-        Args:
-            sub_label: 模型生成的子标签文本
-        
-        Returns:
-            str: 匹配到的主标签
+        硬匹配函数改进版：通过寻找所有子标签中的单次最高重合度来锁定主标签
         """
-        label, max_overlap_str = '', 0
-        
+        label, max_overlap_score = '', 0
+
         for main_label, sub_labels in self.label_dict.items():
-            overlap_num = 0
-            # 计算当前子标签与所有子标签的最长公共子串总长度
+            # 核心改进：对于每一个主标签，我们只关心它名下最像的那一个子标签
+            current_main_label_max = 0
+
             for s_label in sub_labels:
-                overlap_num += self.get_common_sub_str(sub_label, s_label)[1]
-            
-            # 选择总重合度最高的主标签
-            if overlap_num >= max_overlap_str:
-                max_overlap_str = overlap_num
+                # 获取当前子标签与输入的 LCS 长度
+                current_lcs_len = self.get_common_sub_str(sub_label, s_label)[1]
+
+                # 方案 A：在该主标签内取最大值
+                if current_lcs_len > current_main_label_max:
+                    current_main_label_max = current_lcs_len
+
+            # 比较全局最高分
+            # 如果当前类别的“最强匹配”比之前的还要强，则更新结果
+            if current_main_label_max > max_overlap_score:
+                max_overlap_score = current_main_label_max
                 label = main_label
-        
+
         return label
 
-    def find_main_label(self, sub_label: List[Union[list, str]], hard_mapping=True) -> dict:
+    def find_main_label(self, sub_label: Union[list, str], hard_mapping=True) -> dict:
         """
         通过子标签查找主标签
         
@@ -802,7 +803,7 @@ def mlm_loss(logits, mask_positions, sub_mask_labels,
         
         # 计算当前样本的损失并除以子标签数量
         cur_loss = cross_entropy_criterion(single_mask_logits, single_sub_mask_labels)
-        cur_loss = cur_loss / len(single_sub_mask_labels)
+        cur_loss = cur_loss / len(single_sub_mask_labels)  # 这里需不需要/2有待商榷
         
         # 累加所有样本的损失
         if not loss:
@@ -906,9 +907,9 @@ class ClassEvaluator(object):
         
         # 处理多 token 组成的标签（如 Bert+P-tuning）
         if type(gold_batch[0]) in [list, tuple]:
-            # 将 token 列表拼接为字符串：['体', '育'] → '体,育'
-            pred_batch = [','.join([str(e) for e in ele]) for ele in pred_batch]
-            gold_batch = [','.join([str(e) for e in ele]) for ele in gold_batch]
+            # 将 token 列表拼接为字符串：['体', '育'] → '体育'
+            pred_batch = [''.join([str(e) for e in ele]) for ele in pred_batch]
+            gold_batch = [''.join([str(e) for e in ele]) for ele in gold_batch]
         
         # 累积到全局列表
         self.goldens.extend(gold_batch)
@@ -925,6 +926,7 @@ class ClassEvaluator(object):
             dict: 包含各项指标的字典
         """
         # 获取所有类别
+        # 在 Python 中，管道符号 | 是集合（set）的并集运算符。当你对两个集合执行 | 操作时，结果本身就是一个包含了两个集合所有唯一元素的新集合。
         classes = sorted(list(set(self.goldens) | set(self.predictions)))
         class_metrics, res = {}, {}
         
@@ -990,9 +992,9 @@ if __name__ == '__main__':
     'recall': 0.6,
     'f1': 0.6,
     'class_metrics': {
-        '体,育': {'precision': 0.5, 'recall': 0.5, 'f1': 0.5},
-        '计,算,机': {'precision': 1.0, 'recall': 0.5, 'f1': 0.67},
-        '财,经': {'precision': 0.5, 'recall': 1.0, 'f1': 0.67}
+        '体育': {'precision': 0.5, 'recall': 0.5, 'f1': 0.5},
+        '计算机': {'precision': 1.0, 'recall': 0.5, 'f1': 0.67},
+        '财经': {'precision': 0.5, 'recall': 1.0, 'f1': 0.67}
     }
 }
 ```
