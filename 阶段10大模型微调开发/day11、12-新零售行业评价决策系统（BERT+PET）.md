@@ -426,7 +426,7 @@ class HardTemplate(object):
         mask_token_id = tokenizer.convert_tokens_to_ids(['[MASK]'])[0]
         # list == scalar 返回单一 False 值  np.array(list) == scalar 返回逐元素比较的布尔数组
         condition = np.array(outputs['input_ids']) == mask_token_id
-        # np.where(condition)回满足条件的元素索引; p.where(condition, x, y)条件为真时取 x 对应元素，否则取 y 对应元素
+        # np.where(condition)回满足条件的元素索引array([index, index]); p.where(condition, x, y)条件为真时取 x 对应元素，否则取 y 对应元素
         mask_position = np.where(condition)[0].tolist()
         outputs['mask_position'] = mask_position
         
@@ -772,10 +772,10 @@ if __name__ == '__main__':
 
 ```python
 # coding:utf-8
-from torch.utils.data import DataLoader    # PyTorch数据加载器
+from torch.utils.data import DataLoader         # PyTorch数据加载器
 from transformers import default_data_collator  # 默认批处理函数
-from data_preprocess import *              # 导入数据转换函数
-from pet_config import *                   # 项目配置
+from data_preprocess import *                   # 导入数据转换函数
+from pet_config import *                        # 项目配置
 
 # 实例化全局配置和分词器
 pc = ProjectConfig()
@@ -929,7 +929,7 @@ class Verbalizer(object):
             max_label_len (int): 子标签的最大token长度，超长截断，不足补[PAD]
         """
         self.tokenizer = tokenizer
-        self.label_dict = sfel_dict(verbalizer_file)  # 加载标签映射字典
+        self.label_dict = load_label_dict(verbalizer_file)  # 加载标签映射字典
         self.max_label_len = max_label_len  # 标签长度约束
 
     def load_label_dict(self, verbalizer_file: str):
@@ -1048,14 +1048,23 @@ class Verbalizer(object):
         """
         label, max_overlap_str = '', 0
         for main_label, sub_labels in self.label_dict.items():
-            overlap_num = 0
-            # 累加当前子标签与所有子标签的公共子串长度
+            # 核心改进：对于每一个主标签，我们只关心它名下最像的那一个子标签
+            current_main_label_max = 0
+
             for s_label in sub_labels:
-                overlap_num += self.get_common_sub_str(sub_label, s_label)[1]
-            # 选择总重叠度最高的主标签
-            if overlap_num >= max_overlap_str:
-                max_overlap_str = overlap_num
+                # 获取当前子标签与输入的 LCS 长度
+                current_lcs_len = self.get_common_sub_str(sub_label, s_label)[1]
+
+                # 方案 A：在该主标签内取最大值
+                if current_lcs_len > current_main_label_max:
+                    current_main_label_max = current_lcs_len
+
+            # 比较全局最高分
+            # 如果当前类别的“最强匹配”比之前的还要强，则更新结果
+            if current_main_label_max > max_overlap_score:
+                max_overlap_score = current_main_label_max
                 label = main_label
+                
         return label
 
     def find_main_label(self, sub_label: Union[list, str], hard_mapping=True):
@@ -1203,7 +1212,7 @@ def mlm_loss(logits, mask_positions, sub_mask_labels,
         
         # 计算当前样本的平均损失
         cur_loss = cross_entropy_criterion(single_mask_logits, single_sub_mask_labels)
-        cur_loss = cur_loss / len(single_sub_mask_labels)  # 按子标签数量归一化
+        cur_loss = cur_loss / len(single_sub_mask_labels)  # 按子标签数量归一化，是否/2有待商榷
         
         # 累加批次损失
         if not loss:
