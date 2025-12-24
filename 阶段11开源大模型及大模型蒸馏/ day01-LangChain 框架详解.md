@@ -25,7 +25,7 @@ LangChain 应用通常由多个组件协同实现，主要支持以下六种组�
 
 ### 2.1 Models 组件
 
-Models 组件提供与各类模型的深度集成，并统一接口标准。目前支持 **三种模型类型**：**<font color='orange'>LLMs、Chat Models(聊天模型)、Embeddings Models(嵌入模型）</font>**
+Models 组件提供与各类模型的深度集成，并统一接口标准。目前支持 **三种模型类型**：LLMs、Chat Models、Embeddings Models。
 
 #### 2.1.1 LLMs（大语言模型）
 
@@ -63,10 +63,6 @@ print(res)
 
 **支持的消息类型**：
 
-表格
-
-复制
-
 | 消息类型        | 说明                           | 使用场景               |
 | :-------------- | :----------------------------- | :--------------------- |
 | `HumanMessage`  | 用户输入的消息                 | 用户提问、指令         |
@@ -75,10 +71,6 @@ print(res)
 | `ChatMessage`   | 通用消息类型（通常使用前三种） | 自定义场景             |
 
 **💡 示例：生成唐诗**
-
-Python
-
-复制
 
 ```python
 import os
@@ -102,17 +94,11 @@ res = chat(messages)
 print(res)
 ```
 
-------
-
 #### 2.1.3 Prompt Templates（提示模板）
 
 通过预定义模板，快速生成结构化提示词，确保输出格式符合预期。
 
 **💡 示例：生成商品文案**
-
-Python
-
-复制
 
 ```python
 import os
@@ -143,19 +129,11 @@ result = chat(prompt)
 print(result)
 ```
 
-------
-
 #### 2.1.4 Embeddings Models（嵌入模型）
 
 将**文本**转换为**浮点数向量**，用于语义搜索、相似度计算等场景。
 
-<div align="center"> <img src="./assets/6-4.png" alt="Embeddings模型工作原理" style="zoom:40%;" /> </div>
-
 **💡 示例：文本向量化**
-
-Python
-
-复制
 
 ```python
 import os
@@ -180,13 +158,6 @@ res2 = embed.embed_documents([
 print(res2)  # 返回向量列表
 ```
 
-**支持的嵌入模型**：
-
-- AzureOpenAI、Baidu Qianfan、Hugging Face Hub
-- OpenAI、Llama-cpp、SentenceTransformers
-
-------
-
 ### 2.2 Prompts 组件
 
 Prompts 组件用于管理和优化提示词，支持多种提示策略：
@@ -194,10 +165,6 @@ Prompts 组件用于管理和优化提示词，支持多种提示策略：
 #### Zero-Shot 提示（零样本）
 
 直接提问，不提供示例。
-
-Python
-
-复制
 
 ```python
 from langchain_core.prompts import PromptTemplate
@@ -232,10 +199,6 @@ print(result)
 
 提供示例，引导模型学习特定模式。
 
-Python
-
-复制
-
 ```python
 from langchain_core.prompts import PromptTemplate, FewShotPromptTemplate
 from langchain_community.llms import QianfanLLMEndpoint
@@ -253,7 +216,7 @@ examples = [
 # 2. 创建单个示例的格式化模板
 example_template = """
 单词: {word}
-反义词: {antonym}\\
+反义词: {antonym}\\n
 """
 
 # 3. 将示例模板转换为PromptTemplate对象
@@ -281,17 +244,11 @@ llm = QianfanLLMEndpoint(temperature=0.9)
 print(llm(prompt_text))  # 预期输出: 细
 ```
 
-------
-
 ### 2.3 Chains（链）
 
 Chains 将多个组件（LLM、Prompt、工具等）组合成工作流，实现复杂任务编排。
 
 **💡 示例：单链应用**
-
-Python
-
-复制
 
 ```python
 from langchain_core.prompts import PromptTemplate
@@ -320,10 +277,6 @@ print(chain.run("王"))
 ```
 
 **💡 示例：多链串联（SimpleSequentialChain）**
-
-Python
-
-复制
 
 ```python
 from langchain_core.prompts import PromptTemplate
@@ -366,17 +319,11 @@ catchphrase = overall_chain.run("王")
 print(catchphrase)
 ```
 
-------
-
 ### 2.4 Agents（代理）
 
 Agents 是 LangChain 最强大组件，能**自主决策**调用哪些工具，并观察执行结果，直到完成任务。
 
 **核心概念**：
-
-表格
-
-复制
 
 | 组件              | 功能                                     |
 | :---------------- | :--------------------------------------- |
@@ -387,10 +334,6 @@ Agents 是 LangChain 最强大组件，能**自主决策**调用哪些工具，�
 
 **支持的 Agent 类型**：
 
-表格
-
-复制
-
 | Agent 类型                                    | 特点                               | 适用场景     |
 | :-------------------------------------------- | :--------------------------------- | :----------- |
 | `zero-shot-react-description`                 | 仅基于工具描述选择工具，无会话记忆 | 简单任务     |
@@ -398,10 +341,6 @@ Agents 是 LangChain 最强大组件，能**自主决策**调用哪些工具，�
 | `conversational-react-description`            | 支持会话记忆，适合对话环境         | 聊天机器人   |
 
 **⚠️ 示例：实时信息查询**
-
-Python
-
-复制
 
 ```python
 # 安装依赖：pip install duckduckgo-search
@@ -441,10 +380,6 @@ agent.run("中国目前有多少人口")
 
 **💡 查看所有可用工具**
 
-Python
-
-复制
-
 ```python
 from langchain.agents import get_all_tool_names
 
@@ -462,10 +397,6 @@ print(results)
 
 **LangChain 部分工具列表**：
 
-表格
-
-复制
-
 | 工具              | 描述               |
 | :---------------- | :----------------- |
 | Bing Search       | Bing搜索引擎       |
@@ -474,8 +405,6 @@ print(results)
 | Python REPL       | 执行Python代码     |
 | Wikipedia         | 维基百科检索       |
 | Wolfram Alpha     | 数学计算与知识引擎 |
-
-------
 
 ### 2.5 Memory（记忆）
 
@@ -487,10 +416,6 @@ Memory 组件为 LangChain 提供**上下文记忆能力**，模拟人类对话�
 - **长期记忆**：跨会话信息存储与检索
 
 **💡 示例：基础记忆存储**
-
-Python
-
-复制
 
 ```python
 from langchain.memory import ChatMessageHistory
@@ -510,10 +435,6 @@ print(history.messages)
 ```
 
 **💡 示例：带记忆的对话链**
-
-Python
-
-复制
 
 ```python
 from langchain.chains import ConversationChain
@@ -542,10 +463,6 @@ print(result3)
 
 **💡 示例：历史消息持久化**
 
-Python
-
-复制
-
 ```python
 from langchain.memory import ChatMessageHistory
 from langchain.schema import messages_from_dict, messages_to_dict
@@ -566,8 +483,6 @@ print(new_messages)
 # 输出: [HumanMessage(content='hi!'), AIMessage(content='whats up?')]
 ```
 
-------
-
 ### 2.6 Indexes（索引）
 
 Indexes 组件提供**文档处理全流程能力**，包括加载、分割、存储和检索文档。
@@ -577,10 +492,6 @@ Indexes 组件提供**文档处理全流程能力**，包括加载、分割、�
 支持多种文件格式，基于 `Unstructured` 包实现文件解析。
 
 **💡 示例：加载文本文件**
-
-Python
-
-复制
 
 ```python
 from langchain_community.document_loaders import UnstructuredFileLoader, TextLoader
@@ -600,10 +511,6 @@ print(f"前4个字符: {docs[0].page_content[:4]}")
 
 **支持的文档加载器（部分）**：
 
-表格
-
-复制
-
 | 加载器                | 支持的文件类型  |
 | :-------------------- | :-------------- |
 | CSV Loader            | `.csv` 文件     |
@@ -614,17 +521,11 @@ print(f"前4个字符: {docs[0].page_content[:4]}")
 | Image Loader          | 图片文件（OCR） |
 | File Directory Loader | 整个目录        |
 
-------
-
 #### 2.6.2 文档分割器
 
 将长文本按语义分割为小块，避免超过模型上下文限制。
 
 **💡 示例：按字符长度分割**
-
-Python
-
-复制
 
 ```python
 from langchain.text_splitter import CharacterTextSplitter
@@ -644,14 +545,11 @@ print(a)  # 输出: ['a b c', 'd e f']
 texts = text_splitter.create_documents(
     ["a b c d e f", "e f g h"]
 )
-print(texts)  # 输出多个Document对象
+print(texts)  # 输出多个Document对象 
+# [Document(page_content='a b c'), Document(page_content='d e f'), Document(page_content='e f g'), Document(page_content='h')]
 ```
 
 **其他分割器类型**：
-
-表格
-
-复制
 
 | 分割器                   | 适用场景     | 特点                   |
 | :----------------------- | :----------- | :--------------------- |
@@ -660,17 +558,11 @@ print(texts)  # 输出多个Document对象
 | `PythonCodeTextSplitter` | Python代码   | 按类、函数定义分割     |
 | `TokenTextSplitter`      | 通用文本     | 按OpenAI token数分割   |
 
-------
-
 #### 2.6.3 VectorStores（向量存储）
 
 专门存储文本向量的数据库，支持相似度搜索。
 
 **💡 示例：使用 Chroma 向量数据库**
-
-Python
-
-复制
 
 ```python
 # 安装：pip install chromadb
@@ -705,10 +597,6 @@ print(docs)
 
 **支持的 VectorStores**：
 
-表格
-
-复制
-
 | 向量数据库        | 特点                             |
 | :---------------- | :------------------------------- |
 | **Chroma**        | 开源嵌入式数据库，轻量级         |
@@ -717,17 +605,11 @@ print(docs)
 | **Pinecone**      | 云原生向量数据库，功能丰富       |
 | **ElasticSearch** | 传统搜索引擎扩展向量搜索         |
 
-------
-
 #### 2.6.4 Retrievers（检索器）
 
 提供统一的检索接口，底层可对接不同向量数据库。
 
 **💡 示例：基于 FAISS 的检索器**
-
-Python
-
-复制
 
 ```python
 # 安装：pip install faiss-cpu
@@ -761,10 +643,6 @@ print(docs)
 
 **支持的检索器**：
 
-表格
-
-复制
-
 | 检索器                | 描述               |
 | :-------------------- | :----------------- |
 | VectorStore Retriever | 通用向量存储检索器 |
@@ -773,13 +651,9 @@ print(docs)
 | Wikipedia Retriever   | 维基百科内容检索   |
 | Arxiv Retriever       | 学术论文检索       |
 
-------
+
 
 ## 3. LangChain 典型使用场景
-
-表格
-
-复制
 
 | 场景           | 说明                         | 涉及组件                    |
 | :------------- | :--------------------------- | :-------------------------- |
@@ -791,7 +665,7 @@ print(docs)
 | **信息提取**   | 从非结构化文本提取结构化信息 | Prompts + LLMs              |
 | **文档总结**   | 长文档自动摘要               | Indexes + Chains            |
 
-------
+
 
 ## 4. 本章小结
 
