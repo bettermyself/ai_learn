@@ -8,10 +8,6 @@ Function Call（函数调用）是OpenAI于2023年6月13日公布的重要功能
 
 ### 1.2 解决的核心问题
 
-表格
-
-复制
-
 | 问题类型       | 具体表现                             | Function Call解决方案       |
 | :------------- | :----------------------------------- | :-------------------------- |
 | **信息实时性** | 训练数据有截止时间，无法获取最新信息 | 实时调用外部API获取最新数据 |
@@ -27,15 +23,13 @@ Function Call（函数调用）是OpenAI于2023年6月13日公布的重要功能
 - 智谱ChatGLM3-6B / GLM-4
 - 讯飞星火3.0及以上版本
 
-------
+
 
 ## 2. Function Call 工作原理
 
 ### 2.1 无Function Call的传统模式
 
-plaintext
-
-复制
+<img src="assets/1-1.png" alt="img" style="zoom:50%;" />
 
 ```plaintext
 用户 → 应用服务 → GPT模型 → 应用服务 → 用户
@@ -45,9 +39,7 @@ plaintext
 
 ### 2.2 有Function Call的增强模式
 
-plaintext
-
-复制
+<img src="assets/1-2.png" alt="img" style="zoom:50%;" />
 
 ```plaintext
 用户 → 应用服务 → GPT模型 → [判断是否需要调用函数]
@@ -59,7 +51,7 @@ GPT → 生成最终回复 → 应用服务 → 用户
 
 ⚠️ **重要提示**：大模型**不会直接执行任何函数**，仅返回调用函数所需的参数。开发者需要在应用中自行执行函数调用。
 
-------
+
 
 ## 3. Function Call 实践应用：天气查询助手
 
@@ -70,10 +62,6 @@ GPT → 生成最终回复 → 应用服务 → 用户
 ### 3.2 实现步骤
 
 #### 步骤1：定义外部函数
-
-Python
-
-复制
 
 ```python
 # tools.py
@@ -105,7 +93,7 @@ def get_current_weather(location: str) -> str:
     if city_code:
         weather_url = f"http://t.weather.itboy.net/api/weather/city/{city_code}"
         response = requests.get(weather_url)
-        result = response.json()
+        result = response.json()  # HTTP 响应体中的 JSON 格式字符串转换为 Python 的数据结构（如字典、列表等）
         
         # 提取今日天气预报信息
         forecast = result["data"]["forecast"][0]
@@ -123,9 +111,16 @@ def get_current_weather(location: str) -> str:
 
 #### 步骤2：描述函数功能
 
-Python
+💡**重要**：为了向模型描述外部函数库，需要向 tools 字段传入可以调用的函数列表。参数如下表：
 
-复制
+| **参数名称**    | **类型** | **是否必填** | **参数说明**                                                 |
+| --------------- | -------- | ------------ | ------------------------------------------------------------ |
+| **type**        | String   | 是           | 接口类型，固定设置为 `function`。                            |
+| **function**    | Object   | 是           | 包含函数定义的具体信息。                                     |
+| **name**        | String   | 是           | **函数名称**。应具有描述性，以便模型识别。                   |
+| **description** | String   | 是           | **函数功能描述**。模型根据这段文字判断是否需要调用该函数及其调用方式。 |
+| **parameters**  | Object   | 是           | 定义函数接收的参数。需传入一个 **JSON Schema** 对象。若函数无参数，可省略。 |
+| **required**    | Array    | 否           | 指定 `parameters` 中哪些属性是**必填**项。                   |
 
 ```python
 # tools.py
@@ -151,11 +146,15 @@ tools = [
 ]
 ```
 
+| **字段位置**           | **是否需要 type** | **示例**                   | **原因**                             |
+| ---------------------- | ----------------- | -------------------------- | ------------------------------------ |
+| **工具最外层**         | **是**            | `"type": "function"`       | 区分工具类型                         |
+| **parameters 根部**    | **是**            | `"type": "object"`         | 声明参数容器是对象格式               |
+| **具体属性内部**       | **是**            | `"type": "string"`         | **最重要**：约束模型生成的参数值类型 |
+| **name / description** | **否**            | `"name": "get_weather"`    | 属于固定描述信息，类型已固定         |
+| **required**           | **否**            | `"required": ["location"]` | 属于规范定义的逻辑关键字             |
+
 #### 步骤3：模型应用实现
-
-Python
-
-复制
 
 ```python
 # main.py
@@ -295,10 +294,6 @@ if __name__ == '__main__':
 
 #### 步骤4：数据文件准备
 
-JSON
-
-复制
-
 ```json
 // cityCode_use.json
 // 城市名称到天气API编码的映射表
@@ -315,7 +310,7 @@ JSON
 ]
 ```
 
-------
+
 
 ## 4. 多函数协同应用：航班查询系统
 
@@ -327,10 +322,6 @@ JSON
 2. 再查询该航班的票价
 
 ### 4.2 完整实现
-
-Python
-
-复制
 
 ```python
 # airplane_function_tools.py
@@ -371,10 +362,6 @@ tools = [
     },
 ]
 ```
-
-Python
-
-复制
 
 ```python
 # muti_utils.py
@@ -425,13 +412,36 @@ def parse_function_call(model_response) -> dict:
     return {}
 ```
 
-Python
-
-复制
-
 ```python
 # muti_function_zhipu.py
 # 主程序：处理多步函数调用逻辑
+
+def chat_completion_request(messages, tools=None, tool_choice=None, model="glm-4"):
+    """
+    调用大模型生成回复
+    
+    参数:
+        messages: 对话历史消息列表
+        tools: 可用工具函数列表
+        tool_choice: 工具选择策略（auto/none/指定函数）
+        model: 模型名称
+        
+    返回:
+        模型响应对象
+    """
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,  # 对话上下文
+            tools=tools,        # 传入工具函数定义
+            tool_choice=tool_choice,  # 工具选择策略
+        )
+        return response
+    except Exception as e:
+        print(f"生成回复失败: {e}")
+        return None
+
+
 
 def main():
     messages = [
@@ -446,7 +456,7 @@ def main():
     ]
     
     # 第一步：查询航班号
-    first_response = chat_completion_request(messages, tools=tools)
+    first_response = chat_completion_request(messages, tools=tools, tool_choice="auto")
     messages.append(first_response.choices[0].message.model_dump())
     
     # 执行函数调用并添加结果
@@ -459,7 +469,7 @@ def main():
     })
     
     # 第二步：查询票价
-    second_response = chat_completion_request(messages, tools=tools)
+    second_response = chat_completion_request(messages, tools=tools, tool_choice="auto")
     messages.append(second_response.choices[0].message.model_dump())
     
     # 执行票价查询
@@ -476,7 +486,7 @@ def main():
     print(f"最终答案: {final_response.choices[0].message.content}")
 ```
 
-------
+
 
 ## 5. 数据库查询应用：SQL智能助手
 
@@ -485,10 +495,6 @@ def main():
 通过自然语言查询数据库，实现"一句话查数据"的智能体验。
 
 ### 5.2 核心实现
-
-Python
-
-复制
 
 ```python
 # sql_function_tools.py
@@ -546,7 +552,7 @@ def ask_database(query: str):
     返回:
         查询结果元组
     """
-    # 连接数据库（需配置实际连接信息）
+    # 1.连接到 MySQL 数据库
     conn = pymysql.connect(
         host='localhost',
         port=3306,
@@ -557,22 +563,51 @@ def ask_database(query: str):
     )
     
     try:
+      	# 2. 创建游标
         cursor = conn.cursor()
+        # 3. 执行sql语句测试
         cursor.execute(query)
+        # 4. 获取查询结果
         result = cursor.fetchall()
         return result
     finally:
+      	# 5.关闭游标
         cursor.close()
+        # 6.关闭连接
         conn.close()
+        
+def parse_response(response):
+    response_message = response.choices[0].message
+    # 检测是否需要调用函数
+    if response_message.tool_calls:
+        # 调用函数
+        available_functions = {
+            "ask_database": ask_database
+        }  # only one function test in this example, but you can have multiple
+        function_name = response_message.tool_calls[0].function.name
+        fuction_to_call = available_functions[function_name]
+        function_args = json.loads(response_message.tool_calls[0].function.arguments)
+        function_response = fuction_to_call(
+            query=function_args.get("query"),
+        )
+        return function_response
 ```
-
-Python
-
-复制
 
 ```python
 # sql_zhipu.py
 # SQL查询主程序
+def chat_completion_request(messages, tools=None, tool_choice=None, model=ChatGLM):
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+        )
+        return response
+    except Exception as e:
+        print(f"Exception: {e}")
+        return e
 
 def main():
     messages = [
@@ -598,15 +633,11 @@ def main():
     # ...（同前文模式）
 ```
 
-------
+
 
 ## 6. 关键参数说明
 
-### 6.1 `tool_choice` 控制策略
-
-表格
-
-复制
+### `tool_choice` 控制策略
 
 | 参数值                  | 行为描述                     | 适用场景       |
 | :---------------------- | :--------------------------- | :------------- |
@@ -614,64 +645,9 @@ def main():
 | `none`                  | 强制不调用任何函数           | 纯文本对话场景 |
 | `{"name": "func_name"}` | 强制调用指定函数             | 确定性任务流程 |
 
-### 6.2 工具定义参数结构
+### 
 
-表格
-
-复制
-
-| 参数                   | 类型   | 必填 | 说明                      |
-| :--------------------- | :----- | :--- | :------------------------ |
-| `type`                 | String | 是   | 固定值为 `"function"`     |
-| `function.name`        | String | 是   | 函数名称，需唯一          |
-| `function.description` | String | 是   | 功能描述，影响模型决策    |
-| `function.parameters`  | Object | 是   | JSON Schema格式的参数定义 |
-| `function.required`    | Array  | 否   | 必填参数名称列表          |
-
-------
-
-## 7. 最佳实践与注意事项
-
-### 7.1 开发建议
-
-💡 **函数设计原则**
-
-- **原子性**：每个函数只做一件事，便于模型组合调用
-- **描述清晰**：函数描述要准确、完整，包含使用场景
-- **参数明确**：为每个参数提供详细说明和示例
-- **错误处理**：函数内部要做好异常处理，返回统一格式
-
-⚠️ **重要提醒**
-
-- API调用有成本，合理设置`tool_choice`避免不必要的函数调用
-- 函数执行超时需考虑，避免阻塞主流程
-- 敏感操作（如支付、删除）需增加人工确认环节
-- 生产环境需对函数参数做校验，防止SQL注入等安全问题
-
-### 7.2 调试技巧
-
-Python
-
-复制
-
-```python
-# 打印完整消息链，便于调试
-import pprint
-
-def debug_messages(messages):
-    """打印完整的对话消息链"""
-    print("="*50)
-    print("当前消息链:")
-    pprint.pprint(messages, width=80)
-    print("="*50)
-
-# 在每次调用后加入调试
-debug_messages(messages)
-```
-
-------
-
-## 8. 章节总结
+## 7. 章节总结
 
 本章节系统介绍了Function Call技术的核心概念、工作原理和三种典型应用场景：
 
