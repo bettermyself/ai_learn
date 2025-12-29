@@ -1,156 +1,164 @@
-## 1、Linux 使用技巧
+## 1. Linux 使用技巧
 
 ### 1.1 常用快捷键
 
-| 快捷键/命令         | 功能说明              |
-| ------------------- | --------------------- |
-| Ctrl + C            | 强制停止当前命令      |
-| Ctrl + D            | 退出/登出             |
-| history             | 查看历史命令          |
-| !命令前缀           | 自动匹配上一个命令    |
-| Ctrl + R            | 搜索历史命令          |
-| Ctrl + A / Ctrl + E | 光标移到命令开始/结束 |
-| Ctrl + ← / Ctrl + → | 光标左右跳单词        |
-| Ctrl + L 或 clear   | 清屏                  |
+| 快捷键       | 功能说明                    |
+| :----------- | :-------------------------- |
+| `Ctrl + C`   | 强制停止当前命令            |
+| `Ctrl + D`   | 退出/登出当前会话           |
+| `Ctrl + R`   | 搜索历史命令                |
+| `Ctrl + A`   | 光标移动到命令开始          |
+| `Ctrl + E`   | 光标移动到命令结束          |
+| `Ctrl + ←/→` | 光标左右跳转到单词边界      |
+| `Ctrl + L`   | 清屏（等效于 `clear` 命令） |
+
+**命令行快捷操作：**
+
+- `history`：查看完整历史命令列表
+- `!命令前缀`：自动执行最近一条匹配前缀的命令
 
 
 
-### 1.2 软件安装
+### 1.2 软件包管理（apt）
 
-- **apt**：是 Debian 和基于 Debian 的 Linux 发行版（如 Ubuntu）中使用的软件包管理工具，用于自动化安装配置`Linux`软件，并可以自动解决依赖问题。
+使用 **`apt`** 进行软件包管理：`apt` 是 Debian/Ubuntu 系统的软件包管理工具，可自动解决依赖关系。
 
-- 使用 **`apt`** 进行软件包管理：
+```shell
+# 更新软件源列表（安装/升级前必须执行，通过更新软件源，系统可以获取到最新的软件包信息和版本。）
+sudo apt update
 
-  - **更新软件源**：在安装或升级任何软件包之前，首先需要更新本地的软件源列表。通过更新软件源，系统可以获取到最新的软件包信息和版本。使用以下命令来更新软件源：
+# 软件包管理
+sudo apt install package_name              # 安装单个软件包
+sudo apt install pkg1 pkg2                 # 安装多个软件包
+sudo apt install /path/to/file.deb         # 安装本地 deb 文件
+sudo apt remove package_name               # 移除软件包（保留配置）
+sudo apt remove package1 package2          # 删除指定多个包，以空格分隔
+sudo apt purge package_name                # 彻底移除（包含配置）
+sudo apt upgrade                           # 升级所有已安装软件包
+sudo apt upgrade package_name              # 升级指定软件包
 
-    ```shell
-    sudo apt update
-    ```
-
-  - **安装、移除、升级软件包**：
-
-    ```shell
-    sudo apt install package_name # 安装一个软件包
-    sudo apt install package1 package2 # 可以安装多个包，以空格分隔
-    sudo apt install /full/path/file.deb # 要安装本地 deb 文件，需提供文件的完整路径，否则该命令将尝试从 APT 存储库检索并安装该程序包。
-    sudo apt remove package_name # 删除已安装的软件包
-    sudo apt remove package1 package2 # 删除指定多个包，以空格分隔
-    sudo apt upgrade # 将已安装的软件包升级到最新版本
-    sudo apt upgrade package_name # 升级单个包
-    ```
-
-  - **查看软件包列表：**
-
-  ```shell
-  sudo apt list # 列出所有可用包
-  sudo apt list --installed # 列出已安装的包
-  ```
+# 查询软件包
+sudo apt list                             # 列出所有可用包
+sudo apt list --installed                 # 列出已安装包
+sudo apt search keyword                   # 搜索软件包
+```
 
 
 
-### 1.3 服务/软件 打开关闭 `systemctl`
+### 1.3 服务管理（systemctl）
 
 `Linux`系统很多软件（内置或第三方）均支持使用`systemctl`命令控制：启动、停止、开机自启。能够被`systemctl`管理的软件，一般也称之为：服务
 
 ```shell
-systemctl start|stop|status|enable|disable 软件名
+systemctl start|stop|restart|status|enable|disable 服务名
 ```
 
->start 启动
->
->stop 关闭
->
->status 查看状态
->
->enable 开启开机自启
->
->disable 关闭开机自启
+| 子命令    | 功能         |
+| :-------- | :----------- |
+| `start`   | 启动服务     |
+| `stop`    | 停止服务     |
+| `restart` | 重启服务     |
+| `status`  | 查看服务状态 |
+| `enable`  | 设置开机自启 |
+| `disable` | 禁用开机自启 |
 
-应用场景:  修改了网络配置, 需要重启网络的服务 `systemctl stop/start`
+**常用服务示例：**
 
-- 系统内置的服务比较多，比如：
+- `NetworkManager`：主网络服务
+- `ufw`：防火墙服务
+- `ssh`：SSH 远程登录服务
 
-  - NetworkManager，主网络服务
+**💡 应用场景：** 修改网络配置后，需重启网络服务：`systemctl restart NetworkManager`
 
-  - ufw，防火墙服务
 
-  - ssh，ssh服务（FinalShell远程登录`Linux`使用的就是这个服务）
 
-    
+### 1.4 符号链接（软连接）
 
-### 1.4 软连接
+创建文件的快捷方式，类似于 Windows 的快捷方式。
 
-在系统中创建软链接，可以将文件、文件夹链接到其它位置。类似Windows系统中的**快捷方式**
+**语法：** `ln -s 源路径 目标路径`
 
-语法：`ln -s 参数1 参数2`
+```shell
+# 示例：为 /var/www/html 创建软链接到当前用户目录
+ln -s /var/www/html ~/webroot
 
-- `-s`选项，创建软连接
+# 访问 ~/webroot 即等同于访问 /var/www/html
+```
 
-- **参数1：**被链接的文件或文件夹；
+**⚠️ 注意事项：**
 
-- **参数2：**要链接去的目的地
+- 源路径建议使用绝对路径，避免因相对路径导致链接失效
+- 删除软链接不会影响原文件
 
 
 
 ### 1.5 IP地址/域名解析/主机名
 
-想联网访问互联网, 必须有IP地址：ip地址两个版本 ipv4、ipv6。ipv4： a.b.c.d  4个8位二进制数组成（0-255）
+想联网访问互联网, 必须有IP地址：ip地址两个版本 ipv4、ipv6。
 
-- 特殊IP有：127.0.0.1，本地回环IP，表示本机。
+#### IP 地址
 
-- 0.0.0.0：也可表示本机，也可以在一些白名单中表示任意IP
-
-
-
-通过域名访问网络服务, 先要进行域名解析
-
-- 通过本地的hosts 记录域名和ip的对应关系
-  - `windows` C:\Windows\System32\drivers\etc\hosts
-  - `Linux` /etc/hosts
-- DNS服务 在网络上记录了域名和ip的对应关系
-  - 8.8.8.8  114.114.114.114
+- **IPv4 格式：** `a.b.c.d`（每组 0-255）
+- **特殊 IP 地址：**
+  - `127.0.0.1`：本地回环地址，表示本机
+  - `0.0.0.0`：可表示本机或任意 IP（常用于白名单配置）
 
 
 
-主机名, 每一台机器都有名字
+#### 域名解析
 
-- hostname 查看主机名
+通过域名访问网络服务, 先要进行域名解析，系统按以下顺序查找域名对应 IP：
 
-- `hostnamectl set-hostname 主机名`，修改主机名（需root）
-
-  
-
-### 1.6 ubantu 固定ip设置(了解)
-
-**为什么需要固定IP：**
-
-当前我们虚拟机的`Linux`操作系统，其IP地址是通过DHCP服务获取的。**DHCP**：动态获取IP地址，即每次重启设备后都会获取一次，可能导致IP地址频繁变更。
-
-原因：办公电脑IP地址变化无所谓，但是我们要远程连接到Linux系统，如果IP地址经常变化我们就要频繁修改适配很麻烦。
-
-固体步骤用到了查看，现在看对学习没有很大用处。
+| 解析方式            | 文件路径/地址                                                | 说明                   |
+| :------------------ | :----------------------------------------------------------- | :--------------------- |
+| **本地 hosts 文件** | Linux: `/etc/hosts`<br>Windows: `C:\Windows\System32\drivers\etc\hosts` | 优先级最高，可手动配置 |
+| **DNS 服务器**      | `8.8.8.8` (Google)<br>`114.114.114.114` (国内通用)           | 网络级域名解析         |
 
 
 
-### 1.7 网络操作/文件下载
+#### 主机名管理
 
-- `ping`：测试网络是否联通 。语法：`ping url /ping ip`
-  
-  - ping 192.168.88.2  测局域网通不通
-  - ping baidu.com 测互联网是否联通
-  
-- `wget`：是非交互式的文件下载器，可以在命令行内下载网络文件。语法：`wget  [-b]  url`
-  
-  - 选项：`-b`，可选，后台下载，会将日志写入到当前工作目录的wget-log文件
-  - 参数：url，下载链接
-  
-- `curl`：发送http请求的命令，可用于：下载文件、获取信息等。语法：`curl [-o] url`
-  
-  - 选项：`-O`，用于下载文件，当url是下载链接时，可以使用此选项保存文件
-  
-  - 参数：url，要发起请求的网络地址
-  
-    
+```shell
+hostname                                # 查看当前主机名
+sudo hostnamectl set-hostname 新主机名   # 永久修改主机名（需 root 权限）
+```
+
+
+
+#### 固定 IP 配置（可选）
+
+虚拟机默认通过 DHCP 动态获取 IP，可能导致 IP 频繁变更。如需固定 IP 以便远程连接，可在网络设置中手动配置静态 IP（固体步骤用到了查看，现在看对学习没有很大用处。）。
+
+
+
+### 1.6 网络操作与文件下载
+
+#### 连通性测试（ping）
+
+```shell
+ping 192.168.88.2        # 测试局域网连通性
+ping baidu.com           # 测试互联网连通性
+```
+
+#### 文件下载
+
+```shell
+# wget - 非交互式下载器，可以在命令行内下载网络文件。语法：`wget  [-b]  url`
+wget https://example.com/file.zip          # 前台下载
+wget -b https://example.com/large-file.iso # 后台下载（日志写入 wget-log）
+
+# curl - HTTP 客户端工具，可用于：下载文件、获取信息等。语法：`curl [-o] url`
+curl https://api.example.com/data          # 获取内容并输出到终端
+curl -O https://example.com/file.zip       # 下载并保存文件（大写 O）
+```
+
+
+
+
+
+
+
+
 
 ### 1.8 端口占用查看/进程查询	
 
@@ -298,7 +306,7 @@ source ~/.bashrc
   - -f，要创建的文件，或要解压的文件，-f选项必须在所有选项中位置处于最后一个
 
 
-  
+
 
   - -z，gzip模式，不使用-z就是普通的tarball格式
 
