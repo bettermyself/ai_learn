@@ -1,374 +1,444 @@
-## MySQL
+## 1. 数据库约束 (Constraints)
 
-### 1、约束
+### 1.1 约束概述
 
-#### 1.1 建表-约束相关`SQL`语句
+约束（Constraint）是用于限制表中数据的规则，确保数据库中数据的**准确性**和**可靠性**。MySQL支持以下六大核心约束类型：
 
-约束是用于限制表中数据的规则，确保数据库中数据的准确性和可靠性。`MySQL` 支持以下几种主要约束：
-
-- **PRIMARY KEY 约束**：主键，唯一标识表中的每条记录，是 **NOT NULL** 和 **UNIQUE** 的组合。
-  - 主键应当是对用户没有意义的；
-  - 永远也不要更新主键；
-  - 主键不应包含动态变化的数据，如时间戳、创建时间列、修改时间列等；
-  -  主键应当由计算机自动生成。
-
-**自动增长**：我们可以在表中使用 auto_increment 关键字。自动增长列类型必须是整型；自动增长列必须为键(一般是主键)。
-
+| 约束类型        | 功能描述                                        | 适用场景                             |
+| :-------------- | :---------------------------------------------- | :----------------------------------- |
+| **PRIMARY KEY** | 主键约束，唯一标识每条记录（NOT NULL + UNIQUE） | 每条记录必须唯一识别的场景           |
+| **NOT NULL**    | 非空约束，确保列不能存储NULL值                  | 必填字段（如用户名、密码）           |
+| **UNIQUE**      | 唯一约束，确保列中所有值都不同                  | 不可重复的业务字段（如邮箱、手机号） |
+| **FOREIGN KEY** | 外键约束，维护表间数据参照完整性                | 关联表之间的数据一致性保证           |
+| **DEFAULT**     | 默认值约束，未指定值时自动填充                  | 减少数据录入工作量的场景             |
+| **CHECK**       | 检查约束，确保值满足特定条件                    | 业务规则校验（如年龄≥18）            |
 
 
-- **NOT NULL 约束**：确保列不能存储 NULL 值。
 
-- **UNIQUE 约束**：确保列中的所有值都是不同的。
-- **FOREIGN KEY 约束**：防止破坏表之间连接的行为，保证一个表中的数据匹配另一个表中的值的参照完整性。
-- **DEFAULT 约束**：当没有指定值时，为列提供默认值。
-- **CHECK 约束**：确保列中的值满足特定条件。
+### 1.2 核心约束详解
+
+#### 主键约束（PRIMARY KEY）
+
+主键是表设计的核心，应遵循以下**黄金法则**：
+
+- **无意义性**：主键应对用户透明，仅作技术标识
+- **不可变性**：主键值一旦确定，**永不更新**
+- **稳定性**：不应包含动态变化的数据（如时间戳、创建时间）
+- **自动化**：推荐使用`AUTO_INCREMENT`自动生成
 
 ```sql
--- 约束
-
--- 主键约束
+-- 示例1：单列主键 + 自动增长（最常用）
 CREATE TABLE person(
-    id INT PRIMARY KEY ,
-	last_name VARCHAR(100),
-	first_name VARCHAR(100),
-	address VARCHAR(100),
-    city VARCHAR(100)
+    id INT PRIMARY KEY AUTO_INCREMENT,  -- 主键且自动递增，无需人工维护
+    last_name VARCHAR(100),
+    first_name VARCHAR(100)
 );
 
--- 主键约束：复合主键
--- 在 MySQL 中，复合主键（Composite Primary Key） 是由多个列（字段）组合而成的主键，用于唯一标识表中的每一行数据。与单列主键不同，复合主键要求这些列的组合值必须唯一，但单个列的值可以重复。所有组成复合主键的列均不允许为 NULL。
-CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    PRIMARY KEY (ID, LastName)
-);
-    
-
--- NOT NULL 约束
-CREATE TABLE Person (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255) NOT NULL,
-    Age int
-);
-
--- UNIQUE 约束
-CREATE TABLE Persons (
-    ID int NOT NULL UNIQUE,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int
-);
-
-CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int, 	
-    UNIQUE (ID)
-);
-
--- FOREIGN KEY 约束
-CREATE TABLE Orders (
-    OrderID int NOT NULL PRIMARY KEY,
-    OrderNumber int NOT NULL,
-    PersonID int,
-    FOREIGN KEY (PersonID) REFERENCES Persons(ID)
-);
-
-CREATE TABLE Orders (
-    OrderID int NOT NULL PRIMARY KEY,
-    OrderNumber int NOT NULL,
-    PersonID int,
-    CONSTRAINT fk_PersonID FOREIGN KEY (PersonID) REFERENCES Persons(ID)
-);
-
--- CHECK 约束
-CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    CHECK (Age >= 18)
-);
-
--- DEFAULT 约束
-CREATE TABLE Persons (
-    ID int NOT NULL,
-    LastName varchar(255) NOT NULL,
-    FirstName varchar(255),
-    Age int,
-    City varchar(255) DEFAULT 'Sandnes'
+-- 示例2：复合主键（多个列组合唯一）
+-- 适用场景：当单个字段无法唯一标识记录时（如订单明细表）
+-- 特性：所有组成列均不允许NULL，组合值必须唯一
+CREATE TABLE order_items (
+    order_id INT NOT NULL,              -- 订单ID（外键）
+    product_id INT NOT NULL,            -- 商品ID（外键）
+    quantity INT,
+    PRIMARY KEY (order_id, product_id)  -- 复合主键：同一订单中相同商品只能有一条记录
 );
 ```
 
-#### 1.2 约束的添加与删除
-
-**添加约束：**
+#### 其他核心约束
 
 ```sql
--- 添加主键
-ALTER TABLE Persons
-ADD PRIMARY KEY (ID);
+-- NOT NULL约束：确保必填字段
+CREATE TABLE users (
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,      -- 用户名必须填写，不能为NULL
+    email VARCHAR(100) NOT NULL         -- 邮箱必须填写，不能为NULL
+);
 
--- 添加外键
-ALTER TABLE Orders
-ADD FOREIGN KEY (PersonID) REFERENCES Persons(ID);
+-- UNIQUE约束：确保字段唯一性
+-- 方式一：列级定义
+CREATE TABLE members (
+    member_id INT PRIMARY KEY AUTO_INCREMENT,
+    phone VARCHAR(20) UNIQUE            -- 手机号必须唯一
+);
+
+-- 方式二：表级定义（推荐，可定义多个列的组合唯一）
+CREATE TABLE products (
+    product_id INT PRIMARY KEY AUTO_INCREMENT,
+    product_code VARCHAR(50) NOT NULL,
+    category_id INT,
+    UNIQUE (product_code, category_id)  -- 同一分类下商品编码唯一
+);
+
+-- DEFAULT约束：提供默认值
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY AUTO_INCREMENT,
+    order_status VARCHAR(20) DEFAULT 'pending',  -- 默认状态为'pending'
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- 默认当前时间
+);
+
+-- CHECK约束：MySQL 8.0.16+版本有效
+CREATE TABLE employees (
+    emp_id INT PRIMARY KEY AUTO_INCREMENT,
+    emp_name VARCHAR(50) NOT NULL,
+    age INT CHECK (age >= 18 AND age <= 65)  -- 年龄必须在18-65岁之间
+);
+```
+
+
+
+### 1.3 约束的DDL操作
+
+#### 添加约束（ALTER TABLE）
+
+```sql
+-- 添加主键约束（通常在建表时定义，后期添加较少见）
+ALTER TABLE students ADD PRIMARY KEY (student_id);
+
+-- 添加外键约束（需确保引用表存在且字段类型匹配）
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_customer  -- 指定约束名称，便于后续管理
+FOREIGN KEY (customer_id) REFERENCES customers(customer_id);
 
 -- 添加CHECK约束
-ALTER TABLE Persons
-ADD CHECK (Age >= 18);
+ALTER TABLE employees ADD CHECK (salary >= 3000);
 
 -- 添加DEFAULT约束
-ALTER TABLE Persons
-ALTER City SET DEFAULT 'Sandnes';
+ALTER TABLE employees ALTER city SET DEFAULT 'Beijing';
 ```
 
-**删除约束：**
+#### 删除约束（ALTER TABLE）
 
 ```sql
--- 删除主键
-ALTER TABLE Persons
-DROP PRIMARY KEY;
+-- 删除主键约束
+ALTER TABLE students DROP PRIMARY KEY;
 
--- 删除外键(需要知道约束名称)
-ALTER TABLE Orders
-DROP FOREIGN KEY fk_PersonID;
+-- 删除外键约束（必须知道约束名称）
+ALTER TABLE orders DROP FOREIGN KEY fk_orders_customer;
 
 -- 删除DEFAULT约束
-ALTER TABLE Persons
-ALTER City DROP DEFAULT;
+ALTER TABLE employees ALTER city DROP DEFAULT;
 ```
 
 
 
-### 2、`DQL` 单表查询
+### 1.4 外键约束深度解析
 
-#### 2.1 基本查询语法
+外键是实现**参照完整性**的核心机制，其工作原理如下：
+
+```sql
+-- 主表（一）：分类表
+CREATE TABLE category (
+    cid VARCHAR(32) PRIMARY KEY,
+    cname VARCHAR(100)
+);
+
+-- 从表（多）：商品表
+CREATE TABLE products (
+    pid VARCHAR(32) PRIMARY KEY,
+    pname VARCHAR(40),
+    price DOUBLE,
+    category_id VARCHAR(32),
+    -- 外键约束：category_id必须引用category表的cid字段
+    FOREIGN KEY (category_id) REFERENCES category(cid)
+);
+
+-- 数据操作演示
+INSERT INTO category (cid, cname) VALUES('c001', '家电');  -- 必须先插入主表数据
+
+-- 合法操作：外键值为NULL（表示未分类）
+INSERT INTO products (pid, pname) VALUES('p001', '商品名称');
+
+-- 合法操作：外键值在主表中存在
+INSERT INTO products (pid, pname, category_id) VALUES('p002', '商品名称2', 'c001');
+
+-- ❌ 非法操作：外键值在主表中不存在（会抛出异常）
+-- INSERT INTO products (pid, pname, category_id) VALUES('p003', '商品名称2', 'c999');
+
+-- ❌ 非法操作：删除已被引用的主表数据（会抛出异常）
+-- DELETE FROM category WHERE cid = 'c001';
+```
+
+**外键约束核心规则**：
+
+1. **插入规则**：从表的外键值必须为NULL或在主表中存在
+2. **删除规则**：主表中被引用的记录**无法直接删除**（需先删除从表关联记录或使用级联删除）
+
+
+
+## 2. `DQL` 单表查询
+
+### 2.1 基础查询语法
 
 ```sql
 SELECT *|字段名 FROM 表名 WHERE 条件;
 ```
 
-#### 2.2 排序查询
-
 ```sql
-SELECT * FROM 表名 ORDER BY 排序字段 ASC|DESC;  -- ASC 升序 / DESC 降序
-```
+-- 查询所有字段和记录
+SELECT * FROM 表名;
 
-#### 2.3 聚合函数
+-- 查询指定字段
+SELECT pname, price FROM product;
 
-| 函数      | 功能描述 |
-| :-------- | :------- |
-| `COUNT()` | 统计行数 |
-| `SUM()`   | 求和     |
-| `MAX()`   | 最大值   |
-| `MIN()`   | 最小值   |
-| `AVG()`   | 平均值   |
+-- 字段运算（查询时动态计算）
+SELECT pname, price + 10 AS new_price FROM product;  -- 所有商品价格+10元显示
 
-#### 2.4 分组查询
+-- 条件查询（WHERE子句）
+SELECT pname, price FROM product 
+WHERE price BETWEEN 200 AND 800;  -- 查询价格在200-800之间的商品
+select * from product where  price>=200 and price <=800; -- 下面这句相当于 between 200 and 800
 
-```sql
-SELECT 字段1, 字段2... FROM 表名 GROUP BY 分组字段 HAVING 分组条件;  -- HAVING 用于分组后过滤
-```
-
-**注意**：WHERE 用于分组前过滤，HAVING 用于分组后过滤。
-
-#### 2.5 分页查询
-
-```sql
-SELECT 字段1, 字段2... FROM 表名 LIMIT M, N;  -- M: 起始索引，N: 查询条数
-```
-
-**参数计算**：
-
-- `M = (当前页码 - 1) * 每页显示条数`
-- `N = 每页显示条数`
-
-#### 2.6 完整语法：
-
-```sql
-SELECT [DISTINCT] 列名1, 列名2, ...
-FROM 表名
-[WHERE 条件]
-[GROUP BY 分组列]
-[HAVING 分组条件]
-[ORDER BY 排序列 [ASC|DESC]]
-[LIMIT [偏移量,] 行数];
-```
+-- IN查询：枚举具体取值（非范围）
+SELECT pname, price FROM product 
+WHERE price IN (200, 800);  -- 精确匹配200或800的商品
+select * from product where  price=200 or price =800; -- 下面这句相当于 in (200, 800)
 
 
-
-```sql
--- 数据准备 建表
-CREATE TABLE product
-(
-    pid         INT PRIMARY KEY,
-    pname       VARCHAR(20),
-    price       DOUBLE,
-    category_id VARCHAR(32)
-);
-
--- 向表中插入数据
-INSERT INTO product(pid,pname,price,category_id) VALUES(1,'联想',5000,'c001');
-INSERT INTO product(pid,pname,price,category_id) VALUES(2,'海尔',3000,'c001');
-INSERT INTO product(pid,pname,price,category_id) VALUES(3,'雷神',5000,'c001');
-INSERT INTO product(pid,pname,price,category_id) VALUES(4,'杰克琼斯',800,'c002');
-INSERT INTO product(pid,pname,price,category_id) VALUES(5,'真维斯',200,'c002');
-INSERT INTO product(pid,pname,price,category_id) VALUES(6,'花花公子',440,'c002');
-INSERT INTO product(pid,pname,price,category_id) VALUES(7,'劲霸',2000,'c002');
-INSERT INTO product(pid,pname,price,category_id) VALUES(8,'香奈儿',800,'c003');
-INSERT INTO product(pid,pname,price,category_id) VALUES(9,'相宜本草',200,'c003');
-INSERT INTO product(pid,pname,price,category_id) VALUES(10,'面霸',5,'c003');
-INSERT INTO product(pid,pname,price,category_id) VALUES(11,'好想你枣',56,'c004');
-INSERT INTO product(pid,pname,price,category_id) VALUES(12,'香飘飘奶茶',1,'c005');
-INSERT INTO product(pid,pname,price,category_id) VALUES(13,'海澜之家',1,'c002');
-
--- select 字段名字 from 表名
-select * from product;
-
-select pname,price from product;
-select pname,price+10 from product;
-
--- 条件查询
-select pname,price from product where pname='花花公子';
-select pname,price from product where price=800;
-select pname,price from product where price!=800;
-select pname,price from product where price<=60;
-
--- 范围查询
-select pname,price from product where price between 200 and 800;
--- in 中传入的是具体的取值, 不是范围, 范围要使用between and
-select pname,price from product where price in(200,800);
-
--- 逻辑查询
-
--- 下面这句相当于 between 200 and 800
-select * from product where  price>=200 and price <=800;
--- 下面这句相当于 in (200, 800)
-select * from product where  price=200 or price =800;
-
-select * from product where  not (price=200);
+-- 非空查询
+select * from product where product.category_id is not null ;
 
 -- 模糊查询：在 SQL 的模糊查询中，LIKE 关键字配合通配符使用，主要涉及 % 和 _ 两个通配符（注意 * 不是模糊查询的通配符）
 -- % 作用：匹配任意长度的字符串（包括零个字符）；_ 作用：匹配单个任意字符。
 select * from product where pname like '香%';
 select * from product where pname like '_想%';
 
--- 非空查询
-select * from product where product.category_id is not null ;
 
--- 排序 order by DESC降序 默认是升序 ASC
--- 多字段排序, 如果第一个排序字段中有相同取值的结果, 后面的字段排序才会看到效果
-select * from product order by price DESC ,category_id DESC ;
+select pname,price from product where price!=800;
+select * from product where  not (price=200);
+```
 
+### 2.2 结果排序（ORDER BY）
 
--- 聚合函数  count 计数 sum 求和 max 最大 min最小 avg 平均
-select count(*) from product;
-select count(*) from product where price>200;
+```sql
+SELECT * FROM 表名 ORDER BY 排序字段 ASC|DESC;  -- ASC 升序 / DESC 降序
+```
 
-select sum(price) from product where category_id='c001';
-select avg(price) from product where category_id='c001';
-select MAX(price),MIN(price) from product;
+```sql
+-- 单列排序：默认ASC升序，DESC为降序
+SELECT * FROM product ORDER BY price DESC;  -- 按价格从高到低排序
 
+-- 多列排序：先按第一字段排序，相同则按第二字段排序
+SELECT * FROM product 
+ORDER BY price DESC, category_id DESC;  -- 价格相同再按分类降序
 
--- 分组查询
-select category_id, count(*) from product group by category_id;
-select category_id, max(price) from product group by category_id;
+-- 💡 技巧：多字段排序时，只有第一字段有重复值，第二字段排序才生效
+```
 
--- limit 起始编号 这一页显示几条数据
-select * from product limit 0,5;
-select * from product limit 5,10;
+### 2.3 聚合函数
+
+| 函数      | 功能描述                         | 是否忽略NULL |
+| :-------- | :------------------------------- | :----------- |
+| `COUNT()` | 统计行数或指定字段的非NULL值数量 | ✅            |
+| `SUM()`   | 计算数值列总和                   | ✅            |
+| `MAX()`   | 获取最大值                       | ✅            |
+| `MIN()`   | 获取最小值                       | ✅            |
+| `AVG()`   | 计算平均值                       | ✅            |
+
+```sql
+-- 统计所有商品数量
+SELECT COUNT(*) FROM product;
+
+-- 统计价格>200的商品数量
+SELECT COUNT(*) FROM product WHERE price > 200;
+
+-- 统计c001分类商品的总价和均价
+SELECT 
+    SUM(price) AS total_price,
+    AVG(price) AS avg_price
+FROM product 
+WHERE category_id = 'c001';
+
+-- 获取价格极值
+SELECT MAX(price) AS max_price, MIN(price) AS min_price FROM product;
+```
+
+### 2.4 分组统计（GROUP BY & HAVING）
+
+```sql
+SELECT 字段1, 字段2... FROM 表名 GROUP BY 分组字段 HAVING 分组条件;  -- HAVING 用于分组后过滤
+```
+
+```sql
+-- 基础分组：统计每个分类的商品数量
+SELECT category_id, COUNT(*) AS product_count
+FROM product
+GROUP BY category_id;
+
+-- 分组后筛选：统计商品数>2的分类
+SELECT category_id, COUNT(*) AS product_count
+FROM product
+GROUP BY category_id
+HAVING product_count > 2;  -- HAVING用于分组后的条件过滤
+
+-- ⚠️ 注意：WHERE用于分组前过滤，HAVING用于分组后过滤
+```
+
+### 2.5 分页查询（LIMIT）
+
+```sql
+SELECT 字段1, 字段2... FROM 表名 LIMIT M, N;  -- M: 起始索引，N: 查询条数
+```
+
+```sql
+-- LIMIT语法：LIMIT 起始索引, 每页条数
+-- 起始索引 = (页码 - 1) × 每页条数
+
+-- 查询第1页，每页5条
+SELECT * FROM product LIMIT 0, 5;
+
+-- 查询第2页，每页5条
+SELECT * FROM product LIMIT 5, 5;
+
+-- 查询第3页，每页10条
+SELECT * FROM product LIMIT 20, 10;
+```
+
+### 2.6 完整查询执行顺序
+
+```sql
+SELECT [DISTINCT] 列名1, 列名2, ...    -- 1. 选择字段（去重）
+FROM 表名                           -- 2. 指定数据源
+[WHERE 条件]                        -- 3. 原始数据过滤
+[GROUP BY 分组列]                   -- 4. 数据分组
+[HAVING 分组条件]                   -- 5. 分组结果过滤
+[ORDER BY 排序列 [ASC|DESC]]        -- 6. 结果排序
+[LIMIT [偏移量,] 行数];              -- 7. 结果分页
+
+-- 执行优先级：WHERE → GROUP BY → HAVING → ORDER BY → LIMIT
+```
+
+### 2.7 单表查询综合示例
+
+```sql
+-- 1. 创建示例表（商品表）
+CREATE TABLE product (
+    pid INT PRIMARY KEY AUTO_INCREMENT,
+    pname VARCHAR(20) NOT NULL,
+    price DOUBLE NOT NULL,
+    category_id VARCHAR(32)
+);
+
+-- 2. 插入测试数据（共13条）
+INSERT INTO product VALUES
+(1, '联想', 5000, 'c001'), (2, '海尔', 3000, 'c001'),
+(3, '雷神', 5000, 'c001'), (4, '杰克琼斯', 800, 'c002'),
+(5, '真维斯', 200, 'c002'), (6, '花花公子', 440, 'c002'),
+(7, '劲霸', 2000, 'c002'), (8, '香奈儿', 800, 'c003'),
+(9, '相宜本草', 200, 'c003'), (10, '面霸', 5, 'c003'),
+(11, '好想你枣', 56, 'c004'), (12, '香飘飘奶茶', 1, 'c005'),
+(13, '海澜之家', 1, 'c002');
+
+-- 3. 综合查询示例
+-- 查询：每个上架分类的商品数量，按数量降序，显示前3个分类
+SELECT 
+    category_id,
+    COUNT(*) AS product_count
+FROM product
+WHERE category_id IS NOT NULL  -- 过滤未分类商品
+GROUP BY category_id
+HAVING product_count >= 2      -- 只显示商品数≥2的分类
+ORDER BY product_count DESC
+LIMIT 0, 3;
 ```
 
 
 
-### 3、`DQL` 多表查询
+## 3. `DQL` 多表查询
 
-#### 3.1 表和表之间的关系
+### 3.1 表关系设计
 
-实际业务应用中, 同一块业务的数据, 会存在不同的表中, 在做查询时需要将不同的表关联起来才能完成查询工作；在 `MySQL` 数据库中，表和表之间的关系是通过**主键和外键**建立的，用于实现数据的关联和完整性约束。以下是常见的表关系类型：
+实际业务中，数据分散在多个表中，通过**主键**和**外键**建立关联关系，实现数据完整性与查询灵活性。
 
+#### 一对一关系（One-to-One）
 
+**定义**：一个表中的一条记录对应另一个表中的唯一一条记录。
 
-- 一对一关系（**One-to-One**）：
+**适用场景**：将大表垂直拆分（如用户基本信息 vs 用户敏感信息），提高查询效率与安全性。
 
-  - **定义**：一个表中的一条记录对应另一个表中的唯一一条记录。
-  - **场景**：适用于将大表拆分为多个小表以提高效率（如用户基本信息和用户隐私信息）。
-  - **实现方式**：
-    - 在任意一表中添加外键，并设置为唯一约束（`UNIQUE`）。
-    - 或直接将主键作为外键。
+**实现方式**：
 
-  ```sql
-  -- 用户表
-  CREATE TABLE user (
-      user_id INT PRIMARY KEY AUTO_INCREMENT,
-      username VARCHAR(50) NOT NULL
-  );
-  
-  -- 用户详情表
-  CREATE TABLE user_detail (
-      user_id INT PRIMARY KEY,
-      address VARCHAR(100),
-      phone VARCHAR(20),
-      FOREIGN KEY (user_id) REFERENCES user(user_id)
-  );
-  ```
-
-  
-
-- 一对多**（One-to-Many）**
-  - **定义**：一个表中的一条记录对应另一个表中的多条记录。
-  - **场景**：最常见的关系（如部门和员工、用户和订单）。
-  - **实现方式**：
-    - 在“多”的一方表中添加外键，指向“一”的一方的主键。从表外键的值是对主表主键的引用。从表外键类型，必须与主表主键类型一致。
-
-  ```sql
-  -- 部门表（一）
-  CREATE TABLE department (
-      dept_id INT PRIMARY KEY AUTO_INCREMENT,
-      dept_name VARCHAR(50) NOT NULL
-  );
-  
-  -- 员工表（多）
-  CREATE TABLE employee (
-      emp_id INT PRIMARY KEY AUTO_INCREMENT,
-      emp_name VARCHAR(50) NOT NULL,
-      dept_id INT,
-      FOREIGN KEY (dept_id) REFERENCES department(dept_id)
-  );
-  ```
-
-
-
-
-- 多对多关系**（Many-to-Many）**
-  - **定义**：一个表中的多条记录可以关联另一个表中的多条记录。
-  - **场景**：学生和课程、用户和角色、订单和商品。
-  - **实现方式**：
-    - 通过**中间表（关联表）**实现，中间表包含两个外键，分别指向两个主表的主键。
-    - 中间表的主键可以是复合主键（两个外键的组合）。
+- 在任意一表中添加外键，并设置为唯一约束（`UNIQUE`）。
+- 或直接将主键作为外键。
 
 ```sql
--- 学生表
+-- 主表：用户基础信息
+CREATE TABLE user (
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL
+);
+
+-- 从表：用户详情（通过主键作为外键实现一对一）
+CREATE TABLE user_detail (
+    user_id INT PRIMARY KEY,  -- 既是主键也是外键
+    address VARCHAR(100),
+    phone VARCHAR(20),
+    id_card VARCHAR(18),
+    FOREIGN KEY (user_id) REFERENCES user(user_id)  -- 外键约束保证一对一
+);
+```
+
+
+
+#### 一对多关系（One-to-Many）
+
+**定义**：一个表中的一条记录对应另一个表中的多条记录。
+
+**适用场景**：最常见关系（如部门与员工、用户与订单），**在"多"的一方添加外键**。
+
+**实现方式**：
+
+- 在“多”的一方表中添加外键，指向“一”的一方的主键。从表外键的值是对主表主键的引用。从表外键类型，必须与主表主键类型一致。
+
+```sql
+-- 主表（一）：部门表
+CREATE TABLE department (
+    dept_id INT PRIMARY KEY AUTO_INCREMENT,
+    dept_name VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- 从表（多）：员工表
+CREATE TABLE employee (
+    emp_id INT PRIMARY KEY AUTO_INCREMENT,
+    emp_name VARCHAR(50) NOT NULL,
+    salary DECIMAL(10,2),
+    dept_id INT,  -- 外键字段
+    FOREIGN KEY (dept_id) REFERENCES department(dept_id)  -- 引用部门ID
+);
+```
+
+
+
+#### 多对多关系（Many-to-Many）
+
+**定义**：一个表中的多条记录可以关联另一个表中的多条记录。
+
+**适用场景**：学生选课、用户角色、订单商品等复杂关系，**通过中间表实现**。
+
+**实现方式**：
+
+- 通过**中间表（关联表）**实现，中间表包含两个外键，分别指向两个主表的主键。
+- 中间表的主键可以是复合主键（两个外键的组合）。
+
+```sql
+-- 表1：学生表
 CREATE TABLE student (
     student_id INT PRIMARY KEY AUTO_INCREMENT,
     student_name VARCHAR(50) NOT NULL
 );
 
--- 课程表
+-- 表2：课程表
 CREATE TABLE course (
     course_id INT PRIMARY KEY AUTO_INCREMENT,
     course_name VARCHAR(50) NOT NULL
 );
 
--- 中间表（学生选课记录）
+-- 中间表：选课记录（复合主键保证不重复选课）
 CREATE TABLE student_course (
-    student_id INT,
-    course_id INT,
-    PRIMARY KEY (student_id, course_id),  -- 复合主键
+    student_id INT NOT NULL,
+    course_id INT NOT NULL,
+    enrollment_date DATE,
+    PRIMARY KEY (student_id, course_id),  -- 复合主键：同一学生不能重复选同一门课
     FOREIGN KEY (student_id) REFERENCES student(student_id),
     FOREIGN KEY (course_id) REFERENCES course(course_id)
 );
@@ -376,37 +446,17 @@ CREATE TABLE student_course (
 
 
 
-**外键约束：**在创建表的时候, 如果两张表之间有一对多的关系, 可以指定外键约束。1、从表中引用了主表中的数据，主表中数据不可被删除。2、主表中没有数据，从表外键也无法被插入
+### 3.2 连接查询方式
 
-```sql
-create table category (
-    cid varchar(32) primary key,
-    cname varchar(100));
 
-create table products (
-    pid varchar(32) primary key,
-    pname varchar(40),
-    price DOUBLE,
-	category_id varchar(32),
-	FOREIGN KEY (category_id) REFERENCES category(cid));
-```
 
-`FOREIGN KEY (category_id) REFERENCES category(cid)`给category_id字段添加了外键约束，指向 category这个表的`cid`字段
 
-![image-20230829105606070](assets/image-20230829105606070.png)
 
-```sql
-#1 向分类表中添加数据
-INSERT INTO category (cid ,cname) VALUES('c001','服装');
-#2 向商品表添加普通数据,没有外键数据，默认为null
-INSERT INTO products (pid,pname) VALUES('p001','商品名称');
-#3 向商品表添加普通数据，含有外键信息(category表中存在这条数据)
-INSERT INTO products (pid ,pname ,category_id) VALUES('p002','商品名称2','c001');
-#4 向商品表添加普通数据，含有外键信息(category表中不存在这条数据) -- 失败,异常
-INSERT INTO products (pid ,pname ,category_id) VALUES('p003','商品名称2','c999');
-#5 删除指定分类(分类被商品使用) -- 执行异常
-DELETE FROM category WHERE cid = 'c001';
-```
+
+
+
+
+
 
 
 
