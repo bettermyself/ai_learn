@@ -1,84 +1,104 @@
-## 1、租房数据练习
+## 1. 租房数据实战演练
 
 ### 1.1 数据加载与初步探索
 
 加载数据后，使用以下方法了解数据基本情况：
 
 ```python
-df.head()  # 查看前5行数据
-df.info()  # 查看数据结构和数据类型
-df.describe()  # 获取数值列的统计摘要
+df.head()      # 查看前5行数据，快速预览数据结构和内容
+df.info()      # 查看数据结构、数据类型和非空值数量，识别潜在的数据质量问题
+df.describe()  # 获取数值列的统计摘要（计数、均值、标准差、最小最大值等）
 ```
+
+
 
 ### 1.2 分组聚合操作
 
-**基础分组计数**
+#### 1.2.1 基础分组计数
 
 ```python
+# 按 view_num 分组统计各组的 district 数量
+# as_index=False 确保分组字段作为普通列而非索引，便于后续操作
 house_data.groupby('view_num', as_index=False)['district'].count()
 ```
 
-**参数说明：**
+**关键参数说明**
 
-- `as_index=False`：`as_index` 默认是True , 分组字段会作为分组结果的索引, 把它改成False之后, 分组字段作为普通列而非索引（等效于`groupby().reset_index()`）
-- 计数注意事项：
-  - 当数据无缺失值时，对任意列计数结果相同
-  - 存在缺失值时需明确指定计数列
+| 参数       | 说明                       | 默认值 | 使用建议                                                     |
+| :--------- | :------------------------- | :----- | :----------------------------------------------------------- |
+| `as_index` | 是否将分组字段作为结果索引 | `True` | 设为 `False` 可使分组字段作为普通列，等效于 `groupby().reset_index()` |
 
+⚠️ **计数注意事项**：当数据无缺失值时，对任意列计数结果相同；存在缺失值时需明确指定计数列。
 
-
-**多字段聚合**
+#### 1.2.2 多字段聚合
 
 ```python
-house_data.groupby('house_type').agg(
-    {'view_num': 'sum',   # 浏览量求和
-     'price': 'mean'}     # 价格求均值
-)
+# 对 house_type 分组，分别对 view_num 求和、price 求均值
+house_data.groupby('house_type').agg({
+    'view_num': 'sum',   # 计算各户型的总浏览量
+    'price': 'mean'      # 计算各户型的平均价格
+})
 ```
 
-**语法解析：**
+**语法特性**
 
-- 使用字典格式 `{'字段': '聚合方法'}`
-- 支持不同字段应用不同聚合方法
-- 常用聚合函数：`sum`, `mean`, `count`, `max`, `min`
+- 使用字典格式 `{'字段': '聚合方法'}` 实现不同字段的不同聚合逻辑
+- 常用聚合函数：`sum`（求和）、`mean`（均值）、`count`（计数）、`max`/`min`（最值）
 
 
 
 ### 1.3 数据可视化
 
-**中文显示配置**
+#### 1.3.1 中文显示配置
 
-pandas的`Plot()` 实际上调用的是**matplotlib**，matplotlib 中文显示问题解决方案：
+**pandas**的`Plot()` 实际上调用的是**matplotlib**，matplotlib 中文显示问题解决方案：
 
-```py
+```python
 import matplotlib.pyplot as plt
 
-# 解决中文显示问题
+# 解决中文显示问题：指定中文字体优先级列表
 plt.rcParams['font.sans-serif'] = [
-    'Noto Sans CJK JP', 
-    'WenQuanYi Micro Hei', 
-    'SimHei'
-] 
+    'Noto Sans CJK JP',      # 首选字体：Noto Sans CJK
+    'WenQuanYi Micro Hei',   # 备用字体：文泉驿微米黑
+    'SimHei'                 # 备用字体：黑体
+]
 
-# 解决负号显示问题
+# 解决负号显示异常问题
 plt.rcParams['axes.unicode_minus'] = False
 ```
 
-**条形图绘制**
+#### 1.3.2 条形图绘制
 
-```py
-house_data.groupby('house_type')['district']      # 按户型分组
-    .count()                                      # 计数
-    .sort_values(ascending=False)                 # 降序排序
-    .plot(kind='bar', figsize=(16, 8))            # 创建条形图
+```python
+# 绘制户型分布条形图：按户型分组计数并降序展示
+house_data.groupby('house_type')['district']  # 按户型分组，选择district列
+    .count()                                  # 统计每种户型的数量
+    .sort_values(ascending=False)             # 按数量降序排列，便于观察分布
+    .plot(kind='bar', figsize=(16, 8))        # 绘制条形图，设置图像尺寸为16×8英寸
 ```
 
-**plot参数详解：**
+**plot 核心参数**
 
-| 参数      | 说明     | 示例值                            |
-| :-------- | :------- | :-------------------------------- |
-| `kind`    | 图表类型 | `'bar'`(条形图), `'line'`(折线图) |
-| `figsize` | 图像尺寸 | `(宽度, 高度)` 单位英寸           |
+| 参数      | 说明     | 示例值                                |
+| :-------- | :------- | :------------------------------------ |
+| `kind`    | 图表类型 | `'bar'`（条形图）、`'line'`（折线图） |
+| `figsize` | 图像尺寸 | `(宽度, 高度)`，单位英寸              |
+
+
+
+## 2. DataFrame 数据组合技术
+
+### 2.1 Concat 连接（纵向堆叠）
+
+**适用场景**：结构相同的 DataFrame 连接，如合并多天的日志数据。
+
+
+
+
+
+
+
+
 
 
 

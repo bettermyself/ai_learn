@@ -442,16 +442,32 @@ pd.read_csv('data/movie5_noindex.csv')
 
 
 
-## 6、DataFrame数据分析入门
+## 6. DataFrame数据分析
 
 ### 6.1 DataFrame获取部分数据
 
-- 获取一列数据
-  - `df['列名']` → series
-  - `df[['列名']]` → **DataFrame**
+```python
+# 获取单列：返回Series（一维）
+age_series = df['age']
 
-- 获取多列数据
-  - `df[列表]` /`df[['列名1','列名2']]`
+# 获取单列DataFrame：用双层括号
+# 结构保持二维，便于后续链式操作
+age_df = df[['age']]
+
+# 获取多列：传入列名列表
+subset = df[['name', 'age', 'score']]
+```
+
+**保持 DataFrame 结构**：若想取单行/单列但返回 `DataFrame`（二维），用双层括号：
+
+```python
+df.loc[0]  	 # 返回类型为Series，目标第一行
+df.loc[:,0]  # 返回类型为Series，目标第一列
+
+df.loc[0:0]     	# 返回只有一行的 DataFrame（行索引为0）
+df.loc[[0]]     	# 返回只有一行的 DataFrame（行索引为0）
+df.loc[:, ['A']]	# 返回只有列'A'的 DataFrame
+```
 
 
 
@@ -459,68 +475,56 @@ pd.read_csv('data/movie5_noindex.csv')
 
 `df.loc[[行名字],[列名字]]` / `df.iloc [[行序号],[列序号]]`
 
-- `loc`/`iloc` 不是方法是**属性**
-- 可以使用切片语法, 可以传入一个值, 也可以传入列表
-
 ```python
-df.loc[0]  # 取第一行（索引为0 的行）,返回Series
-df.iloc[:,[2,4,-1]] # :, 获取所有行  [2,4,-1] 获取序号是2和4 以及最后一列
+# loc/iloc核心区别：标签 vs 位置
+# loc基于行/列名（标签索引）
+# iloc基于整数位置（0-based）
+
+# 取第一行（Series）
+df.loc[0]  # 索引名为0的行
+df.iloc[0] # 物理第1行，与索引名无关
+
+# 取多列（DataFrame）
+# :表示所有行，[2,4,-1]表示第2、4列和最后一列
+df.iloc[:, [2, 4, -1]]  
+
+# 按列名切片（包含终点）
+df.loc[:, 'country':'year']  # country到year之间所有列，没有开闭区间的概念
 df.loc[:,['country','year']] # :, 获取所有行  获取名字是country 和 year这两列数据
-df.iloc[:,0:6:2] # 切片 0:6 左闭右开 不包含6  2是步长
-df.loc[:,'country':'year'] # 切片 'country':'year' 没有开闭区间的概念
+
+# 步长切片（每2列取1列）
+df.iloc[:, 0:6:2]  # 切片 0:6 左闭右开 不包含6，步长2
 ```
 
-> 在使用的时候, 推荐使用loc，使用行/列的名字来取值, 代码可读性比较好
->
+⚠️ 推荐使用**loc**：代码可读性高，不易出错
 
 
 
-✨ 关键总结
+### 6.3 分组聚合操作
 
-| 操作          | 目标       | 返回类型    | 示例                   |
-| :------------ | :--------- | :---------- | :--------------------- |
-| `df.loc[0]`   | **第一行** | `Series`    | `A:1, B:4`（单行数据） |
-| `df.loc[:,0]` | 第一列     | `Series`    | 需列索引是整数 0       |
-| `df.loc[0:0]` | 第一行     | `DataFrame` | 保留二维结构           |
-
-
-
-**保持 DataFrame 结构**：
-若想取单行/单列但返回 `DataFrame`（二维），用双层括号：
-
-```python
-df.loc[[0]]     # 返回只有一行的 DataFrame（行索引为0）
-df.loc[:, ['A']] # 返回只有列'A'的 DataFrame
-```
-
-
-
-### 6.3 分组聚合
-
-**SQL实现方式**
+**SQL与Pandas实现对比**
 
 ```sql
+-- SQL分组语法
 select 字段, 聚合函数(字段名字) from 表名 group by 分组字段名字
 ```
 
-**DataFrame API实现方式**
-
 ```python
-# 单字段分组
+# Pandas等效实现
+# 单字段分组 + 单字段聚合
 df.groupby('分组字段')['聚合字段'].聚合函数()
 
-# 多字段分组
-df.groupby(['分组字段1', '分组字段2'])[['聚合字段1', '聚合字段2']].聚合函数()
+# 多字段分组 + 多字段聚合（对字段3和字段4都执行mean和sum两种聚合操作）
+df.groupby(['字段1', '字段2'])[['字段3', '字段4']].agg(['mean', 'sum'])
 ```
 
-**核心注意事项**
+**执行流程与注意事项**：
 
 > 1. **索引处理**
->    分组后默认将分组字段设为行索引(index)
->    多字段分组会产生`MultiIndex`复合索引，可用`reset_index()`转为普通列
+>    分组后默认将分组字段设为行索引(index)，多字段分组会产生`MultiIndex`复合索引，可用`reset_index()`转为普通列
 > 2. **执行流程**
->
-> - 创建分组对象：`grouped = df.groupby('year')`
+> 
+>- 创建分组对象：`grouped = df.groupby('year')`
 > - 字段选择：`series_group = grouped['目标字段']`
 > - 执行计算：`result = series_group.mean()`
 
@@ -544,79 +548,76 @@ df.groupby('year')['lifeExp'].mean().plot()
 
 
 
-## 7、pandas数据分析与处理练习
+## 7. pandas数据分析与处理练习
 
-### **7.1 数据加载与初步分析**
-
-加载数据后，首先需要了解数据集的基本情况：
-
-- `df.info()` - 数据集元数据概览
-  - 数据有哪些列, 有多少条数据, 每列数据的数据类型, 每一列数据是否有空值
-- `df.describe()` - 数据统计分析
-  - **数值型数据**：显示计数、极值、分位数、均值和标准差
-  - **类别型数据**：使用 `df.describe(include='object')` 查看：
-    - 不同取值的数量
-    - 出现频率最高的取值
-    - 最高频取值出现的次数
-
-
-
-### 7.2 数据排序技巧
-
-**nlargest/nsmallest - 极值筛选**
-
-- nlargest 获取某个字段取值最大的前n条数据
-- nsmallest  获取某个字段取值最小的前n条数据
+### 7.1 数据探索流程
 
 ```python
-movie2 = movie[['movie_title','imdb_score','budget']]
+# 数据集加载后标准探索流程
+df = pd.read_csv('data.csv')
 
-# 获取IMDB评分最高的100部电影，从高分电影中筛选预算最低的5部
-movie2.nlargest(100,'imdb_score').nsmallest(5,'budget')
+# 1. 元数据概览
+df.info()  
+# 输出：总行数、各列非空值数量、数据类型、内存占用
+
+# 2. 数值分布统计
+df.describe()  # 默认只统计数值列
+# 统计类别型数据
+df.describe(include='object')  # 显示不同取值的数量、出现频率最高的取值、最高频取值出现的次数
+
+# 3. 缺失值分析
+df.isnull().sum()  # 每列缺失值总数
+df.isnull().mean()  # 每列缺失值比例
 ```
 
 
 
-**sort_values() - 单列/多列排序**
+### 7.2 极值筛选技巧
 
 ```python
-sorted_result = movie3.sort_values(['title_year','imdb_score'],ascending=False)
+# 场景：获取IMDB评分最高的100部电影中预算最低的5部
+# 链式操作：先筛选top100，再排序取最小值
+result = (movie[['movie_title', 'imdb_score', 'budget']]
+          .nlargest(100, 'imdb_score')      # 评分最高的100部
+          .nsmallest(5, 'budget'))          # 其中预算最低的5部
 
+# nlargest/nsmallest参数说明：
+# n: 返回的记录数
+# columns: 排序依据的列名
+# keep: 如何处理重复值（'first', 'last', 'all'）
+```
+
+
+
+### 7.3 多列排序策略
+
+```python
 # 按年份降序、评分降序排序
+# ascending参数控制每列排序方向
 sorted_result = movie.sort_values(
-    ['title_year', 'imdb_score'],
-    ascending=[False, False]
+    ['title_year', 'imdb_score'],      # 排序列顺序：先按年，再按分
+    ascending=[False, False]           # False=降序，True=升序
 )
 
-# 按年份升序、评分降序排序
-sorted_result = movie.sort_values(
-    ['title_year', 'imdb_score'],
-    ascending=[True, False]
-)
+# 💡 技巧：排序后索引会乱，通常需要重置
+sorted_result = sorted_result.reset_index(drop=True)  # drop=True不保留原索引
 ```
 
->**参数说明**：
->
->- `ascending`：控制排序方向
->  - 默认 `True`（升序）
->  - 设置为 `False` 改为降序
->- 多列排序时可传递布尔值列表，分别指定每列的排序方向
 
 
-
-### 7.3 数据去重操作
-
-**drop_duplicates() - 删除重复项**
+### 7.4 数据去重最佳实践
 
 ```python
-# 保留每年最后一部电影（按当前排序）
-sorted_result.drop_duplicates(subset=['title_year'],keep='last')
-```
+# 保留每年最后一部电影（按当前排序顺序）
+unique_years = sorted_result.drop_duplicates(
+    subset=['title_year'],  # 基于年份列判断重复,指定判断重复的列（默认所有列）
+    keep='last'             # 'first'保留首次，'last'保留最后，False删除所有重复
+)
 
->**参数说明**：
->
->- `subset`：指定判断重复的列（默认所有列）
->- `keep`：保留策略
->  - `'first'`：保留首次出现的条目
->  - `'last'`：保留最后出现的条目
->  - `False`：删除所有重复项
+# 多列去重：subset传入列表
+df.drop_duplicates(subset=['year', 'region'], keep='first')
+
+# ⚠️ 去重前务必先排序，否则结果不可控(因为涉及了保留策略)
+# 去重后建议重置索引
+df_unique = df.sort_values('date').drop_duplicates('id').reset_index(drop=True)
+```
