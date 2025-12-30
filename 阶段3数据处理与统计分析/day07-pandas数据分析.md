@@ -1,117 +1,118 @@
-## 1、向量化函数/lambda表达式
+## 1. 向量化函数与Lambda表达式
 
 ### 1.1 向量化函数问题分析
 
+在Pandas数据处理中，普通Python函数无法直接处理Series类型的条件判断，这是新手常见的痛点。
+
 ```python
+import numpy as np
+import pandas as pd
+
 def avg_test(x, y):
-    if x == 20:  # 无法处理Series类型的条件判断
+    # 错误示例：if语句无法直接处理Series布尔数组
+    if x == 20:  # ⚠️ 报错：if无法处理Series类型，需要标量布尔值
         return np.NaN
     else:
         return (x + y) / 2
 
-avg_test(df['a'], df['b'])  # 报错：if无法处理Series类型	
+# 尝试调用将失败，因为df['a']是整个Series而非单个值
+# avg_test(df['a'], df['b'])  # 报错：ValueError
 ```
 
-![image-20230903093048874](assets/image-20230903093048874.png)
+**核心问题**：`if`语句需要单一布尔值，但`x == 20`返回的是包含多个布尔值的Series。
 
-**错误原因**：`if`语句需要布尔值，但传入的是包含布尔值的Series。解决方案需遍历Series中的每个值进行单独判断。
-
-> 想让上面的代码正常的执行, 我们需要把 Series里的每一个值遍历的传递给`if`做多次判断, 此时必须要自己写`for`循环，也可以通过 `np.vectorize(avg_test)` 这种方式, 把这个方法变成一个向量化的方法(会遍历每一个值(分量)，多次调用这个方法)。
-
-
-
-**`np.vectorize` 两种用法**
-
-**方法1：显式向量化**
+**解决方案**：使用`np.vectorize()`将普通函数转换为向量化函数，自动遍历Series中的每个元素。
 
 ```python
-import numpy as np
+# 示例数据准备
+df = pd.DataFrame({
+    'a': [20, 15, 20, 18],
+    'b': [10, 12, 14, 16]
+})
 
-def avg_test(x,y):
-    if x==20:
+# ==================== 方法1：显式向量化 ====================
+# 创建向量化版本，np.vectorize会自动遍历每个元素
+avg_vec = np.vectorize(avg_test)  # 将普通函数包装为向量化函数
+result = avg_vec(df['a'], df['b'])  # 成功执行，返回array([nan, 13.5, nan, 17.0])
+print(result)
+
+# ==================== 方法2：装饰器向量化 ====================
+@np.vectorize  # 💡 装饰器模式更简洁，直接修饰函数定义
+def avg_test_decorated(x, y):
+    """向量化函数：当x=20时返回NaN，否则返回平均值"""
+    if x == 20:
         return np.NaN
     else:
-        return (x+y)/2
+        return (x + y) / 2
 
-# 创建向量化版本
-avg_vec = np.vectorize(avg_test) 
-avg_vec(df['a'], df['b'])  # 正确执行
-```
-
-**方法2：装饰器向量化**		
-
-```python
-@np.vectorize  # 装饰器模式
-def avg_test(x,y):
-    if x==20:
-        return np.NaN
-    else:
-        return (x+y)/2
-
-avg_test(df['a'], df['b'])  # 直接调用
+result = avg_test_decorated(df['a'], df['b'])  # 直接调用即可
+print(result)
 ```
 
 
 
-### 1.2 拓展：**装饰器**
+### 1.2 装饰器深度解析
 
-#### 1.2.1 装饰器是什么？
+#### 1.2.1 核心概念
 
-**高阶函数**：接受函数作为参数，返回新函数
-**核心作用**：在不修改原函数代码的前提下添加额外功能。简单来说，装饰器就是**函数的包装器**，它可以在函数执行前后添加一些操作。
+装饰器是Python的高阶函数特性，遵循**开放-封闭原则**：在不修改原函数代码的前提下，动态添加额外功能。简单来说，装饰器就是**函数的包装器**，它可以在函数执行前后添加一些操作。
 
 #### 1.2.2 基础语法
 
 在Python中，装饰器通常使用 `@` 符号来应用于函数或类。下面是一个简单的装饰器示例：
 
 ```python
-def my_decorator(func):          # 装饰器定义
+def my_decorator(func):  # 装饰器接收函数作为参数
+    """
+    装饰器函数：为被装饰函数添加前置和后置操作
+    :param func: 被装饰的原始函数
+    :return: 包装后的新函数
+    """
     def wrapper(*args, **kwargs):
-        print("前置操作")         # 添加的功能
-        result = func(*args, **kwargs)
-        print("后置操作")
-        return result
-    return wrapper
+        # *args接收所有位置参数，**kwargs接收所有关键字参数
+        print("前置操作：函数执行前的准备")  # 添加额外功能
+        result = func(*args, **kwargs)  # 调用原始函数并保存返回值
+        print("后置操作：函数执行后的清理")  # 添加额外功能
+        return result  # 返回原始函数的执行结果
+    return wrapper  # 返回包装函数
 
-@my_decorator                   # 应用装饰器
+@my_decorator  # 语法糖：等同于 say_hello = my_decorator(say_hello)
 def say_hello():
+    """原始业务函数"""
     print("Hello!")
 
-say_hello()                     # 输出包含装饰器逻辑
+# 调用被装饰的函数
+say_hello()
+# 输出：
+# 前置操作：函数执行前的准备
+# Hello!
+# 后置操作：函数执行后的清理
 ```
 
-**执行效果**：
-
-```she
-前置操作
-Hello!
-后置操作
-```
-
-在这个例子中：
-
-- `my_decorator` 是一个装饰器，它接受一个函数 `func` 作为参数。
-- `wrapper` 是一个内部函数，它在调用 `func` 前后添加了额外的打印操作。
-- `@my_decorator` 将 `say_hello` 函数传递给装饰器，并将返回的 `wrapper` 函数重新赋值给 `say_hello`。
-- 因此，当我们调用 `say_hello()` 时，实际执行的是 `wrapper()` 函数。
+**执行机制**：`@装饰器`本质是将原函数作为参数传递给装饰器，返回的新函数重新赋值给原函数名。
 
 
 
-### **1.3 Lambda表达式应用**
+### **1.3 Lambda表达式实战应用**
 
-使用`apply`的时候, 如果自定义处理逻辑比较简单, 一行代码就可以搞定, 可以使用`lambda`, 不用再`def` 一个起名字的函数, 使用`lambda` 创建一个匿名函数就可以了
+当数据处理逻辑简单到一行代码时，使用`lambda`创建匿名函数比`def`更优雅。
 
 ```python
-df.apply(lambda x:x.isnull().sum())
+# 检查DataFrame每列的缺失值数量
+# lambda x: x.isnull().sum() 创建匿名函数，x代表每列Series
+missing_count = df.apply(lambda x: x.isnull().sum())  # 对每列应用函数
+print(missing_count)
+
+# 💡 最佳实践：简单逻辑用lambda，复杂逻辑用def命名函数以提高可读性
 ```
 
 
 
-## 2、数据分组
+## 2. 数据分组高级操作
 
 ### 2.1 分组聚合
 
-**基本语法**
+#### 2.1.1 基础语法
 
 ```python
 # 分组后对单个字段聚合
@@ -130,9 +131,9 @@ df.groupby('year').agg({
 
 
 
-**使用自定义聚合函数**
+#### **2.1.2 自定义聚合函数**
 
-当需要使用非Pandas内置函数时，需使用**`agg`**/**`aggregate`**方法：
+当内置函数无法满足需求时，使用`agg` / `aggregate`方法传入自定义函数。
 
 ```python
 import numpy as np
@@ -144,10 +145,12 @@ df.groupby('continent')['lifeExp'].aggregate(np.mean)
 def my_mean_diff(s, global_mean):
     return s.mean() - global_mean
 
-global_mean = df['lifeExp'].mean()
-df.groupby('continent')['lifeExp'].agg(
+global_mean = df['lifeExp'].mean()  # 预先计算全局均值
+
+# 使用自定义函数，通过全局变量传递参数
+result = df.groupby('continent')['lifeExp'].agg(
     my_mean_diff, 
-    global_mean=global_mean
+    global_mean=global_mean  # 关键字参数传递给自定义函数
 )
 ```
 
