@@ -1,109 +1,75 @@
-## 1、窗口函数
+## 1. 窗口函数
 
-### 1.1 窗口函数简介
+### 1.1 核心概念与语法
 
-**窗口函数（Window Function）** 是 SQL 中一种高级分析工具，允许在数据集的特定“窗口”（一组相关行）上执行计算，**不合并原始数据行**，而是为每一行生成独立的结果。其核心目标是在保留明细数据的同时，支持复杂的分析和聚合操作。
+**窗口函数**是SQL中用于复杂分析的高级工具，允许在数据集的特定"窗口"（相关行集合）上执行计算，**不合并原始数据行**，为每行生成独立结果。
 
-- MYSQL 8.0 之后，加入了窗口函数功能
-- 在没有窗口函数之前，需要通过定义临时变量和大量的子查询才能完成工作，现在使用窗口函数实现起来更加简洁高效
-
-
-
-### **1.2 窗口函数概念**
-
-**基本语法：**
+#### 基本语法结构
 
 ```sql
--- 基本语法
-SELECT 窗口函数() OVER(PARTITION BY ___ ORDER BY___) FROM Table
-
--- 完整语法
+-- 完整语法格式
 SELECT 
     列1, 列2,
     窗口函数() OVER (
-        [PARTITION BY 分区列]
-        [ORDER BY 排序列 [ASC|DESC]]
-        [ROWS/RANGE BETWEEN 起始范围 AND 结束范围]
+        [PARTITION BY 分区列]          -- 定义分组窗口
+        [ORDER BY 排序列 [ASC|DESC]]   -- 定义排序规则
+        [ROWS/RANGE BETWEEN 起始范围 AND 结束范围]  -- 定义窗口帧
     ) AS 别名
-FROM 表;
+FROM 表名;
 ```
 
+**⚠️ 关键区别**：`PARTITION BY`与`GROUP BY`虽然都分组，但`PARTITION BY`返回结果集行数与原始表相同，而`GROUP BY`会合并行。
 
-
-**核心概念：**
-
-- **窗口（Window）**
-  - 由 `OVER()` 子句定义，决定函数计算的范围。
-  - 可以基于分区（`PARTITION BY`）、排序（`ORDER BY`）和行范围（`ROWS` 或 `RANGE`）进一步细化。
-    - `PARTITION BY` 和 `GROUP BY` 的相同点：都会使用字段进行分组 , 做聚合计算的时候, 结果都是一样的
-    - `PARTITION BY` 和 `GROUP BY` 的区别：`GROUP BY` 分组 聚合之后, 分组字段有几个取值, 就会返回几条结果；`PARTITION BY` 返回的结果跟原始数据表的条目数是一样的
-    - `ROWS/RANGE BETWEEN 起始范围 AND 结束范围`：定义窗口的起始和结束范围（**窗口帧**）。
-      1. `UNBOUNDED PRECEDING`：窗口从第一行开始。
-      2. `CURRENT ROW`：当前行。
-      3. `n PRECEDING`/`n FOLLOWING`：当前行前/后n行。
-      4. 示例：`ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`计算当前行及其前两行的聚合。
-- **与聚合函数的区别**
-  - 普通聚合函数（如 `SUM`、`AVG`、`count`、`max`、`min`）合并多行为一行。
-  - 窗口函数保留所有原始行，并为每行附加计算结果。
+> 窗口函数讲解：
+>
+> - 由 `OVER()` 子句定义，决定函数计算的范围。
+> - 可以基于分区（`PARTITION BY`）、排序（`ORDER BY`）和行范围（`ROWS` 或 `RANGE`）进一步细化。
+>   - `PARTITION BY` 和 `GROUP BY` 的相同点：都会使用字段进行分组 , 做聚合计算的时候, 结果都是一样的
+>   - `PARTITION BY` 和 `GROUP BY` 的区别：`GROUP BY` 分组 聚合之后, 分组字段有几个取值, 就会返回几条结果；`PARTITION BY` 返回的结果跟原始数据表的条目数是一样的
+>   - `ROWS/RANGE BETWEEN 起始范围 AND 结束范围`：定义窗口的起始和结束范围（**窗口帧**）。
+>     1. `UNBOUNDED PRECEDING`：窗口从第一行开始。
+>     2. `CURRENT ROW`：当前行。
+>     3. `n PRECEDING`/`n FOLLOWING`：当前行前/后n行。
+>     4. 示例：`ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`计算当前行及其前两行的聚合。
 
 
 
-**窗口函数 vs. 普通聚合函数**
+### 1.2 执行机制对比
 
-| **特性**             | **窗口函数**           | **普通聚合函数（如GROUP BY）** |
-| :------------------- | :--------------------- | :----------------------------- |
-| **输出行数**         | 与输入行数相同         | 合并为分组后的行数（可能更少） |
-| **计算范围**         | 基于窗口分区和排序规则 | 基于分组列                     |
-| **典型用途**         | 排名、累计、趋势分析   | 汇总统计（总和、平均值等）     |
-| **是否保留原始数据** | ✅ 保留所有明细行       | ❌ 仅保留分组和聚合结果         |
+| 特性             | 窗口函数               | 普通聚合函数（GROUP BY）       |
+| :--------------- | :--------------------- | :----------------------------- |
+| **输出行数**     | 与输入行数相同         | 合并为分组后的行数（可能更少） |
+| **计算范围**     | 基于窗口分区和排序规则 | 基于分组列                     |
+| **典型用途**     | 排名、累计、趋势分析   | 汇总统计（总和、平均值等）     |
+| **保留原始数据** | ✅ **保留所有明细行**   | ❌ 仅保留分组和聚合结果         |
 
 
 
-### 1.3 常见窗口函数
+### 1.3 常见窗口函数分类
 
-#### **a、排名函数**
+#### 1.3.1 排名函数
 
-- **`ROW_NUMBER()`**
-  为每行分配唯一序号（相同值按排序顺序编号）。
+```sql
+-- ROW_NUMBER()：分配唯一序号，相同值按顺序编号
+SELECT name, score, 
+       ROW_NUMBER() OVER (ORDER BY score DESC) AS rank
+FROM students;
 
-  ```sql
-  SELECT name, score, 
-    ROW_NUMBER() OVER (ORDER BY score DESC) AS rank
-  FROM students;
-  ```
+-- RANK()：相同值排名相同，后续排名跳过（如1,1,3）
+SELECT name, score, 
+       RANK() OVER (ORDER BY score DESC) AS rank
+FROM students;
 
-  
+-- DENSE_RANK()：相同值排名相同，后续排名不跳过（如1,1,2）
+SELECT name, score, 
+       DENSE_RANK() OVER (ORDER BY score DESC) AS rank
+FROM students;
 
-- **`RANK()`**
-  相同值排名相同，但后续排名会跳过（如：1,1,3）。
-
-  ```sql
-  SELECT name, score, 
-    RANK() OVER (ORDER BY score DESC) AS rank
-  FROM students;
-  ```
-
-  
-
-- **`DENSE_RANK()`**
-  相同值排名相同，后续排名不跳过（如：1,1,2）。
-
-  ```sql
-  SELECT name, score, 
-    DENSE_RANK() OVER (ORDER BY score DESC) AS rank
-  FROM students;
-  ```
-
-  
-
-- **`NTILE(n)`**
-  将数据分成 `n` 个近似相等的组。
-
-  ```sql
-  SELECT name, score, 
-    NTILE(4) OVER (ORDER BY score DESC) AS quartile
-  FROM students;
-  ```
+-- NTILE(n)：将数据分成n个近似相等的组
+SELECT name, score, 
+       NTILE(4) OVER (ORDER BY score DESC) AS quartile
+FROM students;
+```
 
 | name    | score | quartile |
 | :------ | :---- | :------- |
@@ -120,52 +86,37 @@ FROM 表;
 
 
 
-#### b. **聚合函数作为窗口函数**
+#### 1.3.2 聚合函数作为窗口函数
 
-- **`SUM() OVER()`、`AVG() OVER()`**、 **`COUNT() OVER()`**、 **`MIN() OVER()`**、 **`MAX() OVER()`**
-  计算累计值或分区内聚合。
+**`SUM() OVER()`、`AVG() OVER()`**、 **`COUNT() OVER()`**、 **`MIN() OVER()`**、 **`MAX() OVER()`**
 
-  ```sql
-  -- 计算每个部门的累计工资
-  SELECT name, department, salary,
-    SUM(salary) OVER (PARTITION BY department ORDER BY hire_date) AS cumulative_salary
-  FROM employees;
-  ```
-
-
-
-#### c. **偏移函数**
-
-- **`LAG(列, 偏移量,默认值)`**
-
-  - **功能**：获取当前行**之前**的第 `n` 行数据。
-  - **参数**：
-    - `列`：要获取的目标列。
-    - `偏移量`：向前偏移的行数（默认为1）。
-    - `默认值`：当没有前一行时的返回值（默认为 `NULL`）。
-
-- **`LEAD(列, 偏移量,默认值)`**
-
-  - **功能**：获取当前行**之后**的第 `n` 行数据。
-
-  ```sql
-  SELECT date, revenue,
-    LAG(revenue, 1) OVER (ORDER BY date) AS prev_revenue,
-    LEAD(revenue, 1) OVER (ORDER BY date) AS next_revenue
-  FROM sales;
-  ```
-
-
-
-- **场景：计算相邻行的差值（环比）**
+计算累计值或分区内聚合。
 
 ```sql
--- 计算每日销售额的环比增长
+-- 计算每个部门的累计工资（按入职日期排序）
+SELECT name, department, salary,
+       SUM(salary) OVER (PARTITION BY department ORDER BY hire_date) AS cumulative_salary
+FROM employees;
+```
+
+
+
+#### 1.3.3 偏移函数（核心分析工具）
+
+```sql
+-- LAG：获取当前行之前第n行数据
+-- LEAD：获取当前行之后第n行数据
+SELECT date, revenue,
+       LAG(revenue, 1, 0) OVER (ORDER BY date) AS prev_revenue,  -- 前1行数据，无则为0
+       LEAD(revenue, 1) OVER (ORDER BY date) AS next_revenue     -- 后1行数据，无则为NULL
+FROM sales;
+
+-- 计算环比增长（关键业务场景）
 SELECT 
   date, 
   revenue,
-  LAG(revenue, 1, 0) OVER (ORDER BY date) AS prev_revenue,
-  revenue - LAG(revenue, 1, 0) OVER (ORDER BY date) AS growth
+  LAG(revenue, 1, 0) OVER (ORDER BY date) AS prev_revenue,  -- 获取上期数据
+  revenue - LAG(revenue, 1, 0) OVER (ORDER BY date) AS growth -- 计算增长值
 FROM daily_sales;
 ```
 
@@ -177,9 +128,7 @@ FROM daily_sales;
 | 2023-01-02 | 1500    | 1000         | 500    |
 | 2023-01-03 | 1200    | 1500         | -300   |
 
-
-
-**关键注意事项**
+**💡 使用技巧**
 
 - **必须指定 `ORDER BY`**：偏移函数依赖排序规则确定“前一行”或“后一行”的位置。
 
@@ -189,7 +138,7 @@ FROM daily_sales;
 
 
 
-#### d. 练习
+### 1.4 实践案例：员工数据分析
 
 ```sql
 create database ai charset=utf8;
@@ -253,7 +202,7 @@ select first_name,last_name,salary ,name ,
        AVG(salary) OVER(partition by department_id) ,
        salary - AVG(salary) OVER(partition by department_id) as difference
 from employee
-    join department on employee.department_id = department.id;
+join department on employee.department_id = department.id;
 ```
 
 
@@ -286,62 +235,50 @@ select ename from
 
 
 
-## 2、SQL 别名的作用域（可见范围）
+### 1.5 SQL别名作用域问题
 
-**实例：**
+**⚠️ 核心限制**：同一层级的`SELECT`列表中，不能直接引用其他列的别名。
 
-```sql
--- avg_salary_department 别名不生效
-select 
-	first_name,
-    last_name,
-    salary,
-    AVG(salary) OVER (partition by department_id) avg_salary_department,
-    salary - avg_salary_department as difference
-from employee join department on employee.department_id = department.id;
+#### SQL执行顺序
+
+```
+FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY
 ```
 
+窗口函数在 `SELECT` 阶段计算，同时 `SELECT` 中的别名（如 `avg_salary_department`）也在这一阶段定义。但同一层级的 `SELECT` 列表中，列的表达式是并行计算的，这意味着：
 
+- 在计算 `salary - avg_salary_department` 时，`avg_salary_department` 尚未被定义（或未被识别）。
 
-在 SQL 中，**别名的作用域（可见范围）和 SQL 的执行顺序**决定了你能否在同一个查询层级中直接引用别名。你提供的示例中 `avg_salary_department` 别名不生效的原因如下：
+- SQL 引擎会直接报错，提示 `avg_salary_department` 列不存在。
 
-### **2.1 核心原因：SQL 的执行顺序**
-
-SQL 的执行顺序为：
-**FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY**
-
-- **窗口函数在 `SELECT` 阶段计算**，同时 `SELECT` 中的别名（如 `avg_salary_department`）也在这一阶段定义。
-
-- **但同一层级的 `SELECT` 列表中，列的表达式是并行计算的**，这意味着：
-
-  - 在计算 `salary - avg_salary_department` 时，`avg_salary_department` 尚未被定义（或未被识别）。
-
-  - SQL 引擎会直接报错，提示 `avg_salary_department` 列不存在。
-
-    
-
-### **2.2 别名的作用域限制**
-
-- **同一层级的 `SELECT` 列表中，不能直接引用其他列的别名**。
-  例如，以下写法是非法的：
-
-  ```sql
-  SELECT 
-    AVG(salary) OVER(...) AS hi, 
-    salary - hi AS difference  -- 错误：无法识别 hi
-  FROM ...;
-  ```
-
-- **子查询或 CTE 中的别名可以在外层引用**。
-  因为子查询会先生成一个临时结果集，别名会成为该结果集的列名，供外层查询使用。
-
-
-
-### **2.3 修正方法：通过子查询或 CTE**(给子查询单独定义表名，方便后续复用)
-
-将窗口函数和其别名定义在子查询中，然后在外部查询中引用：
+#### 错误示例与修正
 
 ```sql
+-- ❌ 错误：在SELECT中直接引用同层级别名
+SELECT 
+    first_name,
+    salary,
+    AVG(salary) OVER (PARTITION BY department_id) AS avg_salary,
+    salary - avg_salary AS difference  -- 报错：avg_salary未定义
+FROM employee;
+
+-- ✅ 正确：通过子查询或CTE解决,因为子查询会先生成一个临时结果集，别名会成为该结果集的列名，供外层查询使用。
+-- CTE
+WITH EmployeeStats AS (
+    SELECT 
+        first_name,
+        salary,
+        AVG(salary) OVER (PARTITION BY department_id) AS avg_salary  -- 在内层定义别名
+    FROM employee
+)
+SELECT 
+    first_name,
+    salary,
+    avg_salary,
+    salary - avg_salary AS difference  -- 在外层引用别名
+FROM EmployeeStats;
+
+-- 子查询
 SELECT 
   first_name,
   last_name,
@@ -361,76 +298,13 @@ FROM (
 ) AS sub_query;
 ```
 
-
-
-### **2.4 为什么第二个查询可以引用别名 `rank_`？**
-
-你提到的第二个查询：
-
-```sql
-SELECT ename 
-FROM (
-  SELECT 
-    empid, 
-    ROW_NUMBER() OVER(...) AS rank_  -- 别名在子查询中定义
-  FROM employee2
-) AS temp 
-WHERE temp.rank_ < 3;  -- 合法：rank_ 是子查询结果集的列
-```
-
-- 子查询生成临时表 `temp`，其列包含 `rank_`。
-- 外部查询的 `WHERE` 子句引用的是子查询结果集的列，而非同一层级的别名。
+**💡 最佳实践**：复杂计算优先使用CTE（公用表表达式），代码可读性更高。
 
 
 
-### **2.5 总结**
+## 2. Python数据分析环境搭建
 
-- **直接原因**：在同一 `SELECT` 列表中，无法引用其他列的别名。
-- **根本原因**：SQL 引擎按阶段执行查询，别名在 `SELECT` 阶段定义，但无法在同一阶段内交叉引用。
-- **解决方案**：将窗口函数和别名定义在子查询或 CTE 中，然后在外部查询中引用。
-
-
-
-## 3、Linux  Mysql 小结
-
-**Linux 基本的操作—常见的命令：**
-
-- cd、 ls、mv、cp、rm、touch、cat、more
--   which：**命令查找**
--  find：**用于查找指定的文件**
-
-
-
-**vi/vim 基本使用：**
-
-- 命令/编辑/底行
-- 命令 → 编辑  i/a/o
-- 命令 → 底行 :
-- ESC 回到命令模式
-
-- 环境变量配置
-  - /etc/profile
-  - ~/.bashrc
-- .sh /tar/tar.gz
-  - .sh  下载下来之后, 先添加可执行的权限  chmod +x 文件名
-  - tar -zxvf 文件名 -C 路径
-
-- netstat /ps -ef   |grep 端口号/pid
-- kill -9 
-
-
-
-**Mysql**
-
-- DQL 查询操作
-
-- select * from 表名  join 表名 on 表名1.字段 = 表名2.字段  where  条件  group by 字段 
-
-  
-
-## 4、Python数据处理
-
-### 4.1 python对比其他工具
+### 2.1 python对比其他工具
 
 Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应用场景**，成为数据分析领域的首选工具。无论是处理小规模数据还是构建复杂的数据科学管道，Python都能提供高效解决方案。
 
@@ -440,16 +314,14 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 | **Excel**  | Python可处理更大规模数据，且避免手动操作错误。               |
 | **MATLAB** | Python免费开源，库生态更丰富。                               |
 
-- **Pandas：**
-  -  series 一列数据
-  - dataframe 二维表格
+- Pandas：**series** 一列数据；**dataframe** 二维表格
 
-- **numpy：**  科学计算库, Pandas 默认使用Numpy 做数值计算
-- **Matplotlib：** 灵活的可视化工具，适合生成静态、交互式或动态图表。
+- numpy：  科学计算库, Pandas 默认使用Numpy 做数值计算
+- Matplotlib： 灵活的可视化工具，适合生成静态、交互式或动态图表。
 
 
 
-### 4.2 开发环境搭建和Notebook使用说明
+### 2.2 开发环境搭建和Notebook使用说明
 
 开发环境： `Jupyter Lab`/`Jupyter notebook`
 
@@ -463,6 +335,8 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 
 
 
+#### 远程服务器配置流程
+
 打开虚拟机，通过 finalshell 连接，在finalshell 的命令行 输入jupyter lab
 
 ![image-20230830111550275](assets/image-20230830111550275.png)
@@ -475,7 +349,7 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 
 
 
-在pycharm中连接远程的notebook
+#### PyCharm连接远程Notebook
 
 - 新建一个purepython项目, 解释器选哪个都行
 - 创建jupyter notebook
@@ -486,55 +360,44 @@ Python凭借其**易用性、强大的库支持、灵活性**和**广泛的应�
 
 ![image-20230830112114351](assets/image-20230830112114351.png)
 
-http://192.168.88.161:8888/
-
 ![image-20230830112336326](assets/image-20230830112336326.png)
 
 
 
-本地环境搭建
+#### 本地环境搭建
 
-- 可以安装anaconda 
+安装anaconda 
 
 ![image-20230830112957911](assets/image-20230830112957911.png)
 
 
 
-### 4.3 notebook的使用
+### 2.3 notebook核心快捷键
 
-| **快捷键**      | **操作**                                                     | **模式/说明**                |
-| :-------------- | :----------------------------------------------------------- | :--------------------------- |
-| `Esc`           | 退出输入模式，进入命令模式，在命令模式下可以输入快捷键       | 从编辑模式切换到命令模式     |
-| `a`             | 在当前 Cell 上方插入新 Cell                                  | 命令模式                     |
-| `b`             | 在当前 Cell 下方插入新 Cell                                  | 命令模式                     |
-| `dd`            | 删除当前 Cell                                                | 命令模式（需连按两次`d`键）  |
-| `m`             | 将当前 Cell 切换为 Markdown 模式                             | 命令模式                     |
-| `y`             | 将当前 Cell 切换为 Code 模式                                 | 命令模式                     |
-| `Ctrl + Enter`  | 运行当前 Cell                                                | 命令模式或编辑模式下均可使用 |
-| `Shift + Enter` | 运行当前 Cell，并自动跳转到下一个 Cell（若下方无 Cell 则新建） | 命令模式或编辑模式下均可使用 |
+| 快捷键          | 操作说明                      | 适用模式          |
+| :-------------- | :---------------------------- | :---------------- |
+| `Esc`           | 切换到命令模式                | 编辑模式→命令模式 |
+| `a` / `b`       | 在当前Cell上方/下方插入新Cell | 命令模式          |
+| `dd`            | 删除当前Cell（连按两次）      | 命令模式          |
+| `m` / `y`       | 切换为Markdown/Code模式       | 命令模式          |
+| `Shift + Enter` | 运行并跳到下一个Cell          | 任意模式          |
+| `Ctrl + Enter`  | 仅运行当前Cell                | 任意模式          |
 
 
 
-## 5、Numpy简介
+## 3. NumPy科学计算库
 
-**NumPy**（Numerical Python）是 Python 生态中最核心的科学计算库之一，专注于高性能的多维数组（**ndarray**）操作和数学函数。它是数据科学、机器学习和数值计算的基础工具，许多其他库（如 Pandas、SciPy、TensorFlow 等）都依赖 NumPy。
+### 3.1 核心优势
 
+**NumPy**（Numerical Python）是Python科学计算基础库，提供高性能多维数组操作和数学函数支持。
 
-
-### **5.1  NumPy的优势**
-
-- **性能优势**
-  - 向量化操作避免显式循环，底层由 C 实现，计算效率极高。
-  - NumPy重在数值计算，适合处理大规模数据（主要用于多维数组、矩阵处理），用来存储和处理大型矩阵，比Python自身的嵌套列表结构要高效的多。
-
-- **简洁的语法**
-  - 用一行代码实现复杂的数学运算（如矩阵乘法 `A @ B`）。
-- **生态支持**
-  - 是 SciPy、Pandas、Scikit-learn 等库的基础依赖，因此理解NumPy的数据类型对python数据分析十分重要。
+- **⚡ 性能优势**：底层C实现，向量化操作避免Python循环，处理百万级数据效率提升10-100倍
+- **🔧 简洁语法**：一行代码实现复杂矩阵运算，如`A @ B`完成矩阵乘法
+- **🔗 生态基石**：Pandas、SciPy、TensorFlow等库均基于NumPy构建
 
 
 
-### 5.2 numpy的属性
+### 3.2 numpy的属性
 
 #### **a、形状与维度**
 
@@ -575,6 +438,8 @@ print(arr.size)  # 输出 4（2×2）
 arr = np.array([1, 2], dtype=np.float32)
 print(arr.dtype)  # 输出 float32
 ```
+
+**💡 内存优化**：大数据场景下，合理选择`dtype`（如`float32`替代`float64`）可节省50%内存。
 
 
 
@@ -642,7 +507,7 @@ new_arr = arr.reshape(4, 1)
 
 
 
-### 5.3 创建ndarray
+### 3.3 创建ndarray
 
 #### **a、直接输入创建**
 
@@ -703,13 +568,13 @@ np.random.randn(2, 3)   # 生成服从标准正态分布（均值为 0，标准�
 
 #### d、生成矩阵
 
-matrix 是 ndarray 的子类，只能生成 2 维的矩阵
+**matrix** 是 ndarray 的子类，只能生成 2 维的矩阵
 
 ```python
-x1 = np.mat("1 2;3 4")
-x2 = np.matrix("1 2;3 4")
+x1 = np.mat("1 2;3 4") # 字符串定义矩阵
+x2 = np.matrix("1 2;3 4") # 字符串定义矩阵
 
-x3 = np.matrix([[1,2,3],[4,5,6]])
+x3 = np.matrix([[1,2,3],[4,5,6]]) # 列表定义矩阵
 ```
 
 
@@ -733,8 +598,6 @@ np.logspace(0,9,10,base=2) # base 可以换底数  这里就是2^0 ~2^9 生成10
 np.linspace(1,10,10)
 np.linspace(1,10,10,endpoint=False) #endpoint 是否包含结束点, 默认是True 改成False不包含结束点
 ```
-
-
 
 > `logspace()`、`linspace()`创建的数组元素是浮点型。
 
@@ -761,7 +624,7 @@ print(zeros_int_arr.dtype)  # int32
 
 
 
-### 5.4 Numpy的内置函数
+### 3.4 Numpy的内置函数
 
 #### **a、基本函数**
 
@@ -772,11 +635,11 @@ arr = np.random.uniform(-1,5,size=(3,4))
 np.ceil(arr)   # 向上最接近的整数，参数是 number 或 array
 np.floor(arr)  # 向下最接近的整数，参数是 number 或 array
 np.rint(arr)   # 四舍五入，参数是 number 或 array
-np.isnan(arr)  # 判断元素是否为 NaN(Not a Number)，参数是 number 或 array
+np.isnan(arr)  # 判断元素是否为 NaN(Not a Number)，返回布尔掩码。参数是 number 或 array
 
 # 需要注意multiply/divide 如果是两个ndarray进行运算 shape必须一致
-np.multiply(arr,arr)  # 元素相乘，参数是 number 或 array
-np.divide(arr,arr)    # 元素相除，参数是 number 或 array
+np.multiply(arr,arr)  # 对应位置相乘，参数是 number 或 array
+np.divide(arr,arr)    # 对应位置相除，参数是 number 或 array
 
 np.abs()       # 元素的绝对值，参数是 number 或 array
 np.where(arr>0,1,-1)  # np.where(condition, x, y): 三元运算符，x if condition else y
@@ -804,7 +667,7 @@ np.std(arr)   # 所有元素的标准差，参数是 number 或 array
 np.var(arr)   # 所有元素的方差，参数是 number 或 array
 ```
 
-多维数组默认统计全部维度，**axis参数**可以按指定轴心统计，~~值为0则按列统计，值为1则按行统计~~(不一定如此，只要记住默认`axis=0`，如果得出不符合预期的结果，就使用`axis=1`)。
+**💡 axis参数理解**：多维数组默认统计全部维度，**axis参数**可以按指定轴心统计。`axis=0`可理解为"跨行操作"（压缩行），`axis=1`为"跨列操作"。不确定时先测试验证！
 
 ```python
 np.sum(arr,axis=0)  # 数组的按列统计和
@@ -815,7 +678,7 @@ np.sum(arr,axis=1)  # 数组的按行统计和
 
 
 
-**标准差与方差的含义及区别**
+**统计概念：标准差与方差**
 
 标准差和方差是统计学中衡量数据 **离散程度（波动性）** 的核心指标，两者密切相关但用途不同。以下是它们的定义、区别及实际意义：
 
@@ -945,24 +808,38 @@ print(unique_values)
 
 #### **e、排序**
 
-- `np.sort(arr)`：会在一个副本上排序, 不会影响原始的数据，每行单独排序
+```python
+# 返回副本排序（不改变原数组）
+sorted_arr = np.sort(arr)       # 每行单独排序
 
-- `arr.sort()`：直接修改原始数据，每行单独排序
+# 原地排序（修改原数组）
+arr.sort()                      # 直接修改arr本身
+```
 
 
 
-### 5.5 Numpy ndarray之间的运算
+### 3.5 ndarray运算规则
 
-- ndarray的算术运算
+#### a、元素级运算（广播机制）
 
 ndarray的算术运算（加、减、乘、除）是**按照元素位置**计算的。新的数组被创建并且被结果填充。计算的时候, 位置对应的元素 进行 加减乘除的计算, 计算之后得到的结果的shape 跟arr_a  /arr_b 一样
 
-> 两个ndarray, 一个是`arr_a`  另一个是`arr_b`，它们俩之间进行  `arr_a  + arr_b`  或 `arr_a  - arr_b`  或 `arr_a  * arr_b` 或`arr_a / arr_b`这样计算的前提是 shape相同
->
+```python
+arr_a = np.array([[1, 2], [3, 4]])
+arr_b = np.array([[5, 6], [7, 8]])
+
+# 对应位置运算
+add_result = arr_a + arr_b      # [[6,8], [10,12]]
+sub_result = arr_a - arr_b      # [[-4,-4], [-4,-4]]
+mult_result = arr_a * arr_b     # [[5,12], [21,32]]（注意不是矩阵乘法）
+div_result = arr_a / arr_b      # [[0.2,0.33], [0.43,0.5]]
+```
+
+💡前提：shape相同或遵循广播规则
 
 
 
-- ndarray的矩阵运算
+#### b、矩阵乘法（点积运算）
 
 
 `arr_a  .dot(arr_b)` 前提： arr_a 行数 = arr_b列数
@@ -972,126 +849,126 @@ ndarray的算术运算（加、减、乘、除）是**按照元素位置**计算
 ![image-20250508114245493](assets\image-20250508114245493.png)
 
 ```python
-x = np.array([[1,2,3],[4,5,6]])
-y = np.array([[6,23],[-1,7],[8,9]])
-x.dot(y)
-np.dot(x,y)
+# 前提：arr_a列数 == arr_b行数
+x = np.array([[1, 2, 3], [4, 5, 6]])  # 2x3矩阵
+y = np.array([[6, 23], [-1, 7], [8, 9]])  # 3x2矩阵
+
+# 方法1：使用dot方法
+matrix_product = x.dot(y)  # 2x2结果矩阵
+
+# 方法2：使用全局函数
+matrix_product2 = np.dot(x, y)
+
+# 计算过程：
+# [1*6+2*(-1)+3*8, 1*23+2*7+3*9] = [28, 64]
+# [4*6+5*(-1)+6*8, 4*23+5*7+6*9] = [73, 181]
+# 结果：[[28, 64], [73, 181]]
 ```
 
-
-
-## 6 pandas数据结构
-
-### 6.1 创建Series 和 DataFrame
-
-Pandas 是 Python 中最常用的数据分析库，其核心数据结构主要有两种：**Series** 和 **DataFrame**。
-
-其中Series是一维容器，Series表示DataFrame的每一列。可以把DataFrame看作由Series对象组成的字典，其中key是列名，值是Series。Series和Python中的列表非常相似，但是它的每个元素的**数据类型必须相同**。
+**⚠️ 常见错误**：混淆`*`（元素乘）与`dot`（矩阵乘），导致维度不匹配错误。
 
 
 
-**Series（一维数据结构）**
+## 4. Pandas数据结构
+
+### 4.1 Series与DataFrame核心概念
+
+**Pandas**提供两种核心数据结构：**Series**（一维）和**DataFrame**（二维）。**Series**表示**DataFrame**的每一列。可以把**DataFrame**看作由**Series**对象组成的字典，其中**key**是列名，值是**Series**。
+
+💡提示：Series和Python中的列表非常相似，但是它的每个元素的**数据类型必须相同**。
+
+
+
+#### **4.1.1 Series（单列数据容器）**
 
 - 如果不特殊指定, 会自动添加行索引 Index, 从0开始计数
 - 如果想自己设置行索引, 创建Series时可以通过index这个参数来设置行索引
 
 ```python
-# 创建 Series 的最简单方法是传入一个Python列表
-s = pd.Series(['banana',42])
-s = pd.Series(['Tome','Male'],index=['Name','Gender'])
+import pandas as pd
 
-# 从字典创建（键作为索引）
-s2 = pd.Series({'a': 100, 'b': 200, 'c': 300})
+# 方式1：从列表创建（自动生成索引0,1,2...）
+s1 = pd.Series(['banana', 42])  # 混合类型会转为object
+
+# 方式2：指定自定义索引
+s2 = pd.Series(['Tome', 'Male'], index=['Name', 'Gender'])  # 通过index这个参数来设置行索引
+
+# 方式3：从字典创建（键作为行索引）
+s3 = pd.Series({'a': 100, 'b': 200, 'c': 300})
+
+# Series与DataFrame转换
+s = pd.Series([1, 2, 3], name='Values')
+df_from_series = s.to_frame()  # Series转单列DataFrame
 ```
 
-
-
-**DataFrame（二维数据结构）**
+#### 4.1.2 DataFrame（二维表格）
 
 - 有行索引index, 也有列名 columns
 - 是多个 Series 的集合（每列是一个 Series）
 
 ```python
-# 创建DataFrame的时指定列的顺序和行索引
-name_list = pd.DataFrame({'姓名':['Tome','Bob'],'职业':['算法工程师','AI工程师'],'年龄':[28,36]})
-name_list = pd.DataFrame(data = {'职业':['算法工程师','AI工程师'],'年龄':[28,36]},columns=['年龄','职业'],index=['Tome','Bob'])
+# 方式1：从字典创建（推荐，列名即键）
+df1 = pd.DataFrame({
+    '姓名': ['Tome', 'Bob'],
+    '职业': ['算法工程师', 'AI工程师'],
+    '年龄': [28, 36]
+})
 
-# 从列表创建（需指定列名）
-df2 = pd.DataFrame([[1, 'A'], [2, 'B']], columns=['ID', 'Label'])
-```
+# 方式2：指定列顺序和行索引
+df2 = pd.DataFrame(
+    data={'职业': ['算法工程师', 'AI工程师'], '年龄': [28, 36]},
+    columns=['年龄', '职业'],  # 指定列顺序
+    index=['Tome', 'Bob']      # 指定行索引
+)
 
-|      | ID   | Label |
-| :--- | :--- | :---- |
-| 0    | 1    | A     |
-| 1    | 2    | B     |
+# 方式3：从列表创建（需指定列名）
+df3 = pd.DataFrame([[1, 'A'], [2, 'B']], columns=['ID', 'Label'])
 
+# 方式4：从CSV文件读取（真实工作场景）
+# index_col参数：指定作为行索引的列
+df_csv = pd.read_csv('/path/to/data.csv', index_col='id')
+print(df_csv.head())  # 查看前5行
 
-
-读取文件（如 CSV）创建**DataFrame**：【如果使用虚拟机，需要虚拟机上面的路径地址，文件同步】
-
-```python
-import pandas as pd
-data= pd.read_csv('/tmp/pycharm_project_882/data/nobel_prizes.csv',index_col='id')  
-data.head()
+# DataFrame与Series转换
+s = df['Column_Name']  # 提取单列
 ```
 
 ![image-20250508171224686](assets\image-20250508171224686-1746695547431-5.png)
 
 
 
-**Series vs DataFrame**
+#### 4.1.3 核心区别对比
 
-| 特性         | Series       | DataFrame                     |
-| :----------- | :----------- | :---------------------------- |
-| **维度**     | 一维         | 二维                          |
-| **数据形式** | 单列数据     | 多列数据（每列是一个 Series） |
-| **索引**     | 单层索引     | 行索引 + 列索引               |
-| **创建方式** | 列表、字典   | 字典、列表、文件（如 CSV）    |
-| **应用场景** | 单一数据序列 | 多维度结构化数据              |
-
-
-
-**相互转换**
-
-- **Series → DataFrame**：
-
-  ```python
-  s = pd.Series([1, 2, 3], name='Values')
-  df = s.to_frame()  # 转换为单列 DataFrame
-  ```
-
-- **DataFrame → Series**：
-
-  ```python
-  s = df['Column_Name']  # 提取单列
-  ```
-
-  
-
-### 6.2 Series 常用方法和属性
+| 特性         | Series            | DataFrame                  |
+| :----------- | :---------------- | :------------------------- |
+| **维度**     | 一维              | 二维                       |
+| **数据形式** | 单列数据          | 多列数据（每列为Series）   |
+| **索引结构** | 单层索引（Index） | 行索引 + 列索引（Columns） |
+| **创建方式** | 列表、字典        | 字典、列表、CSV/Excel文件  |
+| **内存占用** | 更小              | 更大（但功能更丰富）       |
 
 
+
+### 4.2 Series常用操作大全
 
 ```python
 # 使用 DataFrame的loc属性获取数据集里的一行，就会得到一个Series对象,从DataFrame中获取一行/一列数据 都会返回Series。
-first_row = data.loc[941]
-
-# 获取取出这一行的索引 列名
-first_row.index 
-data.key()
+first_row = df.loc[0]  # 提取第一行，返回Series
+age_column = df['年龄']  # 提取列，返回Series
 ```
+
+
 
 **常用属性**
 
 | 属性       | 说明                         | 示例                            |
 | :--------- | :--------------------------- | :------------------------------ |
 | `s.index`  | 获取 Series 的索引（可修改） | `s.index = ['a', 'b', 'c']`     |
-| `s.values` | 获取值的 NumPy 数组          | `s.values` → `array([1, 2, 3])` |
+| `s.values` | 获取NumPy数组（底层数据）    | `s.values` → `array([1, 2, 3])` |
 | `s.dtype`  | 获取数据类型                 | `s.dtype` → `int64`             |
 | `s.name`   | 获取或设置 Series 的名称     | `s.name = "Price"`              |
 | `s.size`   | 获取元素数量                 | `s.size` → `3`                  |
 | `s.shape`  | 获取形状（一维元组）         | `s.shape` → `(3,)`              |
-| `s.t`      | Series的转置矩阵             | -                               |
 
 
 
@@ -1127,7 +1004,7 @@ data.key()
 
 | 方法                | 说明                                 | 示例                    |
 | :------------------ | :----------------------------------- | :---------------------- |
-| `s.reset_index()`   | 重置索引（原索引变为列）             | `s.reset_index()`       |
+| `s.reset_index()`   | 重置索引（原索引变为一列）           | `s.reset_index()`       |
 | `s.set_index(keys)` | 将某列设为新索引（需结合 DataFrame） | 通常在 DataFrame 中使用 |
 | `s.rename(index)`   | 重命名索引                           | `s.rename({'a': 'X'})`  |
 

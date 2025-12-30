@@ -1,13 +1,12 @@
-## 1、Anaconda 和虚拟环境
+## 1. Anaconda虚拟环境管理
 
-anaconda 是一个Python的发行版, 主要用于科学计算，继承了一个conda 虚拟环境管理器。
+### 1.1 核心概念
 
-### 1.1 继承了一个conda 虚拟环境管理器
+Anaconda是专为科学计算设计的Python发行版，内置conda虚拟环境管理器，可为不同项目创建**完全隔离**的Python运行环境。
 
-- `conda create -n 虚拟环境名字`： 可以创建一个新的虚拟环境
-- `conda activate 虚拟环境名字`：激活虚拟环境
-- `conda deactivate`： 退出当前的虚拟环境
-- **常用命令：**
+
+
+### 1.2 常用命令速查表
 
 | 命令                                    | 功能                                                   | 示例                                      |
 | --------------------------------------- | ------------------------------------------------------ | ----------------------------------------- |
@@ -33,108 +32,109 @@ anaconda 是一个Python的发行版, 主要用于科学计算，继承了一个
 
 
 
-### 1.2 为什么要有虚拟环境
+### 1.3 为什么需要虚拟环境？
 
-为不同项目创建独立的开发环境，解决以下问题：
-
-- **依赖隔离**
-  - **避免版本冲突**：不同项目可能依赖同一库的不同版本，虚拟环境将每个项目的依赖独立存放，防止全局安装导致的版本冲突。
-  - **示例**：项目A需要`numpy 1.18`，项目B需要`numpy 1.20`，通过虚拟环境可分别管理。
-
-- **环境一致性**
-  - **协作与部署**：通过导出环境配置文件（如`environment.yml`），确保团队成员或生产环境能复现完全相同的依赖版本，避免“在我机器上能运行”的问题。
-
-- **安全性**
-  - **保护系统环境**：避免直接修改系统级的Python环境，防止误操作导致系统工具或服务崩溃。
-
-- **灵活性与效率**
-  - **轻量级隔离**：虚拟环境仅复制必要的依赖，节省磁盘空间，同时支持快速创建和删除环境。
-  - **多版本测试**：可同时测试同一库在不同版本下的兼容性（如Python 3.8 vs 3.11）。
-
-- **工具链管理**
-  - **专用工具隔离**：某些项目可能需要特定工具（如Jupyter Lab、TensorFlow），虚拟环境可独立安装，避免全局污染。
+| 优势维度         | 具体说明                         | 典型案例                                 |
+| :--------------- | :------------------------------- | :--------------------------------------- |
+| **⚠️ 依赖隔离**   | 避免不同项目间库版本冲突         | 项目A需`numpy 1.18`，项目B需`numpy 1.20` |
+| **💡 环境一致性** | 通过配置文件确保团队协作环境一致 | 导出`environment.yml`复现相同环境        |
+| **🔒 安全性**     | 保护系统级Python环境不被破坏     | 避免误操作导致系统工具崩溃               |
+| **⚡ 灵活高效**   | 轻量级隔离，支持快速创建/删除    | 测试Python 3.8与3.11兼容性               |
+| **🛠️ 工具链管理** | 特定工具独立安装，避免全局污染   | Jupyter Lab、TensorFlow等项目级工具      |
 
 
 
-## 2、布尔索引/Boolean index
+## 2. 布尔索引（Boolean Indexing）
 
-从**`Series`**、**`DataFrame`**中获取满足某些条件的数据，可以使用布尔索引。
+布尔索引是Pandas中按条件筛选数据的核心机制，功能类似SQL的WHERE子句。
 
-- 布尔索引类似于`SQL`语句中的where条件
-- 将数据中的某一列和一个值进行比较 (**>**、**<** 、**=**、**!=**) ，比较之后会返回一个True/False组成的Series, 把这个Series再传递给Series/DataFrame (**传递的时候, 需要注意要写到中括号中**)
-  - True/False组成的Series, True所对应的行, 原始数据会留下
-  - True/False组成的Series, False所对应的行, 原始数据会过滤掉
-
-
-
-### 1.1 **基本语法**
+### 2.1 基础筛选语法
 
 通过条件表达式生成布尔序列，直接对DataFrame或Series进行筛选：
 
 ```python
 import pandas as pd
 
-# 示例DataFrame
+# 创建示例DataFrame
 df = pd.DataFrame({
     'name': ['Alice', 'Bob', 'Charlie', 'David'],
     'age': [25, 30, 35, 40],
     'score': [85, 90, 78, 95]
 })
 
-# 筛选年龄大于30的行
+# 💡 筛选年龄大于30岁的行（将数据中的某一列和一个值进行比较 (>、< 、=、!=) ，比较之后会返回布尔Series作为掩码）
 mask = df['age'] > 30
-result = df[mask]
+# True对应的行会保留，False对应的行被过滤(传递的时候, 需要注意要写到中括号中)
+result = df[mask]  
+
+# ⚡ 更简洁的写法：直接在方括号内写条件
 result = df[df['age'] > 30]
 ```
 
 
 
-### 1.2 **多条件组合**
+### 2.2 多条件组合
 
-使用逻辑运算符 `&`（与）、`|`（或）、`~`（非），需用括号明确优先级：
+使用逻辑运算符 `&`（与）、`|`（或）、`~`（非），**必须用括号明确优先级**：
 
 ```python
-# 筛选年龄>30 且 分数>80的行
-result = df[(df['age'] > 30) & (df['score'] > 80)]
+# ⚠️ 错误写法（运算符优先级导致逻辑混乱）：
+# df['age'] > 30 & df['score'] > 80
+
+# ✅ 正确写法：每个条件用括号包裹
+result = df[(df['age'] > 30) & (df['score'] > 80)]  # 年龄>30且分数>80
+
+# 或条件示例
+result_or = df[(df['age'] > 35) | (df['score'] < 80)]  # 年龄>35或分数<80
+
+# 非条件示例
+result_not = df[~((df['age'] > 30) & (df['score'] > 80))]  # 取反
 ```
 
 
 
-### **1.3  处理缺失值**
+### 2.3 处理缺失值
 
 结合 `.isna()` 或 `.notna()` 处理缺失值（NaN）：
 
 ```python
-# 示例数据包含缺失值
+# 创建包含缺失值的数据
 df_nan = pd.DataFrame({'value': [1, None, 3, 4]})
 
-# 筛选非缺失值
+# 筛选非缺失值（notna()返回True表示值存在）
 result = df_nan[df_nan['value'].notna()]
+
+# 筛选缺失值（isna()返回True表示值为NaN）
+result_missing = df_nan[df_nan['value'].isna()]
 ```
 
 
 
-### 1.4  修改数据
+### 2.4 修改符合条件的数据
 
 通过布尔索引修改符合条件的值：
 
 ```python
-# 将分数>=90的行的等级设为'A'
+# 使用loc定位并修改：分数>=90的等级设为'A'
+# 参数1：行条件（布尔Series），参数2：目标列名
 df.loc[df['score'] >= 90, 'grade'] = 'A'
+
+# 多条件修改示例
+df.loc[(df['age'] > 30) & (df['score'] < 85), 'grade'] = 'C'
 ```
 
 
 
-### 1.5 **布尔索引的陷阱**
+### 2.5 常见陷阱与解决方案
 
-- **索引对齐问题**：若布尔掩码与原数据索引不一致，可能导致错误。需确保索引对齐或重置索引：
+**索引对齐问题**：若布尔掩码与原数据索引不一致，可能导致错误。需确保索引对齐或重置索引：
 
 ```python
 mask = pd.Series([True, False, True], index=[0, 1, 3])
-result = df[mask.reindex(df.index, fill_value=False)]
+result = df[mask.reindex(df.index, fill_value=False)]  #index重置为[0,1,2,3],空白的地方用False填充
 ```
 
-- **运算符优先级**：`&` 和 `|` 的优先级高于比较运算符，必须用括号包裹条件：
+**运算符优先级**：`&` 和 `|` 的优先级高于比较运算符，必须用括号包裹条件：
 
 ```python
 # 错误写法：df['age'] > 30 & df['score'] < 90
@@ -144,50 +144,65 @@ df[(df['age'] > 30) & (df['score'] < 90)]
 
 
 
-### 1.6 练习
+### 2.6 综合练习
 
 ```python
-scientiests= pd.read_csv('data/scientists.csv')
+# 读取科学家数据集
+scientists = pd.read_csv('data/scientists.csv')
 
-#计算平均年龄
-avg_age = scientiests['Age'].mean()
-# 获取了年龄的Series
-age = scientiests['Age']
-# 通过布尔索引取出符合条件的值
-scientiests['Name'][age>avg_age]
-scientiests['Name'][scientiests['Age']>avg_age]
+# 计算平均年龄（mean()返回标量值）
+avg_age = scientists['Age'].mean()
 
-# 上面的代码相当于
-temp_list = [False,True,True,True,False,False,False,True]
-scientiests['Name'][temp_list]
+# 获取年龄高于平均值的科学家姓名
+# 方式1：先创建布尔掩码再筛选
+age_mask = scientists['Age'] > avg_age
+names_above_avg = scientists['Name'][age_mask]
+
+# 方式2：直接链式操作（推荐）
+names_above_avg = scientists['Name'][scientists['Age'] > avg_age]
+
+# 底层逻辑：布尔Series的True位置对应的数据会被保留
+# 等价于手动指定布尔列表
+temp_list = [False, True, True, True, False, False, False, True]
+manual_filter = scientists['Name'][temp_list]
 ```
 
 
 
-## 3、Series的运算
+## 3. Series运算规则
 
-### 3.1 基本运算特性
+### 3.1 运算特性总览
 
-- Series与标量运算：每个元素都会参与运算
-- 两个Series运算：
-  - 索引对齐：相同索引的值进行计算
-  - 索引不匹配：结果中保留索引，缺失值设为NaN
+| 运算类型            | 行为描述                      | 结果特点                |
+| :------------------ | :---------------------------- | :---------------------- |
+| **Series + 标量**   | 每个元素都与标量进行运算      | 保持原索引结构          |
+| **Series + Series** | 按索引对齐计算，不匹配则为NaN | 索引交集有值，差集为NaN |
 
-> 能算出非nan的条件, 两个Series的index 相同
+### 3.2 代码示例
 
 ```python
-# 相同索引运算
-age = pd.Series([25, 30, 35], index=['A','B','C'])
-age + age
+import pandas as pd
 
-# 索引不匹配
-age + pd.Series([1,2], index=['B','C']) 
-# 结果：A→NaN, B→31, C→37
+# 创建示例Series（带自定义索引）
+age = pd.Series([25, 30, 35], index=['A', 'B', 'C'])
+
+# 相同索引运算：一一对应计算
+same_index = age + age
+# 结果：A:50, B:60, C:70
+
+# 索引不匹配示例：只有B、C能对应计算，A无匹配项
+age_mismatch = age + pd.Series([1, 2], index=['B', 'C'])
+# 结果：A:NaN, B:31, C:37
+# ⚠️ 只有索引完全相同的Series才能完全计算，否则会产生NaN
+
+# 解决索引不匹配：使用add()方法并指定fill_value
+age_mismatch_filled = age.add(pd.Series([1, 2], index=['B', 'C']), fill_value=0)
+# 结果：A:25.0, B:31.0, C:37.0
 ```
 
 
 
-## 4、DataFrame的常用操作
+## 4. DataFrame核心操作速查
 
 ### 4.1 基础属性
 
@@ -197,7 +212,7 @@ age + pd.Series([1,2], index=['B','C'])
 | `.columns` | 列名的索引对象（可修改）   | `df.columns = ['A', 'B', 'C']` |
 | `.index`   | 行索引对象（可重置或修改） | `df.index = [0, 1, 2, 3]`      |
 | `.dtypes`  | 每列的数据类型             | `df.dtypes` → 显示各列类型     |
-| `.values`  | 将DataFrame转换为NumPy数组 | `df.values` → 二维数组         |
+| `.values`  | 将DataFrame转换为NumPy数组 | `df.values` → 二维ndarray      |
 | `.loc[]`   | 基于标签的索引（行和列）   | `df.loc[0, 'name']` → 获取值   |
 | `.iloc[]`  | 基于整数位置的索引         | `df.iloc[0, 1]` → 第一行第二列 |
 
@@ -218,9 +233,9 @@ age + pd.Series([1,2], index=['B','C'])
 
 | 方法             | 功能                     | 示例                                       |
 | :--------------- | :----------------------- | :----------------------------------------- |
-| `.query(条件)`   | 按条件筛选行             | `df.query("age > 30")`                     |
-| `.drop(columns)` | 删除指定列或行           | `df.drop(columns=['score'])`               |
-| `.rename()`      | 重命名列或索引           | `df.rename(columns={'age': '年龄'})`       |
+| `.query()`       | SQL风格条件筛选          | `df.query("age > 30")`                     |
+| `.drop()`        | 删除行/列                | `df.drop(columns=['score'])`               |
+| `.rename()`      | 重命名行/列              | `df.rename(columns={'age': '年龄'})`       |
 | `.assign()`      | 添加新列（支持链式操作） | `df.assign(age_plus_10=df['age']+10)`      |
 | `.sort_values()` | 按列值排序               | `df.sort_values('score', ascending=False)` |
 
@@ -242,6 +257,17 @@ age + pd.Series([1,2], index=['B','C'])
 | :----------- | :----------------------- | :---------------------------------------- |
 | `.groupby()` | 按列分组                 | `df.groupby('gender')['score'].mean()`    |
 | `.agg(func)` | 应用聚合函数（支持多个） | `df.agg({'age': 'mean', 'score': 'max'})` |
+
+```python
+# 按单列分组并聚合
+df.groupby('category')['sales'].mean()
+
+# 多列分组+多字段聚合
+df.groupby(['year', 'region'])[['sales', 'profit']].agg(['sum', 'mean'])
+
+# 自定义聚合函数
+df.groupby('product')['rating'].agg(lambda x: x.max() - x.min())
+```
 
 
 
@@ -272,7 +298,7 @@ age + pd.Series([1,2], index=['B','C'])
 | `.apply(func)`   | 对行或列应用函数   | `df['name'].apply(len)`               |
 | `.astype(dtype)` | 强制转换列数据类型 | `df['age'] = df['age'].astype(float)` |
 | `.set_index()`   | 设置某列为索引     | `df.set_index('name', inplace=True)`  |
-| `.reset_index()` | 重置索引为整数序号 | `df.reset_index(drop=True)`           |
+| `.reset_index()` | 重置索引为整数序号 | `df.reset_index(drop=True)`丢弃原索引 |
 
 
 
@@ -290,29 +316,26 @@ age + pd.Series([1,2], index=['B','C'])
 
 
 
-## 5、DataFrame索引操作
+## 5. DataFrame索引操作详解
 
 ### 5.1 行索引调整
 
-- `set_index(列名)` 把某一列设置为索引
-
 ```python
-movie2.set_index('movie_title')
+# 场景1：将某列设置为索引（类似数据库主键）
+# 参数：列名，inplace=False默认返回副本
+movie2.set_index('movie_title')  # 不推荐：未保存结果
+movie2.set_index('movie_title', inplace=True)  # ✅ 推荐：直接修改原对象
+
+# 场景2：重置索引为默认整数序列
+# 常用于groupby后索引混乱的情况
+movie2.reset_index(inplace=True)  # 将索引变为普通列
+
+# 场景3：加载时直接指定索引列
+# 节省内存，避免重复操作
+movie = pd.read_csv('data/movie.csv', index_col='movie_title')
 ```
 
-- reset_index() 重置索引, 回到从0开始计数的数值索引的状态
-
-```python
-movie2.reset_index()
-```
-
-- 在加载数据的时候, 可以通过**`pd.read_csv('路径', index_col='列名')`** 直接指定某一列作为索引
-
-  
-
-**需要注意的问题**
-
-99%关于DataFrame/Series调整的API , 都会默认在副本上进行修改, 调用修改的方法后, 会把这个副本返回
+⚠**提示**：99%关于**DataFrame**/**Series**调整的API , 都会默认在副本上进行修改, 调用修改的方法后, 会把这个副本返回。
 
 - 这类API都有一个共同的参数 inplace 默认值都是False
 - 如果把inplace 改成True会直接修改原来的数据, 此时这个方法就没有返回值了
@@ -321,94 +344,74 @@ movie2.reset_index()
 
 ### 5.2 索引重命名
 
-- 使用rename方法
-
-  ```python
-  idx_rename = {'Avatar':'阿凡达'}
-  col_rename = {'duration':'时长'}
-  # index 要修改的索引的信息{老索引值:新的索引值}
-  # columns 要修改的列名的信息{老列名值:新的列名值}
-  # inplace 是否在原始的数据上修改, 默认是False 不会修改原始数据
-  movie3.rename(index=idx_rename,columns=col_rename,inplace=True)
-  ```
-
-  >需要注意传入的字典, 老的列名/行索引不存在, 不会报错, 只不过运行之后没有效果，比较适合使用的场景：行/列比较多的时候
-  >
-  
-- 整体替换 index / columns
-
-  - dataframe.index 获取行索引    数据类型  pandas.core.indexes.base.Index
-  - dataframe.columns 获取列索引  数据类型 pandas.core.indexes.base.Index
-  - Index 类型不能直接修改 先需要把这个Index转换成列表, 修改列表中的元素, 再整体替换 index/columns
-
-  ```python
-  index_list = movie3.index.to_list()
-  index_list[1] = '加勒比海盗:世界的尽头'
-  movie3.index =index_list
-  col_list = movie3.columns.to_list()
-  col_list[1] = '导演'
-  movie3.columns = col_list
-  ```
-
-
-
-
-### 5.3 列操作      
-
-- 追加一列数据
-
-
 ```python
-movie['是否看过'] = 0
-movie['脸书点赞总数'] = movie['actor_1_facebook_likes']+movie['actor_2_facebook_likes']\
-                     +movie['actor_3_facebook_likes']+movie['director_facebook_likes']
+# 方法1：rename()局部重命名（推荐）
+idx_rename = {'Avatar': '阿凡达', 'Titanic': '泰坦尼克号'}
+col_rename = {'duration': '时长', 'budget': '预算'}
+
+# index: 行索引映射字典 {旧值: 新值}
+# columns: 列名映射字典 {旧值: 新值}
+# inplace: 是否在原数据修改（默认False，返回副本）
+movie3.rename(index=idx_rename, columns=col_rename, inplace=True)
+
+# ⚠️ 注意：字典中不存在的旧名称会被忽略，不会报错，只不过运行之后没有效果，比较适合使用的场景：行/列比较多的时候
+
+# 方法2：整体替换（适合批量修改）
+# 步骤1：获取索引列表
+index_list = movie3.index.to_list()  # 转换为Python列表
+# 步骤2：修改列表元素
+index_list[1] = '加勒比海盗：世界的尽头'
+# 步骤3：重新赋值
+movie3.index = index_list  # 整体替换
+
+# 列名同样操作
+col_list = movie3.columns.to_list()
+col_list[1] = '导演'
+movie3.columns = col_list
 ```
 
-- 删除一列、一行数据
+- dataframe.index：获取行索引；dataframe.columns：获取列索引；数据类型为 **<font color='orange'>pandas.core.indexes.base.Index</font>**
+- Index 类型不能直接修改 先需要把这个Index转换成列表, 修改列表中的元素, 再整体替换 index/columns
 
+
+
+### 5.3 列操作实战
 
 ```python
-# 删除一列数据
-movie.drop('脸书点赞总数',axis=1,inplace=True)
+# 1. 追加新列（算术运算）
+movie['是否看过'] = 0  # 创建标志列，0表示未看
 
-# 删除一行数据
+# 计算总点赞数（四列求和）
+# \是行连续符，提高长代码可读性
+movie['脸书点赞总数'] = movie['actor_1_facebook_likes'] + \
+                        movie['actor_2_facebook_likes'] + \
+                        movie['actor_3_facebook_likes'] + \
+                        movie['director_facebook_likes']
+
+# 2. 删除列/行
+# 删除列：axis=1或axis='columns'
+movie.drop('脸书点赞总数', axis=1, inplace=True)
+
+# 删除行：axis=0或axis='index'
 movie.drop('Avatar', axis=0, inplace=True)
+
+# 3. 指定位置插入列
+# loc=0表示插入到第0列（最左侧）
+# column参数指定新列名
+# value参数指定列值（可以是Series或标量）
+movie.insert(loc=0, 
+             column='利润', 
+             value=movie['gross'] - movie['budget'])
+
+# 💡 insert()方法没有inplace参数，会直接修改原数据！
 ```
 
->要删除的列名or行名
->
->axis = 'columns'|'index' (默认)   1|0(默认)  按列|行 删除
->
->inplace = 默认False 是否修改原始数据
+**DataFrame列访问两种写法的区别**：
+
+- `df['列名']`：**一定成功**，支持所有列名格式
+- `df.列名`：**不推荐**，仅适用于列名是合法Python标识符 (和**python的关键字/方法名无冲突**) 且无空格的情况
 
 
-
-- insert 在指定位置插入一列数据
-
-```python
-movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
-```
-
->loc=0  要插入列的位置编号
->
->columns 要插入列的列名
->
->value = 要插入列的值
->
->**需要注意的是这个方法没有inplace 参数, 直接在原始数据上修改**
-
-
-
-从DataFrame中, 取出一列数据两种写法
-
-- `df['列名']`  一定成功
-
-- `df.列名` :  有些情况下这种写法会有问题  
-
-  - 列名和python的关键字/方法名冲突
-  - 列名中有空格
-
-  
 
 ### 5.4 数据持久化
 
@@ -418,15 +421,17 @@ movie.insert(loc=0,column='利润',value=movie['gross']-movie['budget'])
 - tsv  用制表符作为分隔符
 
 ```python
+# 准备示例数据（重置索引并取前5行）
 movie5 = movie4.reset_index().head()
+
 movie5.to_pickle('data/movie5.pkl')
 movie5.to_csv('data/movie5.csv')
 movie5.to_excel('data/movie5.xlsx')
-movie5.to_csv('data/movie5_noindex.csv',index=False) # index 不保存行索引
-movie5.to_csv('data/movie5_noindex.tsv',index=False,sep='\t')
+movie5.to_csv('data/movie5_noindex.csv',index=False) # index=False不保存行索引，避免重复索引列
+movie5.to_csv('data/movie5_noindex.tsv',index=False,sep='\t') # TSV格式（制表符分隔）
 ```
 
-加载数据, pd.read_数据格式(路径)
+加载数据, `pd.read_数据格式(路径)`
 
 ```python
 pd.read_pickle('data/movie5.pkl')
