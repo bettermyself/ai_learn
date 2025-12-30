@@ -274,6 +274,8 @@ HAVING product_count > 2;  -- HAVING用于分组后的条件过滤
 -- ⚠️ 注意：WHERE用于分组前过滤，HAVING用于分组后过滤
 ```
 
+💡提示：当需求中出现， 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组。
+
 ### 2.5 分页查询（LIMIT）
 
 ```sql
@@ -448,245 +450,258 @@ CREATE TABLE student_course (
 
 ### 3.2 连接查询方式
 
-
-
-
-
-
-
-
-
-
-
-
-
-#### 3.2 多表查询, 不同的连接方式
-
-![image-20230829111330625](assets/image-20230829111330625.png)
-
 ```sql
--- 多表查询
--- 内连接, 左连接, 右连接
-
--- 数据准备
-CREATE TABLE hero(
-	hid INT PRIMARY KEY,
-	hname VARCHAR(255),
-	kongfu_id INT);
-	
-CREATE TABLE kongfu(
-	kid INT PRIMARY KEY,
-	kname VARCHAR(255));
-
-# 插入hero数据
-INSERT INTO hero VALUES(1, '鸠摩智', 9),(3, '乔峰', 1),(4, '虚竹', 4),(5, '段誉', 12);
-
-# 插入kongfu数据
-INSERT INTO kongfu VALUES(1, '降龙十八掌'),(2, '乾坤大挪移'),(3, '猴子偷桃'),(4, '天山折梅手');
-
--- 内连接 inner join
-SELECT hname,kname FROM hero INNER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
--- 如果直接写join 没有其它修饰词 就是内连接
-SELECT hname,kname FROM hero JOIN kongfu ON hero.kongfu_id=kongfu.kid;
-
--- 左外连接 也叫左连接
-SELECT hname,kname FROM hero LEFT OUTER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
-SELECT hname,kname FROM hero LEFT JOIN kongfu ON hero.kongfu_id=kongfu.kid;
-
--- 右外连接  也叫右连接  OUTER 写不写都可以
-SELECT hname,kname FROM hero RIGHT OUTER JOIN kongfu ON hero.kongfu_id=kongfu.kid;
-SELECT hname,kname FROM hero RIGHT JOIN kongfu ON hero.kongfu_id=kongfu.kid;
-```
-
->join  内连接  保留的是交集，left join  左连接  左表的信息会完整的保留，right join  右连接  右表的信息会完整的保留
->
-
-
-
-**内连接/左连接/右连接如何选择：**
-
-- 内连接  两个表关联的字段 公共的部分会保留在结果中
-- 左连接  在查询结果中, 想把哪张表的结果完整保留下来, 这个表就是左表
-
-
-
-交叉连接, 两表相乘
-
-```sql
-select * from hero,kongfu;
-```
-
->把两张表相乘, hero4条数据  kongfu4条数据  4*4 16条数据, 把所有可能的组合都列出来了
-
-
-
-#### 3.3 多表查询 练习
-
-```sql
-CREATE TABLE category (
-  cid VARCHAR(32) PRIMARY KEY ,
-  cname VARCHAR(50)
+-- 准备测试数据
+CREATE TABLE hero (
+    hid INT PRIMARY KEY,
+    hname VARCHAR(255),
+    kongfu_id INT  -- 武功ID（外键）
 );
 
-CREATE TABLE products(
-  pid VARCHAR(32) PRIMARY KEY ,
-  pname VARCHAR(50),
-  price INT,
-  flag VARCHAR(2),    #是否上架标记为：1表示上架、0表示下架
-  category_id VARCHAR(32),
-  CONSTRAINT products_fk FOREIGN KEY (category_id) REFERENCES category (cid)
+CREATE TABLE kongfu (
+    kid INT PRIMARY KEY,
+    kname VARCHAR(255)  -- 武功名称
 );
 
-INSERT INTO category(cid,cname) VALUES('c001','家电');
-INSERT INTO category(cid,cname) VALUES('c002','服饰');
-INSERT INTO category(cid,cname) VALUES('c003','化妆品');
-INSERT INTO category(cid,cname) VALUES('c004','奢侈品');
+-- 插入英雄数据（部分英雄无对应武功）
+INSERT INTO hero VALUES
+(1, '鸠摩智', 9),   -- kongfu_id=9在kongfu表中不存在
+(3, '乔峰', 1),     -- 对应降龙十八掌
+(4, '虚竹', 4),     -- 对应天山折梅手
+(5, '段誉', 12);    -- kongfu_id=12在kongfu表中不存在
 
-
-INSERT INTO products(pid, pname,price,flag,category_id) VALUES('p001','联想',5000,'1','c001');
-INSERT INTO products(pid, pname,price,flag,category_id) VALUES('p002','海尔',3000,'1','c001');
-INSERT INTO products(pid, pname,price,flag,category_id) VALUES('p003','雷神',5000,'1','c001');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p004','JACK JONES',800,'1','c002');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p005','真维斯',200,'1','c002');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p006','花花公子',440,'1','c002');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p007','劲霸',2000,'1','c002');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p008','香奈儿',800,'1','c003');
-INSERT INTO products (pid, pname,price,flag,category_id) VALUES('p009','相宜本草',200,'1','c003');
-
-
-select distinct c.cname from category as c inner join products p on c.cid = p.category_id where p.flag='1';
-
--- 所有分类商品的个数
-select cname , count(category_id) from category c left join products p on c.cid = p.category_id group by cname;
-
-select cname , category_id from category c left join products p on c.cid = p.category_id;
+-- 插入武功数据
+INSERT INTO kongfu VALUES
+(1, '降龙十八掌'),
+(2, '乾坤大挪移'),
+(3, '猴子偷桃'),
+(4, '天山折梅手');
 ```
 
->在关联查询的时候,  两个表进行关联, 表名比较长可以起别名
->
-> from category as c inner join products p    as 可以写也可以省略掉
->
->在关联查询的时候, 需要想清楚, 以哪张表为主表(要保留哪张表的完整信息)
->
->当前的案例, 要查询的是类别信息的情况, 所以以category 作为左表 做left join
+#### 内连接（INNER JOIN）
 
-
-
-**子查询：**
-
-- 一个select语句的结果可以作为 另外一个查询的条件
-
-  ```sql
-  -- 一个select语句的结果 是作为另外一个select 条件取值
-  select * from products where category_id =
-  (select cid from category where cname='化妆品');
-  ```
-
-- 一个select语句的结果也可以做为一张临时表, 和另外一张表进行关联查询
-
-  ```sql
-  select * from products p, (select * from category where cname = '化妆品') c where p.category_id=c.cid;
-  ```
-
-
-
-**自连接：**
-
-- 两张表进行join 这两张表实际上来自同一张表 就是自连接
+返回**两表交集**，仅保留匹配成功的记录。
 
 ```sql
-CREATE TABLE tb_areas (id VARCHAR(30) NOT NULL PRIMARY KEY, title VARCHAR(30),pid VARCHAR(30));
-INSERT INTO tb_areas (id, title, pid) VALUES ('1', '广东省', 'null');
-INSERT INTO tb_areas (id, title, pid) VALUES ('2', '河南省', 'null');
-INSERT INTO tb_areas (id, title, pid) VALUES ('3', '深圳市', '1');
-INSERT INTO tb_areas (id, title, pid) VALUES ('4', '广州市', '1');
-INSERT INTO tb_areas (id, title, pid) VALUES ('5', '南山区', '3');
-INSERT INTO tb_areas (id, title, pid) VALUES ('6', '宝安区', '3');
-INSERT INTO tb_areas (id, title, pid) VALUES ('7', '越秀区', '4');
-INSERT INTO tb_areas (id, title, pid) VALUES ('8', '天河区', '4');
+-- 语法：INNER JOIN ... ON 连接条件
+-- OUTER关键字可省略，JOIN默认为INNER JOIN
+SELECT 
+    h.hname AS 英雄名,
+    k.kname AS 武功名
+FROM hero h
+INNER JOIN kongfu k ON h.kongfu_id = k.kid;  -- 仅返回有匹配武功的英雄
+
+-- 结果：乔峰、虚竹（鸠摩智和段誉因无匹配武功被排除）
 ```
 
-![image-20230829145953734](assets/image-20230829145953734.png)
+#### 左连接（LEFT JOIN）
 
-把省市区放到一张表中展示：
+返回**左表全部记录**，右表不匹配字段填充NULL。
 
 ```sql
-select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p on c.pid=p.id where p.title = '广东省';
+-- 语法：LEFT [OUTER] JOIN ... ON 连接条件
+SELECT 
+    h.hname AS 英雄名,
+    k.kname AS 武功名
+FROM hero h
+LEFT JOIN kongfu k ON h.kongfu_id = k.kid;  -- 左表hero全部保留
+
+-- 结果：所有英雄都会显示，无武功的显示NULL
 ```
 
->上面的SQL 实际上就是自连接的关联查询, 两张表都是tb_areas  利用城市的pid = 省份的id这个条件做自关联
->
->![image-20230829150203974](assets/image-20230829150203974.png)
+#### 右连接（RIGHT JOIN）
 
-在上面SQL 基础之上, 再做一次关联查询, 把tb_areas中 区的信息在关联起来
-
-- 区的pid = 市的id
+返回**右表全部记录**，左表不匹配字段填充NULL。
 
 ```sql
-select a.province 省, a.city 市 ,d.title 区 from (
-select p.title province,c.title city, c.id from tb_areas as c join tb_areas as p on c.pid=p.id where p.title = '广东省') a join tb_areas d on d.pid = a.id;
+-- 语法：RIGHT [OUTER] JOIN ... ON 连接条件
+SELECT 
+    h.hname AS 英雄名,
+    k.kname AS 武功名
+FROM hero h
+RIGHT JOIN kongfu k ON h.kongfu_id = k.kid;  -- 右表kongfu全部保留
+
+-- 结果：所有武功都会显示，无英雄匹配的显示NULL
 ```
 
->子查询作为一张表来使用的时候, 需要起别名
+#### 连接方式对比表
+
+| 连接类型       | 返回结果            | 使用场景                                      | 数据完整性             |
+| :------------- | :------------------ | :-------------------------------------------- | :--------------------- |
+| **INNER JOIN** | 仅两表匹配的记录    | 查询有效关联数据                              | 严格，丢失不匹配数据   |
+| **LEFT JOIN**  | 左表全部 + 右表匹配 | 保留左表完整性（如查询所有用户及其订单）      | 保留左表，右表可为NULL |
+| **RIGHT JOIN** | 右表全部 + 左表匹配 | 保留右表完整性（较少使用，可改写为LEFT JOIN） | 保留右表，左表可为NULL |
+
+**💡 选择建议**：想完整保留哪张表的数据，就把它作为**LEFT JOIN的左表**。实际开发中**RIGHT JOIN较少使用**，通常通过调换表顺序改用LEFT JOIN实现相同效果。
+
+#### 交叉连接（CROSS JOIN）
+
+返回**笛卡尔积**，两表记录数相乘（一般用于数学计算，业务场景较少）。
+
+```sql
+SELECT * FROM hero, kongfu;  -- 隐式交叉连接，4英雄×4武功=16条记录, 把所有可能的组合都列出来了
+```
 
 
 
-### 4、SQL 报表
+### 3.3 高级查询技巧
 
-数据导入
+#### 子查询（Subquery）
+
+子查询是指将一个查询结果作为另一个查询的**条件**或**临时表**使用。
+
+**场景1：作为WHERE条件**
+
+```sql
+-- 查询所有化妆品分类的商品
+SELECT * FROM products
+WHERE category_id = (
+    SELECT cid FROM category 
+    WHERE cname = '化妆品'  -- 子查询返回单个值
+);
+```
+
+**场景2：作为临时表（派生表）**
+
+```sql
+-- 将子查询结果作为表与主表关联
+SELECT * FROM products p, (SELECT * FROM category WHERE cname = '化妆品') c  -- 派生表必须起别名
+WHERE p.category_id = c.cid;
+```
+
+#### 自连接（Self-Join）
+
+同一张表自我关联，常用于**层级数据查询**（如省市区、组织架构）。
+
+```sql
+-- 地区表：包含省、市、区三级数据，通过pid关联上级
+CREATE TABLE tb_areas (
+    id VARCHAR(30) PRIMARY KEY,
+    title VARCHAR(30),  -- 地区名称
+    pid VARCHAR(30)     -- 父级地区ID（顶级为'null'）
+);
+
+-- 插入广东省数据
+INSERT INTO tb_areas VALUES
+('1', '广东省', 'null'), 
+('3', '深圳市', '1'), 
+('5', '南山区', '3'),
+('4', '广州市', '1'), 
+('6', '宝安区', '3'), 
+('7', '越秀区', '4');
+
+-- 查询广东省省市区三级结构
+SELECT 
+    p.title AS 省,      -- 第一级：省份
+    c.title AS 市,      -- 第二级：城市（pid=省份.id）
+    d.title AS 区       -- 第三级：区县（pid=城市.id）
+FROM tb_areas p         -- 主表：省
+JOIN tb_areas c ON c.pid = p.id  -- 第一次自连接：市关联省
+JOIN tb_areas d ON d.pid = c.id  -- 第二次自连接：区关联市
+WHERE p.title = '广东省';
+```
+
+
+
+## 4. SQL报表与分析
+
+### 4.1 数据导入方法
+
+在MySQL客户端（如pycharm、DataGrip）中：
+
+1. 右键目标数据库 → 选择 **"运行SQL文件"**
+2. 在弹出的对话框中选择对应的`.sql`文件
+3. 点击"开始"导入数据
 
 ![image-20230829115049856](assets/image-20230829115049856.png)
 
-弹出对话框中选择对应的`.sql`文件
-
 ![image-20230829115134383](assets/image-20230829115134383.png)
 
+### 4.2 聚合函数深度解析
+
+**COUNT(*) vs COUNT(字段) 区别**
+
+| 场景               | COUNT(*)       | COUNT(字段)        | 结果差异                    |
+| :----------------- | :------------- | :----------------- | :-------------------------- |
+| **字段全为非NULL** | 统计所有行     | 统计所有行         | 结果相同                    |
+| **字段包含NULL**   | 统计所有行     | **忽略NULL行**     | **COUNT(\*) > COUNT(字段)** |
+| **分组统计**       | 统计每组总行数 | 统计每组非NULL行数 | 可能不同                    |
+
+```sql
+-- 示例：统计有分类的商品数量
+SELECT 
+    COUNT(*) AS total_rows,           -- 13（所有记录）
+    COUNT(category_id) AS valid_cates -- 12（pid=p001的记录category_id为NULL，被忽略）
+FROM product;
+```
 
 
 
+### 4.3 CASE WHEN条件表达式
 
-**`SQL` 分组聚合：**
-
-- 当需求中出现， 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组
-
-- 日期时间类型  如果数据中有日期时间类型, 可以做日期大小判断
-
-
-
-**count(*)  和 count(字段) 区别：**
-
-- 如果所有字段都没有null  count(*) count(字段) 取值都一样, 在这个条件下, 分组之后, count任何一个字段取值都相同。
-- 如果 某个字段中包含了null   count(字段) 不统计null值的 , count(*)  会统计null
-
-
-
-**CASE WHEN：** 
-
-可以把连续的取值的一列, 变成类别型
+将**连续数值**转换为**分类标签**，实现业务逻辑可视化。例如：
 
 - 运费 根据运费的多少 → 高运费 中档运费 低运费
 - 年龄 根据年龄的大小 → 青少年 , 青年, 中年, 老年
 
+**语法**：
+
 ```sql
-CASE WHEN 字段  条件 THEN 取值 WHEN 字段 条件 THEN 取值 ELSE 取值 END (AS) 新列别名
+CASE 
+    WHEN 条件1 THEN 结果1
+    WHEN 条件2 THEN 结果2
+    ELSE 默认结果
+END AS 别名
 ```
 
 ```sql
-select customer_id,company_name, country,
-CASE WHEN country IN ('Germany','Switzerland','Austria') THEN 'German'
-     WHEN country IN ('UK', 'Canada', 'USA', 'Ireland') THEN 'English'
-     ELSE 'Other' END language
-from customers;
+-- 示例：根据客户所在国家划分语言区域
+SELECT 
+    customer_id,
+    company_name,
+    country,
+    CASE 
+        WHEN country IN ('Germany', 'Switzerland', 'Austria') THEN 'German'  -- 德语区
+        WHEN country IN ('UK', 'Canada', 'USA', 'Ireland') THEN 'English'   -- 英语区
+        ELSE 'Other'  -- 其他语言区
+    END AS language_region  -- 新生成列
+FROM customers;
+
+-- 示例：根据运费金额划分等级
+SELECT 
+    order_id,
+    freight,
+    CASE 
+        WHEN freight > 1000 THEN '高运费'
+        WHEN freight > 500 THEN '中运费'
+        ELSE '低运费'
+    END AS freight_level
+FROM orders;
 ```
 
 
 
-**判断条件中关键字`WHERE`、`ON`、`HAVING` 的 核心使用场景和区别：**
+### 4.4 筛选条件核心区别
 
-| 关键词     | 作用阶段                  | 用途                                                         | 能否用聚合函数？ |
-| :--------- | :------------------------ | :----------------------------------------------------------- | :--------------- |
-| **ON**     | 表连接时（`JOIN` 阶段）   | **指定表之间的连接条件**（如 `suppliers.supplier_id = products.supplier_id`） | ❌ 否             |
-| **WHERE**  | 数据筛选（`GROUP BY` 前） | **过滤原始数据行**（如筛选价格 > 100 的产品）                | ❌ 否             |
-| **HAVING** | 数据筛选（`GROUP BY` 后） | **过滤分组后的结果**（如筛选分组后数量 > 3 的供应商）        | ✔️ 是             |
+| 关键词     | 执行阶段             | 核心用途                                  | 是否支持聚合函数 | 执行顺序 |
+| :--------- | :------------------- | :---------------------------------------- | :--------------- | :------- |
+| **ON**     | 表连接时（JOIN）     | **指定表间关联条件**（如`a.id = b.a_id`） | ❌ 否             | 第1步    |
+| **WHERE**  | 分组前（GROUP BY前） | **过滤原始数据行**（如`price > 100`）     | ❌ 否             | 第2步    |
+| **HAVING** | 分组后（GROUP BY后） | **过滤分组结果**（如`COUNT(*) > 3`）      | ✔️ 是             | 第3步    |
 
-**优先级**：`ON` → `WHERE` → `GROUP BY` → `HAVING` → `ORDER BY` → `LIMIT`。
+**执行优先级**：`ON` → `WHERE` → `GROUP BY` → `HAVING` → `ORDER BY` → `LIMIT`
+
+```sql
+-- 综合示例：查询订单金额>1000的客户
+SELECT 
+    c.customer_id,
+    c.company_name,
+    SUM(o.order_amount) AS total_amount  -- 聚合函数
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id  -- ON：连接条件
+WHERE c.country = 'USA'  -- WHERE：过滤客户（分组前）
+GROUP BY c.customer_id
+HAVING total_amount > 1000  -- HAVING：过滤分组结果（聚合后）
+ORDER BY total_amount DESC  -- ORDER BY：排序
+LIMIT 10;  -- LIMIT：取前10名
+```
