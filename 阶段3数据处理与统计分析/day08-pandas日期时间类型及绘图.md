@@ -779,19 +779,22 @@ reviews.describe(include=object)
 
 
 
-#### 4.1.1 柱状图
+#### 4.1.1 柱状图（Bar Chart）
 
 **案例：统计葡萄酒出产种类最多的10个省份**
 
 ```python
-# 基础柱状图
+# 获取出现次数最多的前10个省份
+province_counts = reviews['province'].value_counts().head(10)
+
+# 绘制彩色柱状图
 kwargs = dict(
     figsize=(16, 8),
     fontsize=20,
     color=['b','orange','g','r','purple','brown','pink','gray','cyan','y']
 )
 
-reviews['province'].value_counts().head(10).plot.bar(**kwargs)
+province_counts.plot.bar(**kwargs)
 ```
 
 ![image-20230905173540498](assets/image-20230905173540498.png)
@@ -799,17 +802,21 @@ reviews['province'].value_counts().head(10).plot.bar(**kwargs)
 ```python
 import matplotlib.pyplot as plt
 from matplotlib import ticker
+
 fig,ax = plt.subplots(figsize=(16,8))
 
-# 设置坐标轴为百分比形式展示 decimals=1表示百分比的小数位数为1
+# 设置Y轴为百分比格式 decimals=1表示百分比的小数位数为1，xmax表示 100%对应的数据值
 ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1,decimals=1))
+
+# normalize=True：返回比例而非绝对值
+province_pct = reviews['province'].value_counts(normalize=True).head(10)
 
 kwargs = dict(
     fontsize=20,
     color=['b','orange','g','r','purple','brown','pink','gray','cyan','y']
 )
 
-reviews['province'].value_counts(normalize=True).head(10).plot.bar(**kwargs)
+province_pct.plot.bar(**kwargs)
 ```
 
 ![image-20230905183506956](assets/image-20230905183506956.png)		
@@ -822,8 +829,6 @@ reviews['province'].value_counts(normalize=True).head(10).plot.bar(**kwargs)
 # 折线图展示评分分布，为了方便绘图 sort_index 对行索引进行排序
 reviews['points'].value_counts().sort_index().plot.line(grid=True)
 ```
-
-
 
 ```python
 # 面积图展示评分分布
@@ -861,14 +866,15 @@ reviews['province'].value_counts().head(10).plot.pie()
 
 
 
-#### 4.1.5 可视化选择建议表
+#### 4.1.5 图表选型决策树
 
-| 数据类型 | 分析目标       | 推荐图表       |
-| :------- | :------------- | :------------- |
-| 类别型   | 各类别数量对比 | 柱状图         |
-| 类别型   | 各类别占比     | 饼图（类别≤6） |
-| 数值型   | 数据分布       | 直方图         |
-| 数值型   | 变化趋势       | 折线图         |
-| 数值型   | 累计分布       | 面积图         |
+| 数据类型   | 分析目标 | 推荐图表       | 关键参数                | 注意事项             |
+| :--------- | :------- | :------------- | :---------------------- | :------------------- |
+| **类别型** | 数量对比 | 柱状图（bar）  | `color`, `edgecolor`    | 类别不宜过多（<15）  |
+| **类别型** | 占比分析 | 饼图（pie）    | `autopct`, `startangle` | 类别≤6个，避免3D效果 |
+| **数值型** | 分布形态 | 直方图（hist） | `bins`, `alpha`         | 处理前检查数据偏度   |
+| **数值型** | 趋势变化 | 折线图（line） | `marker`, `grid`        | 时间序列需排序       |
+| **数值型** | 累积趋势 | 面积图（area） | `alpha`, `stacked`      | 适合展示堆叠效果     |
 
 **最佳实践提示**：当处理有偏分布数据时，建议先进行数据预处理（如去除极值、分箱等）再可视化，以获得更清晰的分布特征。
+
