@@ -1,4 +1,4 @@
-## 1 连带率和复购率计算
+## 1. 连带率和复购率计算
 
 ### 1.1 连带率计算
 
@@ -122,16 +122,40 @@ result.iloc[:,1]/result.iloc[:,0]
 
 
 
-## 2、日期时间类型数据
+## 2. 日期时间类型数据处理
 
-### 2.1 日期时间类型简介
+### 2.1 日期时间类型基础
 
-**Pandas** 的日期时间类型默认是 **datetime64[ns]**。加载数据后，日期列通常为**Object**类型：	
+#### 核心数据类型
+
+| 类型               | 描述       | 精度 | 应用场景     |
+| :----------------- | :--------- | :--- | :----------- |
+| **Timestamp**      | 单个时间点 | 纳秒 | 精确时间表示 |
+| **datetime64[ns]** | 日期时间列 | 纳秒 | 时间序列分析 |
+| **Timedelta64**    | 时间差     | 纳秒 | 持续时间计算 |
+
+#### 类型转换方法
+
+Pandas默认日期列为`object`类型，需转换为`datetime64[ns]`才能使用丰富的时间序列功能。
 
 ```python
 import pandas as pd
+
+# 方法1：加载后转换（推荐）
+# ============================================================================
 ebola = pd.read_csv('data/country_timeseries.csv')
+ebola['Date'] = pd.to_datetime(ebola['Date'])  # 自动识别多种日期格式
+
+# 方法2：加载时自动解析
+# ============================================================================
+# 方式A：按列索引指定（第0列）
+ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=[0])
+
+# 方式B：按列名指定（推荐，可读性强）
+ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=['Date'])
 ```
+
+😬转换前：
 
 |      | Date       | Day  | Deaths\_Guinea | Deaths\_Liberia | Deaths\_SierraLeone |
 | :--- | :--------- | :--- | :------------- | :-------------- | :------------------ |
@@ -141,25 +165,7 @@ ebola = pd.read_csv('data/country_timeseries.csv')
 | 3    | 1/2/2015   | 286  | NaN            | 3496.0          | NaN                 |
 | 4    | 12/31/2014 | 284  | 1739.0         | 3471.0          | 2827.0              |
 
-
-
-**转换为日期时间类型：**
-
-- 使用 `pd.to_datetime()` 转换：
-
-```python
-ebola['date_dt'] = pd.to_datetime(ebola['Date'])
-```
-
-- 也可以在读取数据的时候, 直接指定, 某一列解析成日期时间的格式：
-
-```python
-# 按列索引指定
-ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=[0])
-
-# 按列名指定
-ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=['Date'])
-```
+😊转换后：
 
 |      | Date       | Day  | Deaths\_Guinea | Deaths\_Liberia | Deaths\_SierraLeone |
 | :--- | :--------- | :--- | :------------- | :-------------- | :------------------ |
@@ -169,23 +175,7 @@ ebola = pd.read_csv('data/country_timeseries.csv', parse_dates=['Date'])
 | 3    | 2015-01-02 | 286  | NaN            | 3496.0          | NaN                 |
 | 4    | 2014-12-31 | 284  | 1739.0         | 3471.0          | 2827.0              |
 
-
-
-其他时间类型：**时间戳 (Timestamp)**
-
-**`Timestamp`**：表示单个时间点（类似 Python 的 `datetime.datetime`），精度可到纳秒：
-
-```python
-import pandas as pd
-
-# 创建时间戳
-pd.Timestamp(2023, 9, 1)
-pd.Timestamp("2023-10-01 12:30:45")
-```
-
-
-
-**提取不同维度的日期信息：**
+#### 日期属性提取
 
 ```python
 # 单个时间点提取
@@ -194,36 +184,45 @@ time_stamp.year  # 2023
 time_stamp.month  # 9
 time_stamp.day   # 1
 
-# 如果是一列日期时间的数据ebola['Date'].dt.XXX
-ebola['year']=ebola['Date'].dt.year
-ebola['month'] = ebola['Date'].dt.month
-ebola['day'] = ebola['Date'].dt.day
+# ============================================================================
+# 从单列提取多维度时间特征（特征工程常用）
+# 假设df['Date']已是datetime64类型
+
+df['年份'] = df['Date'].dt.year          # 提取年份（如2024）
+df['月份'] = df['Date'].dt.month         # 提取月份（1-12）
+df['季度'] = df['Date'].dt.quarter       # 提取季度（1-4）
+df['日'] = df['Date'].dt.day             # 提取日（1-31）
+df['星期'] = df['Date'].dt.dayofweek     # 提取星期（周一=0, 周日=6）
+
+# 💡 最佳实践：时间特征提取是机器学习特征工程的标准步骤
 ```
 
 
 
 ### 2.2 日期时间索引
 
-**DatetimeIndex**：将日期时间类型设置为索引，简化时间范围选择和时间维度切片操作。
+#### 为什么需要日期时间索引？
+
+将日期列设置为索引后，时间范围选择会变得**极其高效**。
 
 
 
-**案例：筛选2015年8月Tesla股票数据**
+#### Tesla股票数据筛选案例
 
 ##### 方法一：布尔索引/query
 
 ```python
-tesla_stock = pd.read_csv('data/TSLA.csv',parse_dates=[0])
+# 加载数据并解析日期
+tesla_stock = pd.read_csv('data/TSLA.csv', parse_dates=[0])
 
-# 布尔索引写法
+# ❌ 不推荐：布尔索引写法（繁琐）
+# ⚠️ 注意：必须使用 & 而不是 and，且每个条件需加括号
 mask = (tesla_stock['Date'].dt.year == 2015) & (tesla_stock['Date'].dt.month == 8)
-tesla_stock[mask]
+august_2015 = tesla_stock[mask]
 
-# query写法
-tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")  # query() 内部会自动解析 and 为逐元素操作（无需使用 &）
+# 或者使用query（简化版）
+august_2015 = tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")  # query() 内部会自动解析 and 为逐元素操作（无需使用 &）
 ```
-
-
 
 在以上的代码中，布尔索引写法中两个条件同时满足需要使用  **&**  而不是  **and**  ，使用and会报错。原因涉及 **Python 运算符的底层机制**和 **Pandas 布尔索引的设计逻辑**。以下是详细解释：
 
@@ -310,6 +309,11 @@ mask = (
 )
 ```
 
+计算优先级：
+
+1. `&` 的优先级比 `|` 高
+2. 两者都比比较运算符（`==`, `<`, `>`等）的优先级高
+
 
 
 **5. 替代方案：`query()` 方法**
@@ -326,10 +330,10 @@ tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")
 
 **总结**
 
-| 场景                | 正确操作                | 错误操作           |
-| :------------------ | :---------------------- | :----------------- |
-| 标量布尔运算        | `and`、`or`、`not`      | `&`、`|`、**`~`**  |
-| Pandas 布尔序列运算 | `&`、`|`、`~`（带括号） | `and`、`or`、`not` |
+| 场景                | 正确操作                |
+| :------------------ | :---------------------- |
+| 标量布尔运算        | `and`、`or`、`not`      |
+| Pandas 布尔序列运算 | `&`、`|`、`~`（带括号） |
 
 
 
@@ -338,106 +342,66 @@ tesla_stock.query("Date.dt.year == 2015 and Date.dt.month == 8")
 - 把**Date**设置为日期时间索引, 这类操作就会变得十分简单
 
 ```python
+# 加载数据并解析日期
+tesla_stock = pd.read_csv('data/TSLA.csv', parse_dates=[0])
+
+# ✅ 推荐：日期时间索引（简洁高效）
 tesla_stock.set_index('Date', inplace=True)
-tesla_stock.loc['2015-08']  # 正确写法
-# tesla_stock['2015-08']   # Pandas 2.0+ 已废弃
+august_2015 = tesla_stock.loc['2015-08']  # 直接字符串切片
 ```
 
 
 
-**时间差索引 (TimedeltaIndex)**
+#### 时间差索引（TimedeltaIndex）
 
-在 Pandas 中，`timedelta64` 类型用于表示时间差（时间间隔），例如计算两个时间点之间的差异，或对时间序列进行偏移操作。把timedelta64这个类型的数据设置为索引, 就是时间差值索引timedeltaIndex：
+在 Pandas 中，`timedelta64` 类型用于表示时间差（时间间隔），例如计算两个时间点之间的差异。把timedelta64这个类型的数据设置为索引, 就是时间差值索引timedeltaIndex：
 
 ```python
+# 重置索引
 tesla_stock.reset_index(inplace=True)
 
-# 创建时间差列
+# 创建相对时间差列（相对于最小日期）
 tesla_stock['ref_date'] = tesla_stock['Date'] - tesla_stock['Date'].min()
 tesla_stock.set_index('ref_date', inplace=True)
 
-# 时间差切片
-tesla_stock.loc['0 days':'4 days']  # 包含端点值
+# 时间差切片（包含端点，即使端点值不存在也能正确返回, 这就是TimeDeltaIndex 优势）
+first_4_days = tesla_stock.loc['0 days':'4 days']
 ```
-
->上面的切片操作, 4 days在数据中不存在, 依然能正确返回结果, 就是TimeDeltaIndex 优势
 
 
 
 ### 2.3 生成日期时间序列
 
 ```python
-pd.date_range('起始时间','结束时间', freq= '生成时间序列的方式')
-```
+# 基础语法
+pd.date_range('起始时间', '结束时间', freq='频率标识')
 
-freq可能取值：
+# 常用频率标识
+# 1. 日/周/月/季度
+# D: 日历日, B: 工作日, W: 每周, M: 月末, MS: 月初
+# Q: 季度末, QS: 季度初, A: 年末, AS: 年初
 
-**1. 日/周/月/季度频率**
+# 2. 小时/分钟/秒
+# H: 小时, T/min: 分钟, S: 秒, L/ms: 毫秒
 
-| 别名         | 描述                         |
-| :----------- | :--------------------------- |
-| `B`          | 工作日（跳过周末）           |
-| `C`          | 自定义工作日（需指定周掩码） |
-| `D`          | 日历日                       |
-| `W`          | 每周（默认周日为周结束）     |
-| `M`          | 月末                         |
-| `SM`         | 月中和月末（每月15日和月末） |
-| `BM`         | 月末工作日                   |
-| `CBM`        | 自定义月末工作日             |
-| `MS`         | 月初                         |
-| `SMS`        | 月初和月中（每月1日和15日）  |
-| `BMS`        | 月初工作日                   |
-| `CBMS`       | 自定义月初工作日             |
-| `Q`          | 季度末（默认12月结束）       |
-| `BQ`         | 季度末工作日                 |
-| `QS`         | 季度初（默认1月为季度开始）  |
-| `BQS`        | 季度初工作日                 |
-| `A`, `Y`     | 年末                         |
-| `BA`, `BY`   | 年末工作日                   |
-| `AS`, `YS`   | 年初                         |
-| `BAS`, `BYS` | 年初工作日                   |
+# 实战示例
+# 生成2023年8月到10月的工作日序列
+workdays = pd.date_range('2023-08-01', '2023-10-30', freq='B')
 
-**2. 小时/分钟/秒级频率**
-
-| 别名       | 描述                         |
-| :--------- | :--------------------------- |
-| `BH`       | 工作时间（工作日的小时范围） |
-| `H`        | 小时                         |
-| `T`, `min` | 分钟                         |
-| `S`        | 秒                           |
-| `L`, `ms`  | 毫秒                         |
-| `U`, `us`  | 微秒（microseconds）         |
-| `N`        | 纳秒                         |
-
-
-
-```python
-# 生成工作日序列
-pd.date_range('2023-08-01','2023-10-30',freq='B')  # 工作日
-pd.date_range('2023-08-01','2023-10-30',freq='2B')  # 隔一个工作日获取一个工作日
+# 隔一个工作日取样
+every_other_workday = pd.date_range('2023-08-01', '2023-10-30', freq='2B')
 
 # 每月第一个星期四
-pd.date_range('2023-08-01','2023-10-30',freq='WOM-1THU') # WOM：week of month THU Thursday
+first_thu = pd.date_range('2023-08-01', '2023-10-30', freq='WOM-1THU')
+# WOM: week of month, THU: Thursday
 
 # 每月第三个星期五
-pd.date_range('2023-08-01','2023-10-30',freq='WOM-3FRI')  # Friday 星期五
+third_fri = pd.date_range('2023-08-01', '2023-10-30', freq='WOM-3FRI')
 ```
 
 
 
-### 2.4 日期时间数据的小结
-
-Pandas日期时间数据类型：
-
-| 类型            | 描述       | 应用场景                     |
-| :-------------- | :--------- | :--------------------------- |
-| **Timestamp**   | 单个时间点 | 精确时间表示                 |
-| **Datetime64**  | 日期时间列 | 时间序列分析(DatetimeIndex)  |
-| **Timedelta64** | 时间差     | 持续时间计算(TimeDeltaIndex) |
-
-
-
-**最佳实践**
+### 2.4 日期时间数据**最佳实践**
 
 **转换日期列**：如果数据中包含了日期时间的数据，并且后续计算/数据的处理需要用到日期时间类型数据的特性，需要把他转换成日期时间类型
 
@@ -469,68 +433,60 @@ df.loc['2023-01':'2023-03']  # 日期范围切片
 
 ### 2.5 高级应用技巧
 
-**时间范围筛选：**把日期时间设置为Index 行索引之后, 可以使用
+#### 时间范围筛选
 
 ```python
-crime.between_time('2:00','5:00',include_start=False)  # between_time 在两个时刻的范围内
-crime.at_time('5:43')  # at_time 在某个具体的时刻
+# 设置日期时间为索引后，可使用便捷方法
+# 筛选每天2:00-5:00的数据（不包含开始时间）
+night_data = crime.between_time('2:00', '5:00', include_start=False)
+
+# 筛选每天5:43的数据
+specific_time = crime.at_time('5:43')
 ```
 
-
-
-**时间重采样**：
-
-- `crime.resample('W')` 将数据按周进行分组 , 分组之后可以接聚合函数, 类似于groupby之后的聚合；
-
-- `crime.resample('M')` 将数据按月份进行分组,分组之后可以接聚合函数, 类似于groupby之后的聚合；
-
-- `crime.resample('Q')` 将数据按季度进行分组, 分组之后可以接聚合函数, 类似于groupby之后的聚合；
+#### 时间重采样（Resample）
 
 ```python
-# 按周重采样
-crime.resample('W').mean()
+# 按周重采样并计算均值
+weekly_avg = crime.resample('W').mean()
 
-# 按月重采样
-crime.resample('M').sum()
+# 按月重采样并求和
+monthly_sum = crime.resample('M').sum()
 
-# 按季度重采样
-crime.resample('Q').count()
+# 按季度重采样并计数
+quarterly_count = crime.resample('Q').count()
+# 类似于groupby，但专门用于时间序列
+```
+
+#### 性能优化技巧
+
+```python
+# 对DatetimeIndex切片前，建议先排序
+crime.sort_index(inplace=True)  # 提高切片效率
+filtered = crime.loc['2023-01-01':'2023-06-30']
 ```
 
 
 
-**性能优化：**如果需要对DatetimeIndex这个类型的数据进行切片操作, 建议先排序, 再切片, 效率更高。
+## 3. 数据可视化
 
-```py
-# 排序后切片提高效率
-crime.sort_index(inplace=True)
-crime.loc['2023-01-01':'2023-06-30']
-```
+### 3.1 可视化库选型指南
 
-
-
-## 3、数据可视化
-
-### 3.1 可视化库的介绍
-
-| 库类型         | 代表库                   | 特点                       |
-| :------------- | :----------------------- | :------------------------- |
-| **静态图形**   | Matplotlib（基础）       | Python 最基础的绘图库      |
-|                | Pandas（内置Matplotlib） | 简化DataFrame/Series可视化 |
-|                | Seaborn（高级封装）      | 统计图形，美化默认样式     |
-| **交互式图形** | Pyecharts/Echarts        | 基于JavaScript，丰富交互   |
-|                | Plotly                   | 创建交互式Web可视化        |
+| 库类型         | 代表库         | 特点                    | 适用场景           |
+| :------------- | :------------- | :---------------------- | :----------------- |
+| **静态图形**   | **Matplotlib** | Python最基础绘图库      | 精细控制，学术出版 |
+|                | **Pandas**     | 内置Matplotlib，简化API | 快速探索数据       |
+|                | **Seaborn**    | 统计图形，美化样式      | 统计分析与展示     |
+| **交互式图形** | **Pyecharts**  | 基于JavaScript          | Web应用，丰富交互  |
+|                | **Plotly**     | 交互式Web可视化         | 动态数据展示       |
 
 
 
-### 3.2 Matplotlib可视化
+### 3.2 Matplotlib基础
 
-#### 3.2.1 Matplotlib api介绍
+#### 3.2.1 两种绘图API对比
 
-**两种绘图方式：**
-
-1. **面向过程API（plt.）** - 快速简单
-2. **面向对象API（Figure/Axes）** - 精细控制
+Matplotlib提供两种编程范式：**面向过程**（快速）与**面向对象**（精细控制）。
 
 ```python
 import matplotlib.pyplot as plt
@@ -541,52 +497,40 @@ x = [-3, 5, 7]
 y = [10, 2, 5]
 ```
 
-
-
-**面向过程示例：**
+**面向过程示例- 快速简单：**
 
 ```python
-# 创建绘图区域
-plt.figure(figsize=(12,5))
-# 画图
-plt.plot(x,y)
-plt.grid(True)  # 添加网格线
-plt.xlim(-3,7)
-plt.ylim(2,11)
-plt.xlabel('x axis',size=20)
-plt.ylabel('y axis',size=10)
-plt.title('折线图')
-plt.show()
+plt.figure(figsize=(12, 5))  # 创建画布
+plt.plot(x, y)               # 绘制折线
+plt.grid(True)               # 显示网格
+plt.xlim(-3, 7)              # 设置X轴范围
+plt.ylim(2, 11)              # 设置Y轴范围
+plt.xlabel('x axis', size=20) # X轴标签
+plt.ylabel('y axis', size=10) # Y轴标签
+plt.title('折线图')          # 标题
+plt.show()                   # 显示图形
 ```
 
 ![image-20230905164509887](assets/image-20230905164509887.png)
 
-**面向对象示例：**
+**面向对象示例- 精细控制：**
 
 ```python
-fig,ax = plt.subplots(figsize=(12,5)) # ax 坐标系
-
-# 在坐标系中画图
-ax.plot(x,y) # 调用ax 坐标系的绘图方法
-ax.set_xlim(-3,7) # 调用ax 坐标系的设置方法
-ax.set_ylim(2,11)
-ax.set_xlabel('x axis',size=20)
-ax.set_ylabel('y axis',size=10)
+fig, ax = plt.subplots(figsize=(12, 5))  # 创建画布和坐标系
+ax.plot(x, y)                # 在坐标系中绘图
+ax.set_xlim(-3, 7)           # 设置X轴范围
+ax.set_ylim(2, 11)
+ax.set_xlabel('x axis', size=20)
+ax.set_ylabel('y axis', size=10)
 ax.set_title('折线图')
 plt.show()
 ```
 
 
 
-#### 3.2.2 Anscombe 数据集：可视化重要性
+#### 3.2.2 Anscombe四重奏：可视化的力量
 
-
-
-**数据集背景：**
-
-- 由统计学家 Frank Anscombe 创建
-- 包含4组（I, II, III, IV）数据
-- 每组数据统计特性相同，但分布模式完全不同
+**数据集背景**：统计学家Frank Anscombe构造的四组数据，统计特性几乎完全相同，但实际分布截然不同。
 
 ```python
 import pandas as pd
@@ -631,8 +575,7 @@ axes3 = fig.add_subplot(2,2,3)
 # 在画布中 设置一个两行两列的框, 第四个框 对应axes4
 axes4 = fig.add_subplot(2,2,4)
 
-axes1.scatter(anscombe[anscombe['dataset']=='I']
-['x'],anscombe[anscombe['dataset']=='I']['y'])
+axes1.scatter(anscombe[anscombe['dataset']=='I']['x'],anscombe[anscombe['dataset']=='I']['y'])
 axes2.scatter(anscombe[anscombe['dataset']=='II']['x'],anscombe[anscombe['dataset']=='II']['y'])
 axes3.scatter(anscombe[anscombe['dataset']=='III']['x'],anscombe[anscombe['dataset']=='III']['y'])
 axes4.scatter(anscombe[anscombe['dataset']=='IV']['x'],anscombe[anscombe['dataset']=='IV']['y'])	
@@ -640,6 +583,8 @@ plt.show()
 ```
 
 ![image-20230905165109832](assets/image-20230905165109832.png)
+
+💡 **核心启示**：仅依赖统计指标会掩盖数据真实模式，可视化是必要验证步骤
 
 
 
@@ -680,12 +625,12 @@ print("Bin边界值：\n", np.round(bin_edges, 2))
 
 ### 3.4 Matplotlib双变量与多变量可视化
 
-**散点图 (Scatter Plot)**
+#### 3.4.1 散点图（Scatter Plot）
 
 散点图用于表示一个连续变量随另一个连续变量的变化所呈现的大致趋势
 
 ```python
-# 了解账单金额和消费之间的关系可以绘制散点图
+# 了解账单金额和小费之间的关系可以绘制散点图
 plt.figure(figsize=(12,8))
 plt.scatter(tips['total_bill'],tips['tip'])
 plt.xlabel('账单金额')
@@ -725,9 +670,45 @@ plt.legend(tips['sex'])
 
 
 
+## 4. Pandas原生绘图
+
+Pandas基于Matplotlib封装，支持DataFrame/Series直接调用`.plot`方法，快速生成图表。
+
+### 4.1 数据准备与概览
+
+```python
+# 加载葡萄酒评论数据集
+reviews = pd.read_csv('data/winemag-data_first150k.csv', index_col=0)
+
+# 数据概览
+reviews.info()  # 查看数据类型和缺失值
+```
+
+<img src="assets/image-20230905173404220.png" style="zoom: 67%;" />
 
 
-## 4、Pandas绘图
+
+```python
+# 数值型数据统计描述
+reviews.describe()
+```
+
+![image-20230905173433840](assets/image-20230905173433840.png)
+
+```python
+# 非数值型数据统计描述
+reviews.describe(include=object)
+```
+
+![image-20230905173528546](assets/image-20230905173528546.png)
+
+
+
+
+
+
+
+
 
 ### 4.1 Pandas 单变量可视化
 
@@ -749,33 +730,7 @@ plt.legend(tips['sex'])
 
 
 
-**数据准备与概览**
 
-```python
-import pandas as pd
-
-# 读取数据集
-reviews = pd.read_csv('data/winemag-data_first150k.csv', index_col=0)
-
-# 查看数据基本信息
-reviews.info()
-```
-
-![](assets/image-20230905173404220.png)
-
-```python
-# 数值型数据统计描述
-reviews.describe()
-```
-
-![image-20230905173433840](assets/image-20230905173433840.png)
-
-```python
-# 非数值型数据统计描述
-reviews.describe(include=object)
-```
-
-![image-20230905173528546](assets/image-20230905173528546.png)
 
 
 

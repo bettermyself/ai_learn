@@ -160,164 +160,185 @@ result = df.groupby('continent')['lifeExp'].agg(
 
 #### 2.2.1 概念说明
 
-在 pandas 中，**分组转换（GroupBy + Transform）** 操作：
+分组转换（GroupBy + Transform）是Powerful的特征工程工具，特点：
 
-- 对分组后的数据应用函数
-- 返回与原数据相同形状的结果
-- 类似 SQL 中的**窗口函数**
-
-
-
-#### 2.2.2 基本用法
+- 对分组数据应用函数
+- **返回与原数据相同形状的结果**（关键特性）
+- 类似SQL窗口函数，保持数据对齐
 
 ```python
-import pandas as pd
-
+# 基础示例：计算每组的均值并广播到原数据行
 df = pd.DataFrame({
     'Group': ['A', 'A', 'B', 'B', 'B'],
     'Value': [10, 20, 30, 40, 50]
 })
 
-# 计算每组的均值，返回与原数据相同长度的结果
+# transform返回与原DataFrame相同长度的Series
 df['GroupMean'] = df.groupby('Group')['Value'].transform('mean')
+# 结果：A组两行都填充15，B组三行都填充40
 ```
 
 
 
-#### 2.2.3 实际应用示例
+#### 2.2.2 实战：缺失值填充
 
-- 数据准备工作
+处理小费数据集中的缺失值，按性别分组填充。
 
 ```python
-# 加载小费数据集
+# 加载并准备数据
 tips = pd.read_csv('data/tips.csv')
+tips_10 = tips.sample(10, random_state=42)  # 随机采样10条数据（固定随机种子保证可复现）
 
-# 随机采样10条数据（固定随机种子保证可复现）
-tips_10 = tips.sample(10, random_state=42)
-
+# 人为制造缺失值：随机选择4条记录
 import numpy as np
+# np.random.permutation打乱索引，取前4个设为NaN
+tips_10.loc[np.random.permutation(tips_10.index)[:4], 'tip'] = np.NaN
 
-#np.random.permutation(tips_10.index) 将index随机打乱 随机找了4条数据 给tip复制为nan
-tips_10.loc[np.random.permutation(tips_10.index)[:4],'tip'] = np.NAN 
-```
-
-- 编写自定义函数，用来填充缺失值
-
-```python
 def fillna_mean(x):
-    # 计算每组的小费平均值 利用均值填充缺失值
-    return x.fillna(x.mean())
+    """
+    自定义转换函数：用组内均值填充缺失值
+    :param x: 当前分组的数据Series
+    :return: 填充后的Series
+    """
+    return x.fillna(x.mean())  # x.mean()计算当前组的均值
+
+# 按性别分组转换：缺失值用对应性别的平均小费填充
+tips_10['tip_filled'] = tips_10.groupby('sex')['tip'].transform(fillna_mean)
+# 结果：不同性别填充的缺失值是该性别各自的小费平均值
 ```
 
-- 分组转换，调用编写的自定义函数
+
+
+#### 2.2.3 常见应用场景
 
 ```python
-tips_10.groupby('sex')['tip'].transform(fillna_mean)
-```
-
->不同性别填充的缺失值, 是各自性别的小费平均值。
-
-
-
-#### 2.2.4 常见应用场景
-
-```python
-# 场景 1：标准化（Z-Score）
-
-# 按组标准化： (x - 组均值) / 组标准差
+# 场景1：Z-Score标准化（按组标准化）
 df['Z-Score'] = df.groupby('Group')['Value'].transform(
-    lambda x: (x - x.mean()) / x.std()
+    lambda x: (x - x.mean()) / x.std()  # (x-组均值)/组标准差
 )
 
-# 场景 2：填充缺失值
-
-# 用组中位数填充缺失值
+# 场景2：用组中位数填充缺失值
 df['Filled'] = df.groupby('Group')['Value'].transform(
-    lambda x: x.fillna(x.median())
+    lambda x: x.fillna(x.median())  # 中位数更鲁棒
 )
 
-# 场景 3：排名
-
-# 计算每组内的排名
-df['Rank'] = df.groupby('Group')['Value'].transform('rank', ascending=False)
+# 场景3：组内排名
+df['Rank'] = df.groupby('Group')['Value'].transform(
+    'rank', ascending=False  # descending ranking
+)
 ```
 
 
 
-**与`apply`的区别**
+#### 2.2.4 `transform` vs `apply` vs ` map` 对比
 
-| 特性         | `transform`              | `apply`                                        |
-| :----------- | :----------------------- | :--------------------------------------------- |
-| **输出形状** | 必须与原数据相同         | 可返回任意形状                                 |
-| **适用场景** | 逐元素操作，保持数据对齐 | 更灵活，可以返回任意形状的结果（但需手动对齐） |
+在 Pandas 中，这三个方法的传参方式各不相同。理解它们的关键在于**操作的层级**（是针对整个 DataFrame、某一列，还是每一个单元格）。
 
-> 通过 `groupby.transform`，你可以高效实现按组计算并保持数据对齐的需求。
->
+以下是它们的详细对比：
 
+##### **1. `map()`：逐元素操作**
 
+`map` 是 **Series** 对象独有的方法（DataFrame 没有 `map`）。
 
-### 2.3 分组转换练习
-
-**任务：比较Bob 和 Amy 1-4月每月减重效果**
-
-
-
-**数据说明**
-
-- 包含Bob和Amy从1月到4月每周体重数据
-- 每月4周，共32条记录
-
-
-
-**实现步骤**
-
-- **第一步：**加载数据
+- **传参方式**：逐元素。
+- **适用对象**：Series。
+- **行为**：将函数应用于 Series 中的每一个元素。它常用于映射值（比如将 "A" 映射为 1）。
 
 ```python
-weight_loss = pd.read_csv('data/weight_loss.csv')  # 读取体重数据
+# 示例：每个元素都执行一次 lambda
+df['col'].map(lambda x: x + 1) 
 ```
 
-- **第二步：**定义减重函数
 
-我们要使用分组转换来计算Bob和Amy每个月的减重效果 (每个月每周的体重减去当月第一周的体重), 定义一个自定义函数
+
+##### 2. `apply()`：灵活多变（最常用）
+
+`apply` 的行为取决于你是在 Series 还是 DataFrame 上调用它。
+
+- **在 Series 上调用**：**逐元素**传入。行为类似于 `map`。
+- **在 DataFrame 上调用**：**直接传入 Series**。
+  - 默认情况下（`axis=0`），它将每一**列**作为一个 Series 传给函数。
+  - 设置 `axis=1` 时，它将每一**行**作为一个 Series 传给函数。
 
 ```python
-# 计算减重的比例
+# DataFrame 调用：x 是一个 Series（一整列或一整行）
+df.apply(lambda x: x.max() - x.min()) 
+```
+
+
+
+##### 3. `transform()`：直接传入 Series (通常)
+
+`transform` 的主要特征是：**输出的形状必须与输入的形状完全一致**。
+
+- **传参方式**：**直接传入 Series**（一整列）。
+- **特殊之处**：它通常用于执行聚合操作后，将结果广播（Broadcast）回原形状。例如，计算每组的平均值并填充到每个单元格中。
+- **注意**：虽然它传入的是 Series，但如果函数返回的是一个标量，它会自动填充回原长度。
+
+```python
+# x 是整列 Series，返回的结果会自动对应到原索引
+df.transform(lambda x: x - x.mean()) 
+```
+
+
+
+##### **核心区别总结表**
+
+| **方法**        | **适用对象**     | **传参方式**                              | **主要用途**                     |
+| --------------- | ---------------- | ----------------------------------------- | -------------------------------- |
+| **`map`**       | Series           | **逐元素**                                | 简单的值替换、格式化             |
+| **`apply`**     | DataFrame/Series | **Series** (对DF) / **逐元素** (对Series) | 复杂逻辑、数据聚合、行/列计算    |
+| **`transform`** | DataFrame/Series | **Series**                                | 组内标准化、保持原数据形状的操作 |
+
+💡快速判断指南
+
+1. 如果你想**改变数据形状**（比如从 10 行变成 1 个平均值）：用 `apply`。
+2. 如果你想**保持数据形状**（比如减去均值）：用 `transform`。
+3. 如果你只是想**翻译/替换**单个单元格的值：用 `map`。
+
+
+
+### 2.3 分组转换实战：会员减重效果分析
+
+**任务目标**：比较Bob和Amy在1-4月每月的减重效果（每月第4周 vs 第1周）。
+
+```python
+# 加载体重数据：每月4周，共32条记录
+weight_loss = pd.read_csv('data/weight_loss.csv')
+
+# 定义减重函数
 def find_perc_loss(s):
-    # s.iloc[0] 每个月的第一周, 体重
-    return (s.iloc[0]-s)/s.iloc[0]  # (首周体重-当前周体重)/首周体重	
-```
+    """
+    计算减重比例函数：(首周体重-当前周体重)/首周体重
+    :param s: 某人在某月的体重Series（按周顺序）
+    :return: 减重比例Series
+    """
+    first_week_weight = s.iloc[0]  # 每月第一周的体重作为基准
+    return (first_week_weight - s) / first_week_weight  # 计算每周相对于首周的减重比例
 
-- **第三步：**分组转换，调用编写的减重函数
+# 按姓名和月份分组转换
+# 核心：groupby的列顺序决定分组粒度，transform应用自定义函数
+weight_loss['减重比例'] = weight_loss.groupby(['Name', 'Month'])['Weight'].transform(find_perc_loss)
 
-按姓名和月份分组转换，计算Bob和Amy每个月中每周的减重效果
-
-```python
-# 想清楚需要用什么数据代入减重函数，就能准确写好用什么字段groupby
-weight_loss['减重比例'] = weight_loss.groupby(['Name','Month'])['Weight'].transform(find_perc_loss)
-```
-
-- **第四步：**比较减重效果（分析第4周数据）
-
-```python
-# 提取第4周数据
+# 提取第4周数据进行对比
 week4 = weight_loss.query('Week == "Week 4"')[['Name', 'Month', '减重比例']]
 
-# 分离两人数据,将月份设置为行索引, 方便两份数据进行计算
+# 分离两人数据并设置月份为索引（便于对齐计算）
 amy_week4 = week4.query('Name == "Amy"').set_index('Month')
 bob_week4 = week4.query('Name == "Bob"').set_index('Month')
 
-# 计算减重差异
-(bob_week4 - amy_week4).rename(columns={'减重比例': 'Bob减重比例 - Amy减重比例'})
+# 计算减重差异：Bob - Amy
+diff = (bob_week4 - amy_week4).rename(columns={'减重比例': 'Bob减重比例 - Amy减重比例'})
+# 结果解读：负值表示Amy减重效果更好
 ```
 
 ![image-20230903112123650](assets/image-20230903112123650.png)
 
-从数据中, 看出bob- Amy  三个月的数据是负值, 说明 amy 的减重比例高于bob,  amy 减重效果更好。
 
 
+### 2.4 数据筛选：Query 与 Filter
 
-**query方法**
+#### **2.4.1 query方法**
 
 `query()`是**pandas**中一个非常实用的 **`DataFrame`** 方法，它允许你使用字符串表达式来筛选数据（如果条件中还有字符串, 需要用不同类型的引号进行区分），类似于SQL中的WHERE子句。
 
@@ -336,7 +357,7 @@ bob_week4 = week4.query('Name == "Bob"').set_index('Month')
 
 
 
-**pandas中query方法与布尔索引的对比**
+#### **2.4.2 `query` vs 布尔索引**
 
 `query()`方法和布尔索引是**pandas**中两种常用的数据筛选方式，它们各有优缺点。下面从多个维度进行对比分析：
 
@@ -355,8 +376,6 @@ df.query('A > 2 and B < 50 or C == "a"')
 - query语法更简洁，更接近自然语言
 - 布尔索引需要使用`&`、`|`等运算符，而query可以使用`and`、`or`
 - 布尔索引需要重复写**`DataFrame`**名称，**`query`**不需要
-
-
 
 **2.可读性对比**
 
@@ -382,6 +401,8 @@ df.query('A > 2 and B in [10, 30] or C.str.startswith("a")')
 
 **3.列名处理**
 
+布尔索引处理特殊列名更方便
+
 ```python
 # 布尔索引 - 列名中有空格也能正常工作
 df[df['column with space'] > 10]
@@ -390,7 +411,7 @@ df[df['column with space'] > 10]
 df.query('`column with space` > 10')
 ```
 
-布尔索引处理特殊列名更方便
+布尔索引处理动态列名更直接
 
 ```python
 col = 'A'
@@ -401,23 +422,22 @@ df[df[col] > 2]
 df.query(f'{col} > 2')  # 或者 df.query('@col > 2')
 ```
 
-布尔索引处理动态列名更直接
+
+
+💡提示：`query()` 提供了一种类 SQL 的字符串筛选方式，代码可读性更强。
+
+| **维度**       | **query() 方法**                 | **布尔索引**                     |
+| -------------- | -------------------------------- | -------------------------------- |
+| **语法示例**   | `df.query('A > 2 and B < 50')`   | `df[(df['A']>2) & (df['B']<50)]` |
+| **逻辑符**     | `and`, `or`                      | `&`, `|`                         |
+| **变量引用**   | 使用 `@`: `df.query('A > @val')` | 直接使用: `df[df['A'] > val]`    |
+| **列名带空格** | 反引号: ``col name` > 10         | 字典访问: `df['col name'] > 10`  |
 
 
 
-**🛠️ Pandas技巧：`query()` vs 布尔索引**
-
-| 维度         | `query()` 方法                          | 布尔索引                             |
-| :----------- | :-------------------------------------- | :----------------------------------- |
-| **语法**     | `df.query('A>2 & B<50')`                | `df[(df.A>2) & (df.B<50)]`           |
-| **可读性**   | ★★★★★ (类自然语言)                      | ★★★☆☆ (需重复df引用)                 |
-| **运算符**   | 支持`and`/`or`                          | 必须用`&`/`|`                        |
-| **列名处理** | 空格列名需反引号: ``col name` > 10`     | 直接引用: `df['col name'] > 10`      |
-| **变量引用** | 需`@`符号: `df.query('A > @threshold')` | 直接使用变量: `df[df.A > threshold]` |
 
 
-
-### 2.4 分组过滤
+### 2.5 分组过滤
 
 **groupby** 分组之后, 接 **filter** 方法, 传入一个返回 **True** / **False** 的方法, 当数据传入这个方法中,返回True的会被留下, 返回False的会被过滤掉。
 
@@ -429,32 +449,48 @@ df.query(f'{col} > 2')  # 或者 df.query('@col > 2')
 - 返回`False` → 过滤掉整个分组
 
 ```python
-# 使用就餐人数进行分组, 过滤掉条目数少于5条的组
-tips.groupby('size').filter(lambda x:x['size'].count()>5)
+# 加载小费数据
+tips = pd.read_csv('data/tips.csv')
+
+# 过滤就餐人数(size)分组：只保留条目数>5的组
+# lambda x接收每个分组的DataFrame，返回True保留整个分组
+filtered_tips = tips.groupby('size').filter(
+    lambda x: x['size'].count() > 5  # 组内记录数大于5则保留
+)
+
+# 实际应用：过滤掉数据量过少的组，避免统计偏差
 ```
 
 
 
-### 2.5 DataFrameGroupby对象
+### 2.6 DataFrameGroupby对象
 
-DataFrameGroupBy对象是pandas中分组操作的核心，它由`groupby()`方法创建，提供了强大的数据分组和聚合功能。
+DataFrameGroupBy对象是pandas中分组操作的核心，它由`groupby()`方法创建，提供了强大的数据分组和聚合功能，支持延迟计算。
 
 ```python
-# 创建分组对象,按性别分组
+# 创建分组对象（此时不立即计算）
 grouped = tips_10.groupby('sex')
 
-# 返回了分组的情况 {'组中的取值':[取值对应的条目索引列表]}
-grouped.groups  # {'Female': [198, 124, 101], 'Male': [24, 6, 153, 211, 176, 192, 9]}
+# ==================== 核心属性与方法 ====================
 
-# 可以获取每组中的数据 (DataFrame)
-grouped.get_group('Female')
+# 属性1：查看分组结构（字典：组值 → 索引列表）
+print(grouped.groups)  
+# 输出：{'Female': [198, 124, 101], 'Male': [24, 6, 153, 211, 176, 192, 9]}
 
-# 可以遍历这个DataFrameGroupby对象，每个group 都是一个元组 (分组的值, 这一组对应数据的DataFrame)
-for group in grouped:
-    # print(group)
-    print(type(group[1]))
+# 方法2：获取指定组的完整DataFrame
+female_group = grouped.get_group('Female')
+print(f"女性组记录数：{len(female_group)}")
 
+# 方法3：遍历分组（返回元组：(组名, 组DataFrame)）
+for group_name, group_data in grouped:
+    print(f"\n组名：{group_name}")
+    print(f"类型：{type(group_data)}")  # <class 'pandas.core.frame.DataFrame'>
+    print(f"前2条数据：\n{group_data.head(2)}")
 
+# 方法4：分组统计（自动聚合）
+mean_size_by_sex = grouped['size'].mean()
+print("\n按性别平均就餐人数：")
+print(mean_size_by_sex)
 ```
 
  **核心属性与方法**
@@ -471,18 +507,29 @@ for group in grouped:
 **复合索引(MultiIndex)**
 
 ```python
-# 多字段分组的时候, 返回的是复合索引
-result = tips_10.groupby(['sex','time'])['size'].mean()
-result.loc[('Female', 'Dinner')] # 获取复合索引后, 需要使用索引对应的元组才能获取到对应行的数据
+# ==================== 复合索引处理 ====================
 
-# 将复合索引变成普通的索引
-result.reset_index()
-tips_10.groupby(['sex','time'],as_index = False)
+# 多字段分组产生MultiIndex
+result = tips_10.groupby(['sex', 'time'])['size'].mean()
+print("\n复合索引结果：")
+print(result)
+
+# 访问复合索引：必须使用元组
+print("\n访问Female-Dinner数据：")
+print(result.loc[('Female', 'Dinner')])
+
+# 重置索引为普通列
+result_reset = result.reset_index()  # 将索引转换为普通列
+print("\n重置索引后：")
+print(result_reset)
+
+# 或直接设置as_index=False
+result_no_index = tips_10.groupby(['sex', 'time'], as_index=False)['size'].mean()
 ```
 
 
 
-## 3、会员分析和数据透视表
+## 3. 会员运营数据透视分析
 
 **任务：分析会员运营的基本情况**
 
