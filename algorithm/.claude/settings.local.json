@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not exist \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\ai_learn\\\\algorithm\\\\learning_progress\\\\sessions\\\\2026-01-05\" mkdir:*)"
+    ]
+  }
+}
