@@ -743,7 +743,7 @@ x = data[['Pclass','Sex','Age']].copy()
 y = data['Survived'].copy()
 
 x['Age'].fillna(x['Age'].mean(),inplace = True)
-x=pd.get_dummies(x)
+x=pd.get_dummies(x)  # 创建独热编码
 
 x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2)
 
@@ -889,7 +889,6 @@ f(x) =
 8.91 & \text{if } x > 6.5
 \end{cases}
 $$
-
 
 
 

@@ -1108,7 +1108,8 @@ x_test=process.transform(x_test)
 # 4.模型训练
 # 4.1 实例化(正规方程)
 # model =LinearRegression(fit_intercept=True)
-model = SGDRegressor(learning_rate='constant',eta0=0.01)
+model = SGDRegressor(learning_rate='constant',eta0=0.01) # learning_rate='constant'：在整个训练过程中，学习率将保持不变，始终等于 eta0（即 0.01）。
+
 # 4.2 fit
 model.fit(x_train,y_train)
 
@@ -1218,7 +1219,7 @@ x = np.random.uniform(-3,3,size = 100)
 # 线性回归模型需要二维数组
 X = x.reshape(-1,1)  # -1代表行不管多少行
 
-y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = 100,1)  
+y = 0.5* x**2 + x+2 +np.random.normal(0,1,size = 100)  
 
 estimator = LinearRegression()
 estimator.fit(X,y)
