@@ -179,5 +179,3 @@ cython_debug/
 *.DS_Store
 
 .vscode
-CLAUDE.md
-GEMINI.md
