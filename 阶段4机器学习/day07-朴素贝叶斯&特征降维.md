@@ -348,67 +348,57 @@ $0.432 > 0.008 \quad \Rightarrow \quad \hat{y} = \text{垃圾邮件}$
 
 ## 2、特征降维
 
-### 2.1 特征降维简介
+### 2.1 降维概述
 
-用于训练的数据集特征对模型的性能有着极其重要的作用。如果训练数据中包含一些不重要的特征，可能导致模型的泛化性能不佳。例如：
+**核心问题**：高维特征可能导致模型泛化性能下降。
 
-- 某些特征的取值较为接近，其包含的信息较少。  
-- 我们希望特征独立存在并对预测产生影响。具有相关性的特征可能并不会给模型带来更多的信息（但相关性并非完全无用）。
+**典型场景**：
 
+- **低方差特征**：取值相近，信息量低
+- **高相关特征**：冗余信息，未提供额外价值
 
+**降维方法对比**：
 
-**降维**是指在某些限定条件下降低特征个数。接下来介绍几种特征降维的方法：  
-
-- 低方差过滤法  
-- 相关系数法  
-- PCA（主成分分析）降维法  
+| 方法           | 原理                 | 适用场景       | 特点                       |
+| :------------- | :------------------- | :------------- | :------------------------- |
+| **低方差过滤** | 删除方差低于阈值特征 | 快速初步筛选   | 计算简单，可能丢失局部信息 |
+| **PCA**        | 线性变换保最大方差   | 高维数据压缩   | 无损信息，创造新特征       |
+| **相关系数**   | 移除高度相关特征     | 特征解释性分析 | 保留原始特征，可解释性强   |
 
 
 
 ### 2.2 低方差过滤法
 
-定义：  
-- 特征方差小：某个特征大多样本的值比较相近，即 $\text{Var}(X) \approx 0$。  
-- 特征方差大：某个特征很多样本的值差别较大，即 $\text{Var}(X) \gg 0$。  
-
-
-
-**低方差过滤法**通过删除方差低于设定阈值的特征来实现降维。  
+**原理**：删除方差接近零的特征。
 
 ```python
 from sklearn.feature_selection import VarianceThreshold
 
-# 初始化方差阈值选择器，默认 threshold=0.0（删除零方差特征）
-selector = VarianceThreshold(threshold=0.0)  
+# 初始化：删除方差低于阈值的特征
+selector = VarianceThreshold(threshold=0.1)
 
-# 拟合并转换数据，X 为 numpy array 格式 [n_samples, n_features]
-X_filtered = selector.fit_transform(X)  
+# 拟合并转换
+X_filtered = selector.fit_transform(X)  # X: [n_samples, n_features]
 ```
 
-> 在数据集中，删除方差低于 threshold 的特征将被删除，默认值是保留所有非零方差特征，即删除所有样本中具有相同值的特征。
-
-
-
-**示例：垃圾邮件分类数据降维**
+**应用示例**：
 
 ```python
-from sklearn.feature_selection import VarianceThreshold
 import pandas as pd
+from sklearn.feature_selection import VarianceThreshold
 
-# 1. 读取数据集
+# 1. 加载高维数据
 data = pd.read_csv('data/垃圾邮件分类数据.csv')
-print("原始数据维度:", data.shape)  # 输出: (971, 25734)
+print(f"原始数据维度: {data.shape}")  # (971, 25734)
 
-# 2. 应用方差过滤（阈值=0.1）
+# 2. 应用方差过滤
 transformer = VarianceThreshold(threshold=0.1)
 data_filtered = transformer.fit_transform(data)
-print("降维后数据维度:", data_filtered.shape)  # 输出: (971, 1044)
+
+print(f"降维后数据维度: {data_filtered.shape}")  # (971, 1044)
 ```
 
-> 结果说明
->
-> - 原始数据含 25,734 个特征，经低方差过滤后保留 1,044 个特征。
-> - 阈值 `threshold=0.1` 删除了方差 < 0.1 的冗余特征，显著降低维度。
+**效果**：特征数从 **25,734** 降至 **1,044**，保留方差显著特征。
 
 
 
@@ -416,91 +406,91 @@ print("降维后数据维度:", data_filtered.shape)  # 输出: (971, 1044)
 
 <img src="assets/day07\16.png" style="zoom: 33%;" />
 
-通过线性变换将高维数据投影到低维空间，保留最大方差的方向（主成分）。数学表示为：
+**核心思想**：线性投影至低维空间，保留最大方差方向。
+
+**数学表达**：
+
 $$
 X_{\text{PCA}} = X \cdot W
 $$
-其中 $W$ 是特征向量矩阵，按特征值降序排列。
 
-> PCA 通过对数据维数进行压缩，尽可能降低原数据的维数（复杂度），损失少量信息，在此过程中可能会舍弃原有数据、创造新的变量。
+其中 \( W \) 为按特征值降序排列的特征向量矩阵。
 
 ```python
 from sklearn.decomposition import PCA
 from sklearn.datasets import load_iris
 
-# 1. 加载数据集
+# 加载数据
 x, y = load_iris(return_X_y=True)
-print(x[:5])
 
-# [[5.1 3.5 1.4 0.2]
-#  [4.9 3.  1.4 0.2]
-#  [4.7 3.2 1.3 0.2]
-#  [4.6 3.1 1.5 0.2]
-#  [5.  3.6 1.4 0.2]]
+# 方式1：按信息保留比例降维
+pca_ratio = PCA(n_components=0.95)  # 保留95%方差
+x_pca_95 = pca_ratio.fit_transform(x)
+print(f"降维后形状: {x_pca_95.shape}")  # (150, 2)
 
-# 2. 保留指定比例的信息
-transformer = PCA(n_components=0.95)
-x_pca = transformer.fit_transform(x)
-print(x_pca[:5])
-# [[-2.68412563  0.31939725]
-#  [-2.71414169 -0.17700123]
-#  [-2.88899057 -0.14494943]
-#  [-2.74534286 -0.31829898]
-#  [-2.72871654  0.32675451]]
-
-
-# 3. 保留指定数量特征
-transformer = PCA(n_components=2)
-x_pca = transformer.fit_transform(x)
-print(x_pca[:5])
-
-# [[-2.68412563  0.31939725]
-# [-2.71414169 -0.17700123]
-# [-2.88899057 -0.14494943]
-# [-2.74534286 -0.31829898]
-# [-2.72871654  0.32675451]]
+# 方式2：指定目标维度
+pca_fixed = PCA(n_components=2)  # 强制降至2维
+x_pca_2 = pca_fixed.fit_transform(x)
+print(f"前5个样本:\n{x_pca_2[:5]}")
 ```
 
+**输出示例**：
+
+```
+[[-2.68412563  0.31939725]
+ [-2.71414169 -0.17700123]
+ [-2.88899057 -0.14494943]
+ [-2.74534286 -0.31829898]
+ [-2.72871654  0.32675451]]
+```
+
+⚠️ **重要区别**：
+
+- `n_components=0.95`：自动选择维度以保留95%信息
+- `n_components=2`：强制降为2维，可能损失较多信息
 
 
-###  2.4 相关系数法
 
-- 通过计算特征间的相关系数衡量其关系强度：
-  - **皮尔逊相关系数**：衡量线性相关（$r \in [-1,1]$）
-  - **斯皮尔曼相关系数**：衡量单调相关（$\rho \in [-1,1]$）
-
-
+### 2.4 相关系数法
 
 #### 2.4.1 皮尔逊相关系数
-**公式**
-$$
-r = \frac{n\sum xy - (\sum x)(\sum y)}{\sqrt{n\sum x^2 - (\sum x)^2} \cdot \sqrt{n\sum y^2 - (\sum y)^2}}
-$$
 
+**适用**：衡量**线性**相关程度（$r \in [-1, 1]$）
+
+**计算公式**：
+$$
+r = \frac{n\sum xy - (\sum x)(\sum y)}{\sqrt{[n\sum x^2 - (\sum x)^2][n\sum y^2 - (\sum y)^2]}}
+$$
 
 ![image-20250703165409780](assets\image-20250703165409780-1751532857272-1.png)
 
-计算：
+**示例计算**（假设数据）：
 $$
-r = \frac{10 \times 16679.09 - 346.2 \times 422.5}{\sqrt{10 \times 14304.52 - 346.2^2} \sqrt{10 \times 19687.81 - 422.5^2}} = 0.994
+r = \frac{10 \times 16679.09 - 346.2 \times 422.5}{\sqrt{(10 \times 14304.52 - 346.2^2)(10 \times 19687.81 - 422.5^2)}} = 0.994
 $$
 
-**结论**：$r \approx 0.99$（高度线性相关）
+**解读**：
+
+| $r$ 值域  | 相关强度 | 业务含义               |
+| --------- | -------- | ---------------------- |
+| 0.8 ~ 1.0 | 极强相关 | 可考虑删除其中一个特征 |
+| 0.6 ~ 0.8 | 强相关   | 需结合业务判断         |
+| 0.4 ~ 0.6 | 中等相关 | 保留两者可能有益       |
+| < 0.4     | 弱相关   | 建议保留               |
 
 
 
 #### 2.4.2 斯皮尔曼相关系数
-**公式**
+
+**适用**：衡量**单调**相关程度（$\rho \in [-1, 1]$），不要求线性
+
+**计算公式**：
 $$
 \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)}
 $$
-（$d_i$ 为两变量秩次差）
-
-
-
 上面的公式中， $d_i$为样本中不同特征在数据中排序的序号差值，计算举例如下所示
 
-<img src="assets/day07\spm.png" />
+<img src="assets/day07\spm.png" style="zoom: 67%;" />
 
 计算：
 $$
@@ -511,27 +501,65 @@ $$
 
 
 
-**示例**
+**实战代码对比**：
 
 ```python
-import pandas as pd
-from sklearn.feature_selection import VarianceThreshold
-from scipy.stats import pearsonr
-from scipy.stats import spearmanr
+from scipy.stats import pearsonr, spearmanr
 from sklearn.datasets import load_iris
+import pandas as pd
 
+# 加载数据
+iris = load_iris()
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
 
-# 1. 读取数据集(鸢尾花数据集)
-data = load_iris()
-data = pd.DataFrame(data.data, columns=data.feature_names)
+# 计算花萼长度与宽度的相关性
+feature_x = df['sepal length (cm)']
+feature_y = df['sepal width (cm)']
 
-# 2. 皮尔逊相关系数
-corr = pearsonr(data['sepal length (cm)'], data['sepal width (cm)'])
-print(corr, '皮尔逊相关系数:', corr[0], '不相关性概率:', corr[1])
-# (-0.11756978413300204, 0.15189826071144918) 皮尔逊相关系数: -0.11756978413300204 不相关性概率: 0.15189826071144918
+# 皮尔逊相关系数
+pearson_corr, pearson_p = pearsonr(feature_x, feature_y)
+print(f"皮尔逊相关系数: {pearson_corr:.4f}")
+print(f"p-value: {pearson_p:.4f} (p<0.05表示显著)")
+# 皮尔逊相关系数: -0.11756978413300204 不相关性概率: 0.15189826071144918   结果: -0.1176，弱负相关
 
-# 3. 斯皮尔曼相关系数
-corr = spearmanr(data['sepal length (cm)'], data['sepal width (cm)'])
-print(corr, '斯皮尔曼相关系数:', corr[0], '不相关性概率:', corr[1])
-# SpearmanrResult(correlation=-0.166777658283235, pvalue=0.04136799424884587) 斯皮尔曼相关系数: -0.166777658283235 不相关性概率: 0.04136799424884587
+# 斯皮尔曼相关系数
+spearman_corr, spearman_p = spearmanr(feature_x, feature_y)
+print(f"斯皮尔曼相关系数: {spearman_corr:.4f}")
+print(f"p-value: {spearman_p:.4f}")
+# 斯皮尔曼相关系数: -0.166777658283235 不相关性概率: 0.04136799424884587  结果: -0.1668，弱单调负相关
 ```
+
+💡 **选择建议**：
+
+- 数据呈线性分布 → 皮尔逊
+- 数据非线性但单调 → 斯皮尔曼
+- 存在异常值 → 斯皮尔曼更鲁棒
+
+
+
+## 3. 方法总结与选型指南
+
+### 3.1 场景化选型决策树
+
+```mermaid
+graph TD
+    A[开始特征处理] --> B{目标是什么?}
+    B -->|快速预处理| C[低方差过滤]
+    B -->|理解特征关系| D[相关系数法]
+    B -->|最大化保真压缩| E[PCA降维]
+    C --> F[设置threshold阈值]
+    D --> G{数据分布?}
+    G -->|线性| H[皮尔逊r]
+    G -->|非线性| I[斯皮尔曼ρ]
+    E --> J{指定维度?}
+    J -->|是| K[n_components=整数]
+    J -->|否| L[n_components=0~1]
+```
+
+### 3.2 关键参数速查表
+
+| 方法           | 核心参数       | 推荐值    | 作用                     |
+| -------------- | -------------- | --------- | ------------------------ |
+| **朴素贝叶斯** | `alpha`        | 1.0       | 平滑系数，防止零概率     |
+| **低方差过滤** | `threshold`    | 0.0~0.5   | 方差阈值，删除低信息特征 |
+| **PCA**        | `n_components` | 0.95或2-3 | 信息保留比例或目标维度   |
