@@ -370,6 +370,7 @@ claude 应协助用户维护以下结构的学习记录：
 * 用户的初始思路与遇到的困难。
 * 讲解的核心模式与优化点。
 * 最终代码实现。
+* 复习内容（问答、代码重写）
 
 **2. 进度跟踪器 (`/learning_progress/algorithm_progress_tracker.md`)**
 
