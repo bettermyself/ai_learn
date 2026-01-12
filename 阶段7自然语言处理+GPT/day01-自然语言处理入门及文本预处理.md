@@ -369,8 +369,8 @@ def dm_onehot_gen():
     joblib.dump(mytokenizer, mypath)
     print('保存mytokenizer End')
 
-    # 注意5-1 字典没有顺序 onehot编码没有顺序 []-有序 {}-无序 区别
-    # 注意5-2 字典有的单词才有idx idx从1开始
+    # 注意5-1 集合没有顺序 onehot编码没有顺序 []-有序 {}-无序 区别
+    # 注意5-2 集合有的单词才有idx idx从1开始
     # 注意5-3 查询没有注册的词会有异常 eg: 狗蛋
     print(mytokenizer.word_index)
     print(mytokenizer.index_word)

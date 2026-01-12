@@ -326,11 +326,11 @@ def build_vocab():
         for word in words:
             if word not in unique_words:
                 unique_words.append(word)
-        # unique_words.extend([w for w in words if w not in unique_words])  # 去重，不能使用这个方法，unique_words不会动态更新
+        # unique_words.extend([w for w in words if w not in unique_words])  # 去重，不能使用这个方法，unique_words不会动态更新，它会对 words 中的每一个元素进行判断。关键点在于： 在这个推导式运行结束并生成新列表之前，unique_words 本身的内容完全没有变化。
 
     # 构建映射
     word_to_index = {word: idx for idx, word in enumerate(unique_words)}
-    corpus_idx = [word_to_index[w] for words in all_words for w in words + [' ']]  # 添加句子结束符
+    corpus_idx = [word_to_index[w] for words in all_words for w in words + [' ']]  # 添加句子结束符，让模型学习区分不同的句子
     # 对于每个 words（一个句子的分词列表）
     # 将这个句子转换为 words + [' ']，即在原句子末尾添加一个空格字符
     # 然后对这个新列表中的每个元素 w（包括空格字符），都通过 word_to_index[w] 查找其对应的索引
@@ -394,7 +394,7 @@ class TextGenerator(nn.Module):
     def forward(self, inputs, hidden):
         """前向传播：输入形状(batch, seq_len)"""
         embed = self.ebd(inputs).transpose(0, 1)  # 输出(seq_len, batch, 128)
-        output, hidden = self.rnn(embed, hidden)  # RNN输出：(seq_len, batch, 256)
+        output, hidden = self.rnn(embed, hidden)  # RNN输出：(seq_len, batch, 128)
         output = self.out(output.reshape(-1, 128))  # 输出：(seq_len*batch, word_count)
         return output, hidden
 
@@ -421,7 +421,7 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     for epoch in range(10):
-        dataloader = DataLoader(dataset, shuffle=True, batch_size=8)  # 批次大小2
+        dataloader = DataLoader(dataset, shuffle=True, batch_size=8)  # 批次大小8
         total_loss = 0
         start_time = time.time()
 

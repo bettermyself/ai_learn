@@ -329,7 +329,11 @@ def calculate_bleu_scores(reference, candidate):
     return bleu_1, bleu_2, bleu_3, bleu_4
 
 # 示例使用
-reference_texts = [['This', 'is', 'a', 'reference', 'text.']]
+reference_texts = [['This', 'is', 'a', 'reference', 'text.']]  # sentence_bleu 要求 reference 使用双重列表，核心原因在于 BLEU 算法的设计初衷是支持“多参考答案”对比的。假设我们要翻译一句中文：“我饿了”。 由于翻译的灵活性，我们可以提供三个都正确的参考答案：
+# "I am hungry."
+# "I'm hungry."
+# "I feel hungry."
+
 generated = ['This', 'is', 'some', 'generated', 'text.']
 
 bleu_scores = calculate_bleu_scores(reference_texts, generated)
