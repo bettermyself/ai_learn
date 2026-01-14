@@ -154,7 +154,7 @@ class Encoder(nn.Module):
         N : int
             需要堆叠的层数。
         """
-        super(Encoder, self).__init__()
+        super().__init__()
         # 深度拷贝 N 份编码器层
         self.layers = clones(layer, N)
         # 末端 LayerNorm，维度与层内保持一致
