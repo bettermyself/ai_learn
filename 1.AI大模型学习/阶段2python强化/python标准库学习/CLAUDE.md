@@ -68,6 +68,7 @@ This repository emphasizes **Python 3.9+** best practices:
 - Content is designed for **self-paced learning** - each module can be studied independently
 - Code examples are embedded directly in markdown files for easy reference
 - **速查表内容限制原则**: `00_速查表.md` 只应包含各模块学习笔记中实际讲解过的 API，不得超出学习范围添加额外内容。速查表是学习笔记的浓缩复习版本，而非完整的API文档。
+- **复习追踪表更新规则**: 当更新速查表添加新模块时，复习追踪表中该新模块的"今日"列应保持为 `□`（不打勾），因为用户尚未进行复习。勾选只应在用户主动复习时进行。
 
 ## Common Tasks
 
