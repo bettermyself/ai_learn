@@ -132,4 +132,44 @@ class Solution:
 ## 复习记录
 | 日期 | 复习内容 | 状态 |
 |:-----|:---------|:-----|
-| 待定 | Day 15: 对撞指针 + LeetCode 125 | ⏳ |
+| 2026-01-23 | Day 15: 对撞指针 + LeetCode 125 | ✓ 知识点完全巩固 |
+
+---
+
+## Day 16 复习内容
+
+**复习问题**：
+1. 对撞指针的初始化位置是什么？
+   - 答：`left = 0`, `right = len(s) - 1`
+
+2. 循环终止条件是什么？
+   - 答：`left >= right`（即 `left < right` 时继续）
+
+3. 如何跳过非字母数字字符？
+   - 答：使用 `.isalnum()` 判断，配合 `continue` 跳过
+
+4. 如何忽略大小写？
+   - 答：统一转小写 `.lower()` 后比较
+
+**手写代码验证**：
+```python
+class Solution:
+    def isPalindrome(self, s: str) -> bool:
+        s = s.lower()
+        left, right = 0, len(s) - 1
+        while left < right:
+            if not s[left].isalnum():
+                left += 1
+                continue
+            if not s[right].isalnum():
+                right -= 1
+                continue
+            if s[left] == s[right]:
+                left += 1
+                right -= 1
+            else:
+                return False
+        return True
+```
+
+✅ **复习总结**：知识点完全巩固，能够独立写出正确代码
