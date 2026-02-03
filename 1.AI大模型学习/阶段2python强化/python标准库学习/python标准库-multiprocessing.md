@@ -225,11 +225,15 @@ def create_dummy_files(directory, count=10):
 # ----------------- 核心任务：计算 MD5 -----------------
 def compute_md5(file_path):
     """计算单个文件的MD5，这是一个CPU密集型任务"""
+    # 初始化 MD5 对象
     hash_md5 = hashlib.md5()
     try:
         with open(file_path, "rb") as f:
+          	# 使用 iter(lambda: f.read(4096), b'') 每次读取 4096 字节的数据块，直到文件末尾。
             for chunk in iter(lambda: f.read(4096), b""):
+            		# 用 hash_md5.update(chunk) 将每个数据块逐步更新到 MD5 哈希对象中，避免一次性加载大文件导致内存占用过高
                 hash_md5.update(chunk)
+        # 调用 hash_md5.hexdigest() 获取最终的 MD5 哈希值（十六进制字符串格式）
         return (file_path, hash_md5.hexdigest())
     except Exception as e:
         return (file_path, str(e))
@@ -249,6 +253,7 @@ def run_parallel_hasher():
     
     # 2. 并行处理
     # 使用 imap_unordered 可以让完成的任务尽快返回，而不是等待前面的任务
+    # 在没有显式指定进程数量的情况下，multiprocessing.Pool 会默认使用与 CPU 核心数相同的进程数量
     with Pool() as pool:
         results = pool.imap_unordered(compute_md5, files)
         
@@ -264,13 +269,12 @@ if __name__ == '__main__':
     run_parallel_hasher()
     
     # 清理生成的测试文件
-    import shutil
+    import shutil1
     # shutil.rmtree("./test_data") # 如果想保留文件观察结果，请注释掉这行
 ```
 
 ## 三、 关键注意事项 (Gotchas)
 
-* **Windows 下的 Pickle 问题：** multiprocessing 在 Windows 上会通过 pickle 序列化对象传递给子进程。如果你的函数定义在类内部，或者使用了 lambda 函数，可能会导致序列化失败。尽量使用顶层函数。
 * **`if __name__ == '__main__':`：** 这一点至关重要。Windows 创建新进程时会导入主模块。如果不加这个判断，会导致递归创建进程，直到机器崩溃（Fork vs Spawn 机制的区别）。
 * **死锁（Deadlock）：** 如果在使用 Lock 或 Queue 时发生异常导致锁未释放，程序会永久挂起。尽量使用上下文管理器（`with lock:`）。
 * **僵尸进程：** 确保主进程调用了 `join()`，或者使用了 `with Pool() ...`，否则子进程结束后可能变成僵尸进程占用系统资源。
