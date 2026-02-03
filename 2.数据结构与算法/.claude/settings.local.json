@@ -5,5 +5,6 @@
       "Bash(/c/Users/Administrator/AppData/Local/Programs/Python/Python312/python.exe:*)",
       "Skill(glm-plan-usage:usage-query-skill)"
     ]
-  }
+  },
+  "disableAllHooks": false
 }
