@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Display 属性实验</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; padding: 20px; }
+
+        /* 实验对象 1：霸道的 div */
+        .box {
+            display: inline-block;
+            background-color: lightblue;
+            border: 2px solid blue;
+            width: 150px;
+            height: 50px;
+            margin-bottom: 20px;
+        }
+
+        /* 实验对象 2：柔弱的 span */
+        .text-highlight {
+            display: inline-block;
+            background-color: yellow;
+            border: 1px solid orange;
+            width: 200px; /* 陷阱：这对 span 生效吗？ */
+            height: 100px; /* 陷阱：这对 span 生效吗？ */
+            margin-top: 50px; /* 陷阱：这对 span 生效吗？ */
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>默认行为</h2>
+    <div class="box">我是 div (Block)</div>
+    <div class="box">我也是 div</div>
+
+    <p>
+        这是一段话，中间有一个 
+        <span class="text-highlight">span (Inline)</span> 
+        被高亮了。
+    </p>
+
+    <h2>隐藏实验</h2>
+    <div class="box" style="background-color: red;">我是红色 (Normal)</div>
+    <div class="box" style="background-color: green; display: none;">我是绿色 (Display None)</div>
+    <div class="box" style="background-color: blue;">我是蓝色 (Normal)</div>
+    
+    <hr>
+
+    <div class="box" style="background-color: red;">我是红色 (Normal)</div>
+    <div class="box" style="background-color: green; visibility: hidden;">我是绿色 (Visibility Hidden)</div>
+    <div class="box" style="background-color: blue;">我是蓝色 (Normal)</div>
+
+</body>
+</html>
