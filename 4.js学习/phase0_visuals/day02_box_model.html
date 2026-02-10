@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>CSS 盒子模型实验</title>
+    <style>
+        * {
+            box-sizing: border-box; /* 让 padding 和 border 包含在宽高内 */
+        }
+        body {
+            font-family: sans-serif;
+            background-color: pink;
+        }
+        .profile-card {
+            width: 200px;
+            background-color: white;
+            border: 1px solid blue;
+            padding: 20px; /* 内边距 */
+            margin: 30px; /* 外边距 */
+        }
+       
+        
+    </style>
+</head>
+<body>
+
+    <div class="profile-card">
+        我是内容 (Content)
+    </div>
+
+    <div class="profile-card">
+        我是邻居，我挨得很近
+    </div>
+
+</body>
+</html>
