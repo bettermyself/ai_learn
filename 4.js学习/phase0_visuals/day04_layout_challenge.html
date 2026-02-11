@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> 仿 ChatGPT 侧边栏布局</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            height: 100vh;
+            display: flex;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: bisque;
+        }
+        .main {
+            flex: 1;
+            background-color: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+
+        }
+        .char-area {
+            flex:1;
+            overflow-y: auto;
+        }
+        .input-area {
+            height: 80px;
+            width: auto;
+            background-color: lightgreen;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar"></div>
+        <div class="main">
+            <div class="char-area"></div>
+            <div class="input-area"></div>
+        </div>
+    </div>
+    
+</body>
+</html>
