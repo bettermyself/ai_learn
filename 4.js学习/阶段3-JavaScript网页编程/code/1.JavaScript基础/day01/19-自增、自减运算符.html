@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自增、自减运算符</title>
+</head>
+
+<body>
+  <script>
+    // 1. 自增运算符： 可以让变量里面的值加1
+    // let x = 3
+    // // x++   // x = x + 1 或者  x += 1 
+    // ++x
+    // console.log(x)
+
+    // 2. ++在前和++在后的区别。 如果单独使用，没有区别，如果参与了运算就有区别
+    // 2.1 ++在前  前缀式 ： 先对变量值+1， 然后拿着变量值做运算
+    // let x = 3
+    // let y = ++x
+    // console.log(y) // 4
+    // console.log(x) // 4
+
+    // 2.2 ++在后 后缀式 ： 先拿着变量值运算，再对变量值+1 
+    let x = 3
+    let y = x++
+    console.log(y);
+    console.log(x);
+    
+  </script>
+</body>
+
+</html>
