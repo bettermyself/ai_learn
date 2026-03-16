@@ -334,5 +334,5 @@ sudo chown root test1.txt
 
 # 修改用户组为 root（itheima 变为其他用户）
 sudo chown :root test1.txt
--rw-rw-r-- 1 itheima root test1.txt  # itheima 仅保留读权限
+-rw-rw-r-- 1 root root test1.txt  # itheima 仅保留读权限
 ```
