@@ -185,13 +185,11 @@ SELECT pname, price FROM product;
 SELECT pname, price + 10 AS new_price FROM product;  -- 所有商品价格+10元显示
 
 -- 条件查询（WHERE子句）
-SELECT pname, price FROM product 
-WHERE price BETWEEN 200 AND 800;  -- 查询价格在200-800之间的商品
+SELECT pname, price FROM product WHERE price BETWEEN 200 AND 800;  -- 查询价格在200-800之间的商品
 select * from product where  price>=200 and price <=800; -- 下面这句相当于 between 200 and 800
 
 -- IN查询：枚举具体取值（非范围）
-SELECT pname, price FROM product 
-WHERE price IN (200, 800);  -- 精确匹配200或800的商品
+SELECT pname, price FROM product WHERE price IN (200, 800);  -- 精确匹配200或800的商品
 select * from product where  price=200 or price =800; -- 下面这句相当于 in (200, 800)
 
 
@@ -219,21 +217,21 @@ SELECT * FROM 表名 ORDER BY 排序字段 ASC|DESC;  -- ASC 升序 / DESC 降�
 SELECT * FROM product ORDER BY price DESC;  -- 按价格从高到低排序
 
 -- 多列排序：先按第一字段排序，相同则按第二字段排序
-SELECT * FROM product 
-ORDER BY price DESC, category_id DESC;  -- 价格相同再按分类降序
+SELECT * FROM product ORDER BY price DESC, category_id DESC;  -- 价格相同再按分类降序
 
 -- 💡 技巧：多字段排序时，只有第一字段有重复值，第二字段排序才生效
 ```
 
 ### 2.3 聚合函数
 
-| 函数      | 功能描述                         | 是否忽略NULL |
-| :-------- | :------------------------------- | :----------- |
-| `COUNT()` | 统计行数或指定字段的非NULL值数量 | ✅            |
-| `SUM()`   | 计算数值列总和                   | ✅            |
-| `MAX()`   | 获取最大值                       | ✅            |
-| `MIN()`   | 获取最小值                       | ✅            |
-| `AVG()`   | 计算平均值                       | ✅            |
+| 函数          | 功能描述             | 是否忽略NULL |
+| :------------ | :------------------- | :----------- |
+| `COUNT(*)`    | 统计行数             | ❌            |
+| `COUNT(字段)` | 统计字段非NULL值数量 | ✅            |
+| `SUM()`       | 计算数值列总和       | ✅            |
+| `MAX()`       | 获取最大值           | ✅            |
+| `MIN()`       | 获取最小值           | ✅            |
+| `AVG()`       | 计算平均值           | ✅            |
 
 ```sql
 -- 统计所有商品数量
@@ -270,9 +268,9 @@ SELECT category_id, COUNT(*) AS product_count
 FROM product
 GROUP BY category_id
 HAVING product_count > 2;  -- HAVING用于分组后的条件过滤
-
--- ⚠️ 注意：WHERE用于分组前过滤，HAVING用于分组后过滤
 ```
+
+⚠️ **注意**：`WHERE` 用于分组前过滤，`HAVING` 用于分组后过滤。
 
 💡提示：当需求中出现， 每一个/每一种/每一组/每一类 这样的字样, 考虑使用group by 分组。
 
@@ -300,12 +298,12 @@ SELECT * FROM product LIMIT 20, 10;
 
 ```sql
 SELECT [DISTINCT] 列名1, 列名2, ...    -- 1. 选择字段（去重）
-FROM 表名                           -- 2. 指定数据源
-[WHERE 条件]                        -- 3. 原始数据过滤
-[GROUP BY 分组列]                   -- 4. 数据分组
-[HAVING 分组条件]                   -- 5. 分组结果过滤
-[ORDER BY 排序列 [ASC|DESC]]        -- 6. 结果排序
-[LIMIT [偏移量,] 行数];              -- 7. 结果分页
+FROM 表名                           	-- 2. 指定数据源
+[WHERE 条件]                        	-- 3. 原始数据过滤
+[GROUP BY 分组列]                   	 -- 4. 数据分组
+[HAVING 分组条件]                   	-- 5. 分组结果过滤
+[ORDER BY 排序列 [ASC|DESC]]        	-- 6. 结果排序
+[LIMIT [偏移量,] 行数];               -- 7. 结果分页
 
 -- 执行优先级：WHERE → GROUP BY → HAVING → ORDER BY → LIMIT
 ```
@@ -379,6 +377,8 @@ CREATE TABLE user_detail (
     FOREIGN KEY (user_id) REFERENCES user(user_id)  -- 外键约束保证一对一
 );
 ```
+
+> **总结**：外键的核心要求是**引用目标必须具有唯一性约束**
 
 
 
@@ -483,8 +483,7 @@ INSERT INTO kongfu VALUES
 返回**两表交集**，仅保留匹配成功的记录。
 
 ```sql
--- 语法：INNER JOIN ... ON 连接条件
--- OUTER关键字可省略，JOIN默认为INNER JOIN
+-- 语法：INNER JOIN ... ON 连接条件(其中INNER可省略)
 SELECT 
     h.hname AS 英雄名,
     k.kname AS 武功名
@@ -499,7 +498,7 @@ INNER JOIN kongfu k ON h.kongfu_id = k.kid;  -- 仅返回有匹配武功的英�
 返回**左表全部记录**，右表不匹配字段填充NULL。
 
 ```sql
--- 语法：LEFT [OUTER] JOIN ... ON 连接条件
+-- 语法：LEFT JOIN ... ON 连接条件
 SELECT 
     h.hname AS 英雄名,
     k.kname AS 武功名
@@ -514,7 +513,7 @@ LEFT JOIN kongfu k ON h.kongfu_id = k.kid;  -- 左表hero全部保留
 返回**右表全部记录**，左表不匹配字段填充NULL。
 
 ```sql
--- 语法：RIGHT [OUTER] JOIN ... ON 连接条件
+-- 语法：RIGHT JOIN ... ON 连接条件
 SELECT 
     h.hname AS 英雄名,
     k.kname AS 武功名
@@ -526,11 +525,11 @@ RIGHT JOIN kongfu k ON h.kongfu_id = k.kid;  -- 右表kongfu全部保留
 
 #### 连接方式对比表
 
-| 连接类型       | 返回结果            | 使用场景                                      | 数据完整性             |
-| :------------- | :------------------ | :-------------------------------------------- | :--------------------- |
-| **INNER JOIN** | 仅两表匹配的记录    | 查询有效关联数据                              | 严格，丢失不匹配数据   |
-| **LEFT JOIN**  | 左表全部 + 右表匹配 | 保留左表完整性（如查询所有用户及其订单）      | 保留左表，右表可为NULL |
-| **RIGHT JOIN** | 右表全部 + 左表匹配 | 保留右表完整性（较少使用，可改写为LEFT JOIN） | 保留右表，左表可为NULL |
+| 连接类型       | 返回结果            | 使用场景         | 数据完整性             |
+| :------------- | :------------------ | :--------------- | :--------------------- |
+| **INNER JOIN** | 两表匹配的记录      | 查询有效关联数据 | 严格，丢失不匹配数据   |
+| **LEFT JOIN**  | 左表全部 + 右表匹配 | 保留左表完整性   | 保留左表，右表可为NULL |
+| **RIGHT JOIN** | 右表全部 + 左表匹配 | 保留右表完整性   | 保留右表，左表可为NULL |
 
 **💡 选择建议**：想完整保留哪张表的数据，就把它作为**LEFT JOIN的左表**。实际开发中**RIGHT JOIN较少使用**，通常通过调换表顺序改用LEFT JOIN实现相同效果。
 
@@ -617,27 +616,9 @@ WHERE p.title = '广东省';
 
 ![image-20230829115134383](assets/image-20230829115134383.png)
 
-### 4.2 聚合函数深度解析
-
-**COUNT(*) vs COUNT(字段) 区别**
-
-| 场景               | COUNT(*)       | COUNT(字段)        | 结果差异                    |
-| :----------------- | :------------- | :----------------- | :-------------------------- |
-| **字段全为非NULL** | 统计所有行     | 统计所有行         | 结果相同                    |
-| **字段包含NULL**   | 统计所有行     | **忽略NULL行**     | **COUNT(\*) > COUNT(字段)** |
-| **分组统计**       | 统计每组总行数 | 统计每组非NULL行数 | 可能不同                    |
-
-```sql
--- 示例：统计有分类的商品数量
-SELECT 
-    COUNT(*) AS total_rows,           -- 13（所有记录）
-    COUNT(category_id) AS valid_cates -- 12（pid=p001的记录category_id为NULL，被忽略）
-FROM product;
-```
 
 
-
-### 4.3 CASE WHEN条件表达式
+### 4.2 CASE WHEN条件表达式
 
 将**连续数值**转换为**分类标签**，实现业务逻辑可视化。例如：
 
@@ -681,7 +662,7 @@ FROM orders;
 
 
 
-### 4.4 筛选条件核心区别
+### 4.3 筛选条件核心区别
 
 | 关键词     | 执行阶段             | 核心用途                                  | 是否支持聚合函数 | 执行顺序 |
 | :--------- | :------------------- | :---------------------------------------- | :--------------- | :------- |
