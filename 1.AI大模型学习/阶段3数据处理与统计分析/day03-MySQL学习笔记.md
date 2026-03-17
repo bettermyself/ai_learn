@@ -1,17 +1,17 @@
 ## 1. 数据库约束 (Constraints)
 
-### 1.1 约束概述
+### 1.1 约束类型概览
 
-约束（Constraint）是用于限制表中数据的规则，确保数据库中数据的**准确性**和**可靠性**。MySQL支持以下六大核心约束类型：
+约束是确保数据**准确性**和**可靠性**的规则。MySQL支持六大核心约束类型：
 
-| 约束类型        | 功能描述                                        | 适用场景                             |
-| :-------------- | :---------------------------------------------- | :----------------------------------- |
-| **PRIMARY KEY** | 主键约束，唯一标识每条记录（NOT NULL + UNIQUE） | 每条记录必须唯一识别的场景           |
-| **NOT NULL**    | 非空约束，确保列不能存储NULL值                  | 必填字段（如用户名、密码）           |
-| **UNIQUE**      | 唯一约束，确保列中所有值都不同                  | 不可重复的业务字段（如邮箱、手机号） |
-| **FOREIGN KEY** | 外键约束，维护表间数据参照完整性                | 关联表之间的数据一致性保证           |
-| **DEFAULT**     | 默认值约束，未指定值时自动填充                  | 减少数据录入工作量的场景             |
-| **CHECK**       | 检查约束，确保值满足特定条件                    | 业务规则校验（如年龄≥18）            |
+| 约束类型        | 功能描述   | 关键特性                        | 典型场景                  |
+| :-------------- | :--------- | :------------------------------ | :------------------------ |
+| **PRIMARY KEY** | 主键约束   | 唯一 + 非空，一表一个           | 记录唯一标识              |
+| **NOT NULL**    | 非空约束   | 禁止NULL值                      | 必填字段（用户名、密码）  |
+| **UNIQUE**      | 唯一约束   | 值唯一，允许多个NULL            | 邮箱、手机号              |
+| **FOREIGN KEY** | 外键约束   | 维护表间参照完整性              | 关联表数据一致性          |
+| **DEFAULT**     | 默认值约束 | 未指定时自动填充                | 减少录入工作量            |
+| **CHECK**       | 检查约束   | 验证值满足条件（MySQL 8.0.16+） | 业务规则校验（如年龄≥18） |
 
 
 
@@ -29,20 +29,20 @@
 ```sql
 -- 示例1：单列主键 + 自动增长（最常用）
 CREATE TABLE person(
-    id INT PRIMARY KEY AUTO_INCREMENT,  -- 主键且自动递增，无需人工维护
-    last_name VARCHAR(100),
-    first_name VARCHAR(100)
-);
+                    id INT PRIMARY KEY AUTO_INCREMENT,  -- 主键且自动递增，无需人工维护
+                    last_name VARCHAR(100),
+                    first_name VARCHAR(100)
+				   	);
 
 -- 示例2：复合主键（多个列组合唯一）
 -- 适用场景：当单个字段无法唯一标识记录时（如订单明细表）
 -- 特性：所有组成列均不允许NULL，组合值必须唯一
 CREATE TABLE order_items (
-    order_id INT NOT NULL,              -- 订单ID（外键）
-    product_id INT NOT NULL,            -- 商品ID（外键）
-    quantity INT,
-    PRIMARY KEY (order_id, product_id)  -- 复合主键：同一订单中相同商品只能有一条记录
-);
+                            order_id INT NOT NULL,              -- 订单ID（外键）
+                            product_id INT NOT NULL,            -- 商品ID（外键）
+                            quantity INT,
+                            PRIMARY KEY (order_id, product_id)  -- 复合主键：同一订单中相同商品只能有一条记录
+                        );
 ```
 
 #### 其他核心约束
@@ -146,10 +146,10 @@ CREATE TABLE products (
 -- 数据操作演示
 INSERT INTO category (cid, cname) VALUES('c001', '家电');  -- 必须先插入主表数据
 
--- 合法操作：外键值为NULL（表示未分类）
+-- ✅ 合法：外键为NULL（表示未分类）
 INSERT INTO products (pid, pname) VALUES('p001', '商品名称');
 
--- 合法操作：外键值在主表中存在
+-- ✅ 合法：外键值在主表中存在
 INSERT INTO products (pid, pname, category_id) VALUES('p002', '商品名称2', 'c001');
 
 -- ❌ 非法操作：外键值在主表中不存在（会抛出异常）
@@ -159,10 +159,10 @@ INSERT INTO products (pid, pname, category_id) VALUES('p002', '商品名称2', '
 -- DELETE FROM category WHERE cid = 'c001';
 ```
 
-**外键约束核心规则**：
+**核心规则**：
 
-1. **插入规则**：从表的外键值必须为NULL或在主表中存在
-2. **删除规则**：主表中被引用的记录**无法直接删除**（需先删除从表关联记录或使用级联删除）
+1. **插入规则**：从表外键值必须为NULL或在主表中存在
+2. **删除规则**：主表被引用记录**无法直接删除**（需先删除从表关联记录或使用级联删除）
 
 
 
