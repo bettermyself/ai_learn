@@ -27,20 +27,19 @@ Anaconda是专为科学计算设计的Python发行版，内置conda虚拟环境�
 | `conda env export > env.yml`            | 导出当前环境的所有包及其版本为一个 yml 文件            | `conda env export > environment.yml`      |
 | `conda env create -f env.yml`           | 根据 yml 文件创建一个新环境                            | `conda env create -f environment.yml`     |
 | `conda list --revisions`                | 显示环境中的所有更改历史（安装、卸载、更新等）         | `conda list --revisions`                  |
-| `conda install python<version>`         | 安装或更新指定版本的 Python 到当前环境中               | `conda install python=3.8`                |
+| `conda install python=<version>`        | 安装或更新指定版本的 Python 到当前环境中               | `conda install python=3.8`                |
 | `conda config --add channels <channel>` | 添加新的 conda 仓库源                                  | `conda config --add channels conda-forge` |
 
 
 
 ### 1.3 为什么需要虚拟环境？
 
-| 优势维度         | 具体说明                         | 典型案例                                 |
-| :--------------- | :------------------------------- | :--------------------------------------- |
-| **⚠️ 依赖隔离**   | 避免不同项目间库版本冲突         | 项目A需`numpy 1.18`，项目B需`numpy 1.20` |
-| **💡 环境一致性** | 通过配置文件确保团队协作环境一致 | 导出`environment.yml`复现相同环境        |
-| **🔒 安全性**     | 保护系统级Python环境不被破坏     | 避免误操作导致系统工具崩溃               |
-| **⚡ 灵活高效**   | 轻量级隔离，支持快速创建/删除    | 测试Python 3.8与3.11兼容性               |
-| **🛠️ 工具链管理** | 特定工具独立安装，避免全局污染   | Jupyter Lab、TensorFlow等项目级工具      |
+| 优势维度       | 说明                             | 典型案例                                   |
+| -------------- | -------------------------------- | ------------------------------------------ |
+| **依赖隔离**   | 避免不同项目间库版本冲突         | 项目A需 `numpy 1.18`，项目B需 `numpy 1.20` |
+| **环境一致性** | 通过配置文件确保团队协作环境一致 | 导出 `environment.yml` 复现相同环境        |
+| **安全性**     | 保护系统级 Python 环境不被破坏   | 避免误操作导致系统工具崩溃                 |
+| **灵活高效**   | 轻量级隔离，支持快速创建/删除    | 测试 Python 3.8 与 3.11 兼容性             |
 
 
 
@@ -62,7 +61,7 @@ df = pd.DataFrame({
     'score': [85, 90, 78, 95]
 })
 
-# 💡 筛选年龄大于30岁的行（将数据中的某一列和一个值进行比较 (>、< 、=、!=) ，比较之后会返回布尔Series作为掩码）
+# 💡 筛选年龄大于30岁的行（将数据中的某一列和一个值进行比较 (>、< 、==、!=) ，比较之后会返回布尔Series作为掩码）
 mask = df['age'] > 30
 # True对应的行会保留，False对应的行被过滤(传递的时候, 需要注意要写到中括号中)
 result = df[mask]  
@@ -116,6 +115,7 @@ result_missing = df_nan[df_nan['value'].isna()]
 
 ```python
 # 使用loc定位并修改：分数>=90的等级设为'A'
+
 # 参数1：行条件（布尔Series），参数2：目标列名
 df.loc[df['score'] >= 90, 'grade'] = 'A'
 
@@ -137,8 +137,10 @@ result = df[mask.reindex(df.index, fill_value=False)]  #index重置为[0,1,2,3],
 **运算符优先级**：`&` 和 `|` 的优先级高于比较运算符，必须用括号包裹条件：
 
 ```python
-# 错误写法：df['age'] > 30 & df['score'] < 90
-# 正确写法：
+# ❌ 错误写法
+df['age'] > 30 & df['score'] < 90
+
+# ✅ 正确写法
 df[(df['age'] > 30) & (df['score'] < 90)]
 ```
 
