@@ -234,10 +234,10 @@ M \leq d_p(\mathbf{x}, \mathbf{y}) \leq n^{1/p} \cdot M
 
 特征的**单位或者大小相差较大，或者某特征的方差相比其他的特征要大出几个数量级**，**容易影响（支配）目标结果**，使得一些模型（算法）无法学习到其它的特征。
 
-| **问题**               | **影响**               | **解决方案**  |
-| :--------------------- | :--------------------- | :------------ |
-| 特征尺度差异大 📏       | 大尺度特征支配模型结果 | 归一化/标准化 |
-| 特征方差数量级差异大 📈 | 模型忽略小方差特征     | 标准化        |
+| **问题**             | **影响**               | **解决方案**  |
+| :------------------- | :--------------------- | :------------ |
+| 特征尺度差异大       | 大尺度特征支配模型结果 | 归一化/标准化 |
+| 特征方差数量级差异大 | 模型忽略小方差特征     | 标准化        |
 
 
 
@@ -251,7 +251,7 @@ X_{\text{norm}} = \frac{X - X_{\min}}{X_{\max} - X_{\min}}
 $$
 
 $$
-x = x' * (mx - mi) + mi
+x = x' * (max - min) + min
 $$
 
 **数据归一化的API实现：**
@@ -317,7 +317,7 @@ print("数据范围:", scaler.data_min_, "~", scaler.data_max_)
 **输出示例**：
 
 ```tex
-各特征最小值: [-2. -1. -2.]
+各特征偏移量: [-2. -1. -2.]
 缩放比例: [0.03333333 0.5        0.2       ]
 数据范围: [60  2 10] ~ [90  4 15]
 ```
@@ -661,7 +661,7 @@ from sklearn.model_selection import GridSearchCV
 
 # 示例代码
 estimator = GridSearchCV(
-    estimator=KNeighborsClassifier(),  # 基础模型
+    estimator=KNeighborsClassifier(),  # 基础模型,输入一个estimator 返回一个estimator。此estimator会更强大拥有交叉验证网格搜索的功能
     param_grid={'n_neighbors': [4,5,7,9]},  # 参数网格
     cv=4  # 4折交叉验证
 )
@@ -683,14 +683,6 @@ print("最优模型得分:", estimator.best_score_)   # 交叉验证平均分
 | ③ 网格搜索训练 | 调用 `GridSearchCV.fit()`       | 遍历参数组合并验证     |
 | ④ 最优模型提取 | 通过 `best_estimator_` 获取模型 | 获得重训练后的最优模型 |
 | ⑤ 测试集评估   | 用测试集评估最优模型            | 验证泛化性能           |
-
-
-
-
-
-![image-20230831163636694](assets/image-20230831163636694.png)
-
-
 
 交叉验证网格搜索在鸢尾花分类中的应用：
 
@@ -734,6 +726,8 @@ x=pre.transform(x)
 y_prdict=model.predict(x_test)
 print(accuracy_score(y_test,y_prdict))
 ```
+
+
 
 ### 5.4 **核心优势对比**
 
