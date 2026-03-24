@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript基本数据类型</title>
+</head>
+
+<body>
+  <script>
+    // 1. 数字型： 用于计算的， js数字类型包含： 整数、小数
+    let num = 18
+    let num1 = 18.88
+    // let num1 = 18
+    // let num1 = -18
+    // let num1 = -18.88
+    console.log(typeof num);
+    
+
+    // 2. 字符串类型: 被引号包裹的一段文字信息   单引号 双引号  反引号
+    let goods = '笔记本电脑'
+    let address = "黑马程序员"
+    console.log(typeof goods);
+    console.log(typeof address);
+    let color = `粉红色`
+    let tel = '1232223321'
+    // 2.1 变量是不能加引号的,变量加了引号就不是盒子了，是一个字符串
+    console.log('goods');
+    
+    // 2.2 字符串嵌套的问题. 不能嵌套自己, 外单内双  或者 外双内单
+    console.log('今日特价"跳楼大甩卖"速速抢购');
+    console.log("今日特价'跳楼大甩卖'速速抢购");
+    
+  </script>
+</body>
+
+</html>
