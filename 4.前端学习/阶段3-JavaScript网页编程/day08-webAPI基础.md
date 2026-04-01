@@ -61,9 +61,10 @@ son.addEventListener('click', function (e) {
 });
 ```
 
-| 方法                  | 作用                  | 兼容性     |
-| :-------------------- | :-------------------- | :--------- |
-| `e.stopPropagation()` | 阻止事件冒泡/捕获传播 | 标准浏览器 |
+| 方法                    | 作用                  | 兼容性     |
+| ----------------------- | --------------------- | ---------- |
+| `e.stopPropagation()`   | 阻止事件冒泡/捕获传播 | 标准浏览器 |
+| `e.cancelBubble = true` | IE浏览器阻止冒泡      | IE专用     |
 
 ### 1.5 鼠标经过事件对比
 
@@ -116,7 +117,7 @@ ul.addEventListener('click', function (e) {
   // 判断点击的是否是目标子元素
   if (e.target.tagName === 'LI') {
     e.target.style.color = 'pink';
-    console.log('点击了：', e.target.textContent);
+    console.log('点击了：', e.target.textContent); // 被点击元素的文本
   }
 });
 ```
@@ -209,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 监听页面滚动
 window.addEventListener('scroll', function() {
   // 获取滚动距离
-  const scrollTop = document.documentElement.scrollTop;
+  const scrollTop = document.documentElement.scrollTop; //document.documentElement 获取html标签
   
   // 应用场景：固定导航栏、返回顶部按钮显示
   if (scrollTop > 100) {

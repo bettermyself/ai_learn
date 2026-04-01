@@ -74,7 +74,7 @@ box.innerText = getDateTime();
 
 // 每秒更新
 setInterval(function () {
-      document.querySelector('.box').innerText = getDateTime();
+    document.querySelector('.box').innerText = getDateTime();
 }, 1000);
 ```
 
