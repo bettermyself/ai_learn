@@ -26,7 +26,7 @@ JavaScript 由 **ECMAScript** 和 **Web APIs** 两大核心部分组成：
 
 1. **全局作用域**：所有全局变量和函数自动挂载为 `window` 的属性和方法
 2. **隐式调用**：访问 `window` 下的属性和方法时可省略 `window` 前缀
-3. **内置对象聚合**：包含 `document`、`console`、`alert` 等常用对象
+3. **内置对象聚合**：包含 `document`、`console`、`alert` 等常用对象和方法
 
 ```javascript
 // 以下三种写法等价
@@ -225,11 +225,11 @@ localStorage.removeItem('age');
 
 **与 localStorage 的区别**：
 
-| 特性         | localStorage           | sessionStorage                               |
-| :----------- | :--------------------- | :------------------------------------------- |
-| **生命周期** | 永久保存，除非手动删除 | 页面会话期间保存，**关闭浏览器标签页即清除** |
-| **作用域**   | 同源窗口共享           | 同一标签页内有效                             |
-| **API 方法** | 完全相同               | 完全相同                                     |
+| 特性         | localStorage               | sessionStorage                               |
+| :----------- | :------------------------- | :------------------------------------------- |
+| **生命周期** | 永久保存，除非手动删除     | 页面会话期间保存，**关闭浏览器标签页即清除** |
+| **作用域**   | 同源窗口共享（多标签共享） | 同一标签页内有效                             |
+| **API 方法** | 完全相同                   | 完全相同                                     |
 
 ```javascript
 // sessionStorage 用法与 localStorage 完全一致
@@ -322,19 +322,19 @@ const colors = ['red', 'blue', 'pink'];
 const colorDescriptions = colors.map(function(element, index) {
   // element: 当前数组元素 ('red', 'blue', 'pink')
   // index: 当前索引 (0, 1, 2)
-  return `${element} 颜色（索引：${index}）`;
+  return `${element}颜色`;
 });
 
 console.log(colorDescriptions);
-// 输出：['red 颜色（索引：0）', 'blue 颜色（索引：1）', 'pink 颜色（索引：2）']
+// 输出：['red 颜色', 'blue 颜色', 'pink 颜色']
 ```
 
 **map vs forEach 关键区别**：
 
-| 方法        | 返回值                         | 主要用途           |
-| :---------- | :----------------------------- | :----------------- |
-| `map()`     | **返回新数组**（处理后的结果） | 数据转换、映射     |
-| `forEach()` | `undefined`（无返回值）        | 纯遍历、执行副作用 |
+| 方法        | 返回值                         | 主要用途       |
+| :---------- | :----------------------------- | :------------- |
+| `map()`     | **返回新数组**（处理后的结果） | 数据转换、映射 |
+| `forEach()` | `undefined`（无返回值）        | 纯遍历         |
 
 
 
