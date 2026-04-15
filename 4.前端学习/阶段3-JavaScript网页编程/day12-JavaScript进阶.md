@@ -295,436 +295,262 @@ const combined = [...arr1, ...arr2];  // [1, 2, 3, 4, 5, 6]
 
 💡 **记忆技巧**：剩余参数是"**凝聚**"（收集多个元素为数组），展开运算符是"**拆散**"（将数组展开为元素）。
 
+### 2.3 箭头函数（Arrow Function）
 
+箭头函数是更简洁的函数表达式写法，特别适用于需要匿名函数的场景。
 
+```javascript
+// 基础语法对比
+// 传统函数表达式
+const fn = function(x) {
+  return x * 2;
+};
 
-
-
-
-### 箭头函数
-
-箭头函数比函数表达式更简洁的一种写法
-
-使用场景：箭头函数更适用于那些本来需要匿名函数的地方，写法更简单
-
-```html
-<body>
-  <script>
-    // 箭头函数
-    // 1. 基本语法
-    // const fn = function () {
-    //   console.log('我是函数表达式')
-    // }
-    // fn()
-    // const fn = () => {
-    //   console.log('我是箭头函数')
-    // }
-    // fn()
-
-    // 2. 细节使用
-    // 2.1 如果只有一个形参则可以省略小括号,其余个数不能省略，如果没有参数则写空的小括号
-    // const sum = (x) => {
-    //   console.log(x + x)
-    // }
-    // sum(2)
-    // const sum = x => {
-    //   console.log(x + x)
-    // }
-    // sum(2)
-
-    // 2.2 如果函数体只有一句代码，则可以省略大括号，这句代码就是返回值（省略return）
-    // const sum = x => {
-    //   return x + x
-    // }
-    // const sum = x => x + x
-    // console.log(sum(5))
-
-    // 2.3 如果返回的是一个对象，则需要用小括号把对象包裹起来
-    // const fn = function() {
-    //   return {name: '佩奇'}
-    // }
-    // const fn = () => ({ name: '佩奇' })
-    // console.log(fn())
-
-    // 2.4 箭头函数里面没有 arguments，但是有剩余参数
-    const fn = (...other) => {
-      // console.log(arguments)
-      console.log(other)
-    }
-    fn(1, 2)
-  </script>
-</body>
+// 箭头函数
+const fn = (x) => x * 2;
 ```
 
-**用法细节：** 
+**箭头函数语法简写规则：**
 
-1. 当箭头函数只有一个参数时，可以省略参数的小括号，其余个数不能省略（没有参数也需要写小括号）
-2. 当箭头函数的函数体只有一句代码 可以省略函数体大括号，这句代码就是返回值（可以不用写return）
-3. 如果返回的是个对象，则需要把对象用小括号包裹
-4. 箭头函数里面没有arguments，但是有剩余参数
+| 场景           | 语法                 | 示例                       |
+| :------------- | :------------------- | :------------------------- |
+| 单参数         | 省略圆括号           | `x => x * 2`               |
+| 无参数或多参数 | 保留圆括号           | `() => console.log('hi')`  |
+| 单条语句       | 省略花括号，自动返回 | `x => x + 1`               |
+| 返回对象       | 用小括号包裹对象     | `() => ({ name: '佩奇' })` |
 
-总结：
+```javascript
+// 完整示例
+const sum = x => x + x;           // 单参数，单语句
+const greet = () => 'Hello!';     // 无参数
+const getUser = () => ({           // 返回对象
+  name: '小明',
+  age: 18
+});
 
-1. 箭头函数属于表达式函数，因此不存在函数提升
-2. 箭头函数只有一个参数时可以省略圆括号 `()`
-3. 箭头函数函数体只有一行代码时可以省略花括号 `{}`，并自动做为返回值被返回
-4. 箭头函数中没有 `arguments`，只能使用 `...` 动态获取实参
-
-####  箭头函数中的this
-
-以前函数中的this指向是根据如何调用来确定的。简单理解就是this指向调用者
-
-箭头函数本身没有this,它只会沿用上一层作用域的this 
-
-~~~html
- <body>
-  <button class="btn1">点击</button>
-  <button class="btn2">5秒后启用</button>
-  <script>
-    // 1. 以前this的指向：  指向调用者
-    // console.log(this)  // window
-    // // 普通函数
-    // function fn() {
-    //   console.log(this)  // window
-    // }
-    // window.fn()
-    // // 对象方法里面的this
-    // const obj = {
-    //   name: 'andy',
-    //   sayHi: function () {
-    //     console.log(this)  // obj
-    //   }
-    // }
-    // obj.sayHi()
-
-    // 2. 箭头函数的中this指向-沿用上一层作用域的this 
-    const fn = () => {
-      console.log(this)  // window
-    }
-    fn()
-    // const obj = {
-    //   name: 'andy',
-    //   sayHi: () => {
-    //     console.log(this)  // window
-    //   }
-    // }
-    // obj.sayHi()
-
-    const obj = {
-      name: 'andy',
-      sayHi: function () {
-        const fun = () => {
-          console.log(this)  // obj 
-        }
-        fun()
-      }
-    }
-    obj.sayHi()
-
-    // 3. 我们可以根据需求来选择是否使用箭头函数 this
-    // document.querySelector('.btn1').addEventListener('click', function () {
-    //   this.style.color = 'red'
-    // })
-    document.querySelector('.btn1').addEventListener('click', () => {
-      // this.style.color = 'red'
-      // 此处不能用 this 指向 Window不是 按钮了
-      document.querySelector('.btn1').style.color = 'red'
-    })
-
-    document.querySelector('.btn2').addEventListener('click', function () {
-      this.disabled = true
-      // setTimeout(function () {
-      //   console.log(this) //  定时器里面的this 指向 window 
-      //   this.disabled = false
-      // }, 5000)
-
-      setTimeout(() => {
-        console.log(this) //  
-        this.disabled = false
-      }, 5000)
-    })
-  </script>
-</body>
-~~~
-
-### ES6对象简写
-
-1. 在对象中，如果属性名和属性值一致，可以简写只写属性名即可
-2. 在对象中，方法（函数）可以简写
-
-~~~html
-<body>
-  用户名: <input type="text" class="username"> <br>
-  密　码: <input type="password" class="password"> <br>
-  <button>点击</button>
-  <script>
-    // ES6对象属性和方法的简写
-    // 1. 对象属性的简写 (点击按钮生成对象)
-    document.querySelector('button').addEventListener('click', function () {
-      const username = document.querySelector('.username').value
-      const password = document.querySelector('.password').value
-      // const obj = {
-      //   username: username,
-      //   password: password
-      // }
-      // 属性名和属性值相同的时候，可以只写属性名
-      // 2. 对象方法的简写
-      // const obj = {
-      //   username,
-      //   password,
-      //   sayHi: function() {
-      //     console.log('hi~')
-      //   }
-      // }
-      const obj = {
-        username,
-        password,
-        sayHi() {
-          console.log('hi~')
-        }
-      }
-      console.log(obj)
-    })
-
-
-  </script>
-~~~
-
-## 解构赋值
-
-> 知道解构的语法及分类，使用解构简洁语法快速为变量赋值。
-
-解构赋值：可以将数组中的值或对象的属性取出，赋值给其他变量
-
-解构：其实就是把一个事物的结构进行拆解
-
-### 数组解构
-
-基本语法：
-
-1. 右侧数组的值将被赋值给左侧的变量
-2. 变量的顺序对应数组值的位置依次进行赋值操作
-
-```html
-<body>
-  <script>
-    // 数组解构
-    // 1. 基本语法
-    const [a, b, c] = [1, 2, 3]
-    console.log(a)
-    console.log(b)
-    console.log(c)
-
-    // 2. 典型的使用场景  交换2个变量的值
-    let x = 1
-    let y = 2;
-    [y, x] = [x, y]
-    console.log(x, y);
-
-    // 3. js 2个特殊情况需要加分号
-    // 3.1 如果是小括号开头的则需要加分号
-    (function () { })();
-    (function () { })();
-    // 3.2 如果是中括号开头的则需要加分号
-
-  </script>
-</body>
+// 箭头函数没有 arguments，使用剩余参数
+const fn = (...args) => {
+  console.log(args);  // 真数组
+};
+fn(1, 2, 3);
 ```
 
-**变量和值不匹配的情况**
+#### 2.3.1 箭头函数中的 this
 
-~~~html
-<body>
-  <script>
-    // 数组解构变量和值不匹配的情况
+⚠️ **关键区别**：箭头函数**没有自己的 this**，它会**继承外层作用域的 this**。
 
-    // 1. 变量多，值少的情况
-    // const [a, b, c, d] = ['小米', '华为', '苹果']
-    // console.log(a)
-    // console.log(b)
-    // console.log(c)
-    // console.log(d) // undefined
+```javascript
+// 传统函数：this 指向调用者
+const obj = {
+  name: 'andy',
+  sayHi: function() {
+    console.log(this);  // obj
+  }
+};
+obj.sayHi();
 
-    // 2. 防止undefined传值，可以设置默认值
-    // const [a, b, c, d = '三星'] = ['小米', '华为', '苹果']
-    // console.log(a)
-    // console.log(b)
-    // console.log(c)
-    // console.log(d)
+// 箭头函数：this 继承外层作用域
+const obj2 = {
+  name: 'andy',
+  sayHi: () => {
+    console.log(this);  // window（继承全局作用域）
+  }
+};
+obj2.sayHi();
 
-    // 3. 变量少，值多的情况
-    // const [a, b] = ['小米', '华为', '苹果']
-    // console.log(a)
-    // console.log(b)
-
-    // 4. 利用剩余参数解决变量少值多的情况
-    // const [a, ...b] = ['小米', '华为', '苹果']
-    // console.log(a)
-    // console.log(b)
-
-    // 5. 按需导入，忽略某些值
-    const [a, , c, d] = ['小米', '华为', '苹果', 'vivo']
-    console.log(a)
-    console.log(c)
-    console.log(d)
-  </script>
-</body>
-~~~
-
-### 对象解构
-
-对象解构赋值：可以将对象的属性取出，赋值给其他变量
-
-```html
-<body>
-  <script>
-    const username = 'andy'
-    const user = {
-      username: '小明',
-      age: 18
-    }
-    // 1. 对象解构赋值基本使用
-    // const { username, age, gender } = user
-    // console.log(username)  // 小明
-    // console.log(age)  // 18
-    // console.log(gender)  // undefined
-
-    // 1.1 要求变量名和属性名必须一致
-    // 1.2 如果变量名和属性名不一致，则默认为 undefined
-    // 1.3 变量名不要和外面的变量名冲突，否则会报错
-
-    // 2. 更改解构变量名（重命名）  变量名: 新变量名
-    // const { username: uname, age } = user
-    // console.log(uname)  // 小明
-    // console.log(age)  // 18
-
-    // 3. 对象数组解构
-    const arr = [
-      {
-        username: '小明',
-        age: 18
-      }
-    ]
-
-    const [{ username: uname, age }] = arr
-    console.log(uname)
-    console.log(age)
-  </script>
-</body>
+// 实际应用：事件处理中保持 this 指向
+document.querySelector('.btn').addEventListener('click', function() {
+  this.disabled = true;  // this 指向按钮
+  
+  setTimeout(() => {
+    // 箭头函数继承外层 function 的 this
+    this.disabled = false;  // ✅ 正确指向按钮
+  }, 5000);
+});
 ```
 
-注：支持多维解构赋值
+**this 指向对比表：**
 
-~~~html
-<body>
-  <script>
-    // 1. 这是后台传递过来的数据
-    const msg = {
-      "code": 200,
-      "msg": "获取新闻列表成功",
-      "data": [
-        {
-          "id": 1,
-          "title": "5G商用自己，三大运用商收入下降",
-          "count": 58
-        },
-        {
-          "id": 2,
-          "title": "国际媒体头条速览",
-          "count": 56
-        },
-        {
-          "id": 3,
-          "title": "乌克兰和俄罗斯持续冲突",
-          "count": 1669
-        },
+| 函数类型 | this 指向              | 适用场景                 |
+| :------- | :--------------------- | :----------------------- |
+| 传统函数 | 调用者（动态绑定）     | 需要动态 this 的事件处理 |
+| 箭头函数 | 外层作用域（静态继承） | 需要固定 this 的回调函数 |
 
-      ]
-    }
+### 2.4 ES6 对象简写
 
-    // 需求1： 请将以上msg对象  采用对象解构的方式 只选出  data 方面后面使用渲染页面
-    // const { data } = msg
-    // console.log(data)
-    // 需求2： 上面msg是后台传递过来的数据，我们需要把data选出当做参数传递给 函数
-    // const { data } = msg
-    // msg 虽然很多属性，但是我们利用解构只要 data值
-    function render({ data }) {
-      // const { data } = arr
-      // 我们只要 data 数据
-      // 内部处理
-      console.log(data)
+```javascript
+const username = '小明';
+const age = 18;
 
-    }
-    render(msg)
+// 1. 属性简写（属性名与变量名相同）
+const user = {
+  username,  // 等同于 username: username
+  age        // 等同于 age: age
+};
 
-    // 需求3， 为了防止msg里面的data名字混淆，要求渲染函数里面的数据名改为 myData
-    function render({ data: myData }) {
-      // 要求将 获取过来的 data数据 更名为 myData
-      // 内部处理
-      console.log(myData)
+// 2. 方法简写
+const person = {
+  name: '小明',
+  // 传统写法
+  sayHi: function() {
+    console.log('Hi!');
+  },
+  // ES6 简写
+  sayHello() {
+    console.log('Hello!');
+  }
+};
+```
 
-    }
-    render(msg)
 
-  </script>
-~~~
 
-## 综合案例
+## 三、解构赋值（Destructuring）
 
-### filter遍历数组
+解构赋值可以将数组中的值或对象的属性取出，赋值给其他变量。
 
-filter() 方法创建一个新的数组，新数组中的元素是符合条件的所有元素
+### 3.1 数组解构
 
-主要使用场景： 筛选数组符合条件的元素，并返回筛选之后元素的新数组，不影响原数组
+```javascript
+// 基本语法
+const [a, b, c] = [1, 2, 3];
+console.log(a, b, c);  // 1 2 3
 
-~~~html
-<body>
-  <script>
-    // filter 筛选数组元素
-    const arr = [10, 20, 30, 40]
-    // const newArr = arr.filter(function (ele, index) {
-    //   // console.log(ele)
-    //   // console.log(index)
-    //   // return 筛选条件
-    //   return ele >= 30
-    //   // return ele + 30 都是真的所以都选出来了
-    // })
+// 典型场景：交换变量值
+let x = 1, y = 2;
+[x, y] = [y, x];       // 无需临时变量
+console.log(x, y);     // 2 1
+```
 
-    const newArr = arr.filter(ele => ele >= 30)
-    console.log(newArr)
-  </script>
-</body>
-~~~
+**变量与值不匹配的处理：**
 
-## 拓展-垃圾回收机制算法
+| 场景         | 处理方式               | 示例                                        |
+| :----------- | :--------------------- | :------------------------------------------ |
+| 变量多，值少 | 多余变量为 `undefined` | `const [a, b, c] = [1, 2]` → c 为 undefined |
+| 设置默认值   | 使用 `=` 指定          | `const [a, b = 10] = [1]`                   |
+| 变量少，值多 | 使用剩余参数           | `const [a, ...rest] = [1, 2, 3]`            |
+| 按需取值     | 使用逗号跳过           | `const [a, , c] = [1, 2, 3]`                |
 
-堆栈空间分配区别：
+```javascript
+// 默认值
+const [a, b, c = '默认值'] = [1, 2];
+console.log(c);  // '默认值'
 
-1. 栈（操作系统）: 由操作系统自动分配释放函数的参数值、局部变量等，基本数据类型放到栈里面。
-2. 堆（操作系统）: 一般由程序员分配释放，若程序员不释放，由垃圾回收机制回收。复杂数据类型放到堆里面。
+// 剩余参数
+const [first, ...others] = ['小米', '华为', '苹果'];
+console.log(first);   // '小米'
+console.log(others);  // ['华为', '苹果']
 
-下面介绍两种常见的浏览器垃圾回收算法: 引用计数法 和 标记清除法
+// 按需导入，跳过某些值
+const [brand, , price] = ['iPhone', 'Apple', 9999];
+console.log(brand, price);  // 'iPhone' 9999
+```
 
-### 引用计数
+### 3.2 对象解构
 
-IE采用的引用计数算法, 定义“内存不再使用”，就是看一个对象是否有指向它的引用，没有引用了就回收对象
+```javascript
+const user = {
+  username: '小明',
+  age: 18,
+  gender: '男'
+};
 
-算法： 
+// 基本解构（变量名必须与属性名一致）
+const { username, age } = user;
+console.log(username, age);  // '小明' 18
 
-1. 跟踪记录被引用的次数
-2. 如果被引用了一次，那么就记录次数1,多次引用会累加 ++
-3. 如果减少一个引用就减1 -- 
-4. 如果引用次数是0 ，则释放内存
+// 重命名（解决命名冲突）
+const { username: uname } = user;
+console.log(uname);  // '小明'
 
-### 标记清除法
+// 设置默认值
+const { salary = 0 } = user;
+console.log(salary);  // 0（属性不存在时使用默认值）
+```
 
-现代的浏览器已经不再使用引用计数算法了。
+**对象数组解构：**
 
-现代浏览器通用的大多是基于标记清除算法的某些改进算法，总体思想都是一致的。
+```javascript
+const users = [
+  { username: '小明', age: 18 },
+  { username: '小红', age: 20 }
+];
 
-核心：
+// 解构数组中的对象
+const [{ username: firstName, age: firstAge }] = users;
+console.log(firstName, firstAge);  // '小明' 18
+```
 
-1. 标记清除算法将“不再使用的对象”定义为“无法达到的对象”。 
-2. 就是从根部（在JS中就是全局对象）出发定时扫描内存中的对象。凡是能从根部到达的对象，都是还需要使用的。
+**函数参数解构（实际应用）：**
 
-3.那些无法由根部出发触及到的对象被标记为不再使用，稍后进行回收。 
+```javascript
+// 处理 API 响应数据
+const response = {
+  code: 200,
+  msg: '获取成功',
+  data: [{ id: 1, title: '新闻1' }, { id: 2, title: '新闻2' }]
+};
+
+// 直接解构需要的字段
+function render({ data: newsList }) {
+  // 将 data 重命名为 newsList
+  console.log(newsList);
+}
+
+render(response);  // [{ id: 1, title: '新闻1' }, ...]
+```
+
+
+
+## 四、综合案例
+
+### 4.1 filter 数组筛选
+
+`filter()` 方法创建新数组，包含通过测试的所有元素，**不影响原数组**。
+
+```javascript
+const scores = [85, 60, 90, 55, 78];
+
+// 筛选及格分数（>= 60）
+const passed = scores.filter(score => score >= 60);
+console.log(passed);   // [85, 60, 90, 78]
+console.log(scores);   // [85, 60, 90, 55, 78]（原数组不变）
+
+// 筛选优秀分数（>= 90）
+const excellent = scores.filter(s => s >= 90);
+console.log(excellent);  // [90]
+```
+
+
+
+## 五、拓展：垃圾回收算法详解
+
+### 5.1 堆栈空间分配区别
+
+| 内存区域        | 管理方式            | 存储内容                         | 回收时机             |
+| :-------------- | :------------------ | :------------------------------- | :------------------- |
+| **栈（Stack）** | 自动分配释放        | 基本数据类型、函数参数、局部变量 | 函数执行完毕自动释放 |
+| **堆（Heap）**  | 程序员分配/垃圾回收 | 复杂数据类型（对象、数组等）     | 不再被引用时回收     |
+
+### 5.2 引用计数法（已淘汰）
+
+IE 早期使用的算法，通过跟踪引用次数判断对象是否可回收。
+
+**工作原理：**
+
+1. 记录对象被引用次数
+2. 引用时计数 +1，释放引用时 -1
+3. 引用次数为 0 时回收内存
+
+⚠️ **致命缺陷**：**循环引用**无法回收（A 引用 B，B 引用 A，两者都无法被回收）。
+
+### 5.3 标记清除法（现代标准）
+
+现代浏览器通用的垃圾回收算法。
+
+**核心思想：**
+
+1. 从**根部**（全局对象）出发，定时扫描内存
+2. 标记所有**可达**（被引用）的对象
+3. **未标记**的对象视为不再使用，进行回收
+
+**优势：** 解决循环引用问题，只要对象无法从根节点到达，即被回收。
